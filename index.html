@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f8c3dd">
+<meta name="description" content="たしざんで いぬを そだてる レトロRPGふうの さんすうアプリ">
+<title>わんわんクエスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23ffd9ec'/%3E%3Crect x='3' y='5' width='10' height='8' fill='%23fff3dc'/%3E%3Crect x='2' y='2' width='3' height='5' fill='%23e0a06a'/%3E%3Crect x='11' y='2' width='3' height='5' fill='%23e0a06a'/%3E%3Crect x='5' y='8' width='2' height='2' fill='%233a2114'/%3E%3Crect x='9' y='8' width='2' height='2' fill='%233a2114'/%3E%3C/svg%3E">
+<style>
+/* ==========================================================
+   わんわんクエスト  —  レトロRPGふう「たしざん × いぬそだて」
+   ========================================================== */
+:root{
+  --pink:       #ff6fa5;
+  --pink-deep:  #c0417a;
+  --pink-pale:  #ffe3f0;
+  --purple:     #a76fe0;
+  --purple-deep:#7a3fb8;
+  --ink:        #4a2340;
+  --ink-soft:   #8a5f7d;
+  --gold:       #ffcf3f;
+  --good:       #17a86b;
+  --bad:        #e03a5c;
+  --win-bg:     #fffafd;
+  --shadow:     #d38ab4;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'DotGothic16','Yu Gothic','MS Gothic','Hiragino Kaku Gothic ProN',monospace;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 12% 8%,  rgba(255,255,255,.85) 0 3px, transparent 4px),
+    radial-gradient(circle at 68% 22%, rgba(255,255,255,.65) 0 2px, transparent 3px),
+    radial-gradient(circle at 33% 61%, rgba(255,255,255,.75) 0 3px, transparent 4px),
+    radial-gradient(circle at 87% 78%, rgba(255,255,255,.6)  0 2px, transparent 3px),
+    linear-gradient(170deg,#ffd9ec 0%,#ffc9e6 30%,#e9cdff 68%,#d6c4ff 100%);
+  background-size:120px 120px,120px 120px,120px 120px,120px 120px,100% 100%;
+  background-attachment:fixed;
+  min-height:100vh;min-height:100dvh;
+  line-height:1.7;letter-spacing:.02em;overflow-x:hidden;
+}
+#app{
+  max-width:480px;margin:0 auto;
+  padding:10px 12px calc(26px + env(safe-area-inset-bottom));
+  min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;
+}
+
+/* ---------- RPGふう ウィンドウ ---------- */
+.win{
+  position:relative;background:var(--win-bg);
+  border:4px solid var(--pink-deep);border-radius:16px;
+  box-shadow:inset 0 0 0 3px #fff, inset 0 0 0 6px var(--pink-pale),
+             0 5px 0 var(--shadow), 0 9px 18px rgba(120,50,100,.22);
+  padding:14px 16px;margin:16px 0 12px;
+}
+.win.purple{
+  border-color:var(--purple-deep);
+  box-shadow:inset 0 0 0 3px #fff, inset 0 0 0 6px #f0e4ff,
+             0 5px 0 #9878c4, 0 9px 18px rgba(90,50,130,.22);
+}
+.win-title{
+  position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  background:var(--pink-deep);color:#fff;
+  border:3px solid #fff;border-radius:999px;
+  font-size:13px;padding:1px 14px;white-space:nowrap;
+  box-shadow:0 2px 0 var(--shadow);
+}
+.win.purple .win-title{background:var(--purple-deep);box-shadow:0 2px 0 #9878c4;}
+
+/* ---------- ボタン ---------- */
+.btn{
+  display:block;width:100%;font-family:inherit;font-size:18px;color:#fff;
+  background:linear-gradient(180deg,#ff8dbb 0%,var(--pink) 55%,#ee5590 100%);
+  border:3px solid var(--pink-deep);border-radius:14px;
+  padding:12px 10px;margin:9px 0;cursor:pointer;line-height:1.4;
+  text-shadow:0 2px 0 rgba(150,30,80,.55);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6), 0 4px 0 var(--pink-deep), 0 7px 10px rgba(120,50,100,.25);
+  transition:transform .06s, box-shadow .06s, filter .12s;
+}
+.btn:active{transform:translateY(4px);box-shadow:inset 0 2px 0 rgba(255,255,255,.4), 0 0 0 var(--pink-deep);}
+.btn.purple{
+  background:linear-gradient(180deg,#c79bf0 0%,var(--purple) 55%,#8f4fd0 100%);
+  border-color:var(--purple-deep);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6), 0 4px 0 var(--purple-deep), 0 7px 10px rgba(90,50,130,.25);
+}
+.btn.purple:active{box-shadow:inset 0 2px 0 rgba(255,255,255,.4), 0 0 0 var(--purple-deep);}
+.btn.small{font-size:14px;padding:8px;}
+.btn[disabled]{filter:grayscale(.8) brightness(.95);cursor:not-allowed;opacity:.7;}
+.btn .sub{display:block;font-size:12px;opacity:.95;text-shadow:none;margin-top:2px;}
+.btn .lock{display:block;font-size:12px;text-shadow:none;}
+.row{display:flex;gap:8px;}
+.row .btn{margin:9px 0;}
+
+/* ---------- タイトル ---------- */
+#screen-title{text-align:center;}
+.logo{
+  margin:16px 0 4px;font-size:clamp(30px,10.5vw,46px);color:#fff;letter-spacing:.06em;
+  text-shadow:3px 3px 0 var(--pink-deep),-3px 3px 0 var(--pink-deep),
+              3px -3px 0 var(--pink-deep),-3px -3px 0 var(--pink-deep),
+              0 5px 0 var(--pink-deep),0 10px 0 var(--purple-deep),0 14px 16px rgba(100,40,90,.4);
+  animation:logoFloat 2.6s ease-in-out infinite;
+}
+@keyframes logoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.subtitle{
+  font-size:15px;color:var(--pink-deep);background:rgba(255,255,255,.8);
+  display:inline-block;padding:2px 14px;border-radius:999px;
+}
+.sparkle{font-size:18px;letter-spacing:8px;color:#fff;text-shadow:0 2px 0 var(--pink-deep);}
+.field-label{font-size:14px;color:var(--pink-deep);margin-bottom:4px;}
+input[type=text]{
+  width:100%;font-family:inherit;font-size:20px;text-align:center;color:var(--ink);background:#fff;
+  border:3px solid var(--purple-deep);border-radius:12px;padding:9px 8px;
+  box-shadow:inset 0 2px 5px rgba(120,60,110,.15);
+}
+input[type=text]:focus{outline:none;border-color:var(--pink);
+  box-shadow:inset 0 2px 5px rgba(120,60,110,.15),0 0 0 4px rgba(255,111,165,.28);}
+.rule{font-size:13px;text-align:left;color:var(--ink-soft);line-height:1.9;}
+.rule b{color:var(--bad);font-size:14px;}
+
+/* ---------- ステータス ---------- */
+.status{
+  display:flex;align-items:center;gap:8px;background:var(--win-bg);
+  border:3px solid var(--purple-deep);border-radius:14px;
+  box-shadow:inset 0 0 0 2px #fff,0 4px 0 #9878c4;
+  padding:7px 10px;margin-bottom:14px;
+}
+.status .who{font-size:13px;line-height:1.35;flex:1;min-width:0;}
+.status .who .nm{color:var(--purple-deep);font-size:15px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.status .lv{
+  background:var(--gold);color:#7a4a00;border:3px solid #b98c00;border-radius:10px;
+  font-size:11px;padding:1px 8px;text-align:center;line-height:1.25;white-space:nowrap;box-shadow:0 2px 0 #b98c00;
+}
+.status .lv b{font-size:18px;display:block;}
+.iconbtn{
+  font-family:inherit;font-size:16px;background:#fff;color:var(--purple-deep);
+  border:3px solid var(--purple-deep);border-radius:10px;padding:2px 7px;cursor:pointer;
+  box-shadow:0 2px 0 #9878c4;
+}
+.iconbtn:active{transform:translateY(2px);box-shadow:none;}
+
+/* ---------- ゲージ ---------- */
+.gauge-wrap{margin:6px 0 2px;}
+.gauge-cap{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-bottom:3px;}
+.gauge{height:16px;background:#efd9e8;border:3px solid var(--ink);border-radius:999px;overflow:hidden;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.2);}
+.gauge>i{display:block;height:100%;width:0;
+  background:linear-gradient(180deg,#ffd0e4 0%,var(--pink) 45%,#e0407c 100%);
+  transition:width .45s cubic-bezier(.3,1.4,.5,1);}
+.gauge.mood>i{background:linear-gradient(180deg,#c9ffe6 0%,var(--good) 45%,#0d7d4d 100%);}
+.gauge.mood.low>i{background:linear-gradient(180deg,#ffe0b0 0%,#ff9a3c 45%,#e06a00 100%);}
+.gauge.mood.danger>i{background:linear-gradient(180deg,#ffc3ce 0%,var(--bad) 45%,#a81030 100%);animation:pulse .55s infinite alternate;}
+@keyframes pulse{from{filter:brightness(1)}to{filter:brightness(1.45)}}
+
+/* ---------- いぬ ---------- */
+.dog-stage{position:relative;text-align:center;padding:4px 0 2px;min-height:186px;
+  display:flex;align-items:flex-end;justify-content:center;}
+.dog-stage::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
+  width:120px;height:14px;border-radius:50%;background:rgba(160,80,140,.2);filter:blur(2px);}
+.dog{position:relative;z-index:1;width:170px;height:auto;display:block;
+  image-rendering:pixelated;image-rendering:crisp-edges;
+  filter:drop-shadow(0 4px 0 rgba(150,70,130,.22));}
+.dog.idle{animation:idle 1.7s ease-in-out infinite;}
+@keyframes idle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-5px) scaleY(1.03)}}
+.dog.happy{animation:happy .42s ease-in-out 3;}
+@keyframes happy{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-16px) rotate(-7deg)}75%{transform:translateY(-16px) rotate(7deg)}}
+.dog.sad{animation:sadShake .6s ease-in-out;}
+@keyframes sadShake{0%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}100%{transform:translateX(0)}}
+.dog.grow{animation:grow .9s cubic-bezier(.2,1.6,.4,1);}
+@keyframes grow{0%{transform:scale(.5)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+.fx{position:absolute;inset:0;pointer-events:none;z-index:2;}
+.fx span{position:absolute;font-size:22px;animation:fly 1s ease-out forwards;}
+@keyframes fly{0%{opacity:0;transform:translateY(20px) scale(.4)}25%{opacity:1}100%{opacity:0;transform:translateY(-62px) scale(1.25)}}
+.dogname{display:inline-block;font-size:13px;color:var(--purple-deep);
+  background:rgba(255,255,255,.85);border-radius:999px;padding:1px 12px;}
+
+/* ---------- メッセージ ---------- */
+.msg{min-height:86px;font-size:15px;}
+.msg .q{font-size:clamp(30px,9vw,40px);text-align:center;color:var(--purple-deep);
+  letter-spacing:.05em;line-height:1.25;margin:2px 0 4px;text-shadow:0 2px 0 #ecdcf8;}
+.msg .note{font-size:12.5px;text-align:center;color:#a24d07;background:#fff2d6;
+  border:2px dashed #e8a640;border-radius:10px;padding:2px 8px;margin-top:6px;}
+.msg .good{color:var(--good);}
+.msg .bad{color:var(--bad);}
+.msg .cursor::after{content:'▼';margin-left:6px;animation:blink .8s steps(1) infinite;color:var(--pink);}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.qcount{font-size:12px;color:var(--ink-soft);text-align:right;margin-bottom:2px;}
+
+/* ---------- せんたくし ---------- */
+.choices{display:flex;flex-direction:column;}
+.choice{font-size:26px;padding:11px 8px;color:var(--pink-deep);text-shadow:none;
+  background:linear-gradient(180deg,#fff 0%,#ffeaf4 60%,#ffd6e8 100%);
+  border:3px solid var(--pink-deep);
+  box-shadow:inset 0 2px 0 #fff,0 4px 0 var(--shadow),0 7px 10px rgba(120,50,100,.2);}
+.choice:active{box-shadow:inset 0 2px 0 #fff,0 0 0 var(--shadow);}
+.choice.is-correct{background:linear-gradient(180deg,#e6fff2 0%,#a9f0cd 60%,#5fd6a0 100%);border-color:#0d7d4d;color:#0a5c38;}
+.choice.is-wrong{background:linear-gradient(180deg,#ffe7ea 0%,#ffb9c4 60%,#ff8a9c 100%);border-color:#a81030;color:#7d0c22;}
+.choice.dim{opacity:.4;}
+
+/* ---------- けっか ---------- */
+.score{display:flex;gap:8px;justify-content:center;margin:6px 0 4px;}
+.score div{flex:1;text-align:center;border:3px solid;border-radius:12px;padding:5px 2px;font-size:12px;line-height:1.3;}
+.score b{display:block;font-size:26px;}
+.score .s-ok{border-color:#0d7d4d;color:#0a5c38;background:#e9fff5;}
+.score .s-ng{border-color:#a81030;color:#7d0c22;background:#fff0f2;}
+.banner{text-align:center;font-size:19px;color:#fff;margin:2px 0 8px;
+  background:linear-gradient(90deg,var(--pink),var(--purple));
+  border:3px solid #fff;border-radius:12px;padding:5px;
+  box-shadow:0 3px 0 var(--purple-deep);animation:pop .5s cubic-bezier(.2,1.7,.4,1);}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.weak-list{font-size:13px;margin:4px 0;padding-left:20px;}
+.weak-list li{margin:2px 0;}
+.weak-list .cnt{color:var(--bad);}
+.center{text-align:center;}
+.tiny{font-size:11.5px;color:var(--ink-soft);}
+.hidden{display:none !important;}
+.screen{animation:fadeIn .3s;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.spacer{flex:1;}
+.shake{animation:shakeAll .45s;}
+@keyframes shakeAll{0%,100%{transform:translate(0)}20%{transform:translate(-7px,3px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,2px)}80%{transform:translate(5px,-2px)}}
+@media (max-height:660px){
+  .dog{width:130px;} .dog-stage{min-height:142px;} .logo{font-size:33px;margin-top:6px;}
+  .win{padding:12px 14px;}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ============ 1. タイトル ============ -->
+<section id="screen-title" class="screen">
+  <div class="sparkle">･ﾟ✧ ✦ ✧ﾟ･</div>
+  <h1 class="logo">わんわん<br>クエスト</h1>
+  <div class="subtitle">さんすうで いぬを そだてよう</div>
+  <div class="dog-stage" style="min-height:150px">
+    <div id="title-dog"></div>
+  </div>
+
+  <div class="win">
+    <span class="win-title">きみの なまえ</span>
+    <div class="field-label">▼ なまえを いれてね</div>
+    <input type="text" id="input-name" maxlength="8" placeholder="さくら" autocomplete="off" spellcheck="false">
+    <div id="save-info" class="tiny center hidden"></div>
+    <button class="btn" id="btn-start">おせわを はじめる</button>
+  </div>
+
+  <div class="win purple">
+    <span class="win-title">あそびかた</span>
+    <p class="rule">
+      たしざんに せいかいすると、いぬが なついて 大きく なります。<br>
+      でも、<b>１つでも まちがえると</b>、いぬの ごきげんが ななめに なって、
+      なつき度が <b>0に もどって</b> しまいます。<br>
+      しんけんに えらんでね！
+    </p>
+  </div>
+
+  <div class="center tiny">© わんわんクエスト</div>
+</section>
+
+<!-- ============ 2. おさんぽ（コースえらび） ============ -->
+<section id="screen-map" class="screen hidden">
+  <div class="status">
+    <div class="who">
+      <span class="nm" id="map-name">――</span>
+      <span class="tiny" id="map-dogname">こいぬ</span>
+    </div>
+    <div class="lv">レベル<b id="map-level">1</b></div>
+    <button class="iconbtn" id="btn-sound" title="おと">♪</button>
+  </div>
+
+  <div class="win">
+    <span class="win-title">いぬの ようす</span>
+    <div class="dog-stage" style="min-height:170px">
+      <div id="map-dog"></div>
+    </div>
+    <div class="gauge-wrap">
+      <div class="gauge-cap"><span>なつき度</span><span id="map-aff-num">0 / 100</span></div>
+      <div class="gauge"><i id="map-aff-bar"></i></div>
+    </div>
+    <p class="tiny center" id="map-hint" style="margin:6px 0 0">なつき度が １００に なると レベルアップ！</p>
+  </div>
+
+  <div class="win purple">
+    <span class="win-title">おさんぽ コース</span>
+    <div id="course-list"></div>
+  </div>
+
+  <div class="win" id="weak-win">
+    <span class="win-title">にがてな もんだい</span>
+    <ul class="weak-list" id="weak-list"></ul>
+    <p class="tiny">※ にがてな もんだいは よく でてくるよ</p>
+  </div>
+
+  <div class="spacer"></div>
+  <button class="btn small purple" id="btn-reset">さいしょから やりなおす</button>
+</section>
+
+<!-- ============ 3. おせわ（クイズ） ============ -->
+<section id="screen-quiz" class="screen hidden">
+  <div class="status">
+    <div class="who" style="flex:1">
+      <span class="nm" id="quiz-course">はじまりの にわ</span>
+      <div class="gauge-wrap" style="margin:2px 0 0">
+        <div class="gauge-cap"><span>いぬの ごきげん</span><span id="quiz-mood-num">100%</span></div>
+        <div class="gauge mood"><i id="quiz-mood-bar"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dog-stage">
+    <div id="quiz-dog"></div>
+    <div class="fx" id="quiz-fx"></div>
+  </div>
+  <div class="center" style="margin-bottom:4px"><span class="dogname" id="quiz-dogname">こいぬ</span></div>
+
+  <div class="win">
+    <span class="win-title" id="quiz-wintitle">もんだい</span>
+    <div class="qcount" id="quiz-count">1 もんめ / 10</div>
+    <div class="msg" id="quiz-msg"></div>
+  </div>
+
+  <div class="choices" id="quiz-choices"></div>
+  <button class="btn purple hidden" id="btn-next">つぎへ ▶</button>
+  <div class="spacer"></div>
+  <button class="btn small purple" id="btn-give-up">おさんぽへ もどる</button>
+</section>
+
+<!-- ============ 4. リザルト ============ -->
+<section id="screen-result" class="screen hidden">
+  <div id="result-banner"></div>
+  <div class="dog-stage">
+    <div id="result-dog"></div>
+    <div class="fx" id="result-fx"></div>
+  </div>
+  <div class="center" style="margin-bottom:2px"><span class="dogname" id="result-dogname">こいぬ</span></div>
+
+  <div class="win">
+    <span class="win-title">せいせき</span>
+    <div class="msg" id="result-msg"></div>
+    <div class="score">
+      <div class="s-ok">せいかい<b id="result-ok">0</b>もん</div>
+      <div class="s-ng">まちがい<b id="result-ng">0</b>もん</div>
+    </div>
+    <div class="gauge-wrap">
+      <div class="gauge-cap"><span>なつき度</span><span id="result-aff-num">0 / 100</span></div>
+      <div class="gauge"><i id="result-aff-bar"></i></div>
+    </div>
+  </div>
+
+  <button class="btn" id="btn-again">もういちど おせわする</button>
+  <button class="btn purple" id="btn-back-map">おさんぽへ もどる</button>
+</section>
+
+<!-- ============ 5. ゲームオーバー ============ -->
+<section id="screen-gameover" class="screen hidden">
+  <div class="win purple" style="margin-top:26px">
+    <span class="win-title">…‥…‥…</span>
+    <div class="dog-stage" style="min-height:160px">
+      <div id="over-dog"></div>
+    </div>
+    <p class="center" style="font-size:19px;color:var(--bad);margin:8px 0 4px">
+      いぬが どこかへ いって しまった…
+    </p>
+    <p class="tiny center">ごきげんゲージが 0に なって しまったよ。<br>
+      でも だいじょうぶ。よんだら もどって きてくれる！</p>
+    <div class="score" style="margin-top:10px">
+      <div class="s-ok">せいかい<b id="over-ok">0</b>もん</div>
+      <div class="s-ng">まちがい<b id="over-ng">0</b>もん</div>
+    </div>
+  </div>
+  <button class="btn" id="btn-over-again">もういちど おせわする</button>
+  <button class="btn purple" id="btn-over-map">おさんぽへ もどる</button>
+</section>
+
+</div><!-- /#app -->
+
+<script>
+(function(){
+'use strict';
+
+/* =========================================================
+   0. せってい
+   ========================================================= */
+var SAVE_KEY        = 'wanwanquest_save_v1';
+var QUESTIONS_PER_RUN = 10;   // 1かいの おせわで だす もんだい かず
+var AFFECTION_MAX   = 100;    // なつき度の さいだい
+var AFFECTION_UP    = 10;     // せいかい したときの アップ
+var MOOD_MAX        = 100;    // ごきげんゲージ
+var MOOD_DOWN       = 34;     // まちがい 1かいの ダウン（3かいで 0）
+var WEAK_RATE       = 0.4;    // にがて もんだいが でる かくりつ
+
+/* =========================================================
+   1. ドットえ（16 × 16 の もじで えを かく）
+   ========================================================= */
+var PAL = {
+  o:'#5a3320',  /* せん      */
+  b:'#fff3dc',  /* からだ    */
+  e:'#e0a06a',  /* みみ・もよう */
+  n:'#3a2114',  /* め・はな  */
+  p:'#ff8fb0',  /* した      */
+  w:'#ffffff',  /* おなか    */
+  y:'#ffd447',  /* かんむり  */
+  v:'#b06fe0'   /* マント    */
+};
+var PAL_PAW = { o:'#d98ab7' };
+
+var ART = {
+  /* こいぬ（レベル 1〜2） */
+  puppy:[
+    '................',
+    '................',
+    '..oo........oo..',
+    '.oeeo......oeeo.',
+    '.oeeooooooooeeo.',
+    '.oeebbbbbbbbeeo.',
+    '.oeebnbbbbnbeeo.',
+    '.oeebbbnnbbbeeo.',
+    '..obbbbppbbbbo..',
+    '...obbbbbbbbo...',
+    '...obbbbbbbbo...',
+    '..obbbbbbbbbbo..',
+    '..obbwwwwwwbbo..',
+    '..obbwwwwwwbbo..',
+    '..oobbbbbbbboo..',
+    '...oo......oo...'
+  ],
+  /* わんこ（レベル 3〜4） */
+  adult:[
+    '..oo........oo..',
+    '.oeeo......oeeo.',
+    '.oeeooooooooeeo.',
+    '.oeebbbbbbbbeeo.',
+    '.oeebnbbbbnbeeo.',
+    '.oeebbbnnbbbeeo.',
+    '..obbbbppbbbbo..',
+    '...obbbbbbbbo...',
+    '..oobbbbbbbboo.o',
+    '.obbbbbbbbbbbboo',
+    '.obbbbwwwwbbbbo.',
+    '.obbbwwwwwwbbbo.',
+    '.obbbwwwwwwbbbo.',
+    '.oobbbbbbbbbboo.',
+    '..obbo....obbo..',
+    '..oooo....oooo..'
+  ],
+  /* でんせつの 犬（レベル 5〜） */
+  hero:[
+    '....y..y..y.....',
+    '....yyyyyyyy....',
+    '...yyyyyyyyyy...',
+    '..oo........oo..',
+    '.oeeo......oeeo.',
+    '.oeeooooooooeeo.',
+    '.oeebbbbbbbbeeo.',
+    '.oeebnbbbbnbeeo.',
+    '.oeebbbnnbbbeeo.',
+    '..obbbbppbbbbo..',
+    '...obbbbbbbbo...',
+    'vvoobbbbbbbboovv',
+    'vvobbbbbbbbbbovv',
+    'vvobbbbwwwwbbovv',
+    '.vobbbwwwwwwbov.',
+    '.oobbbbbbbbbboo.',
+    '..obbo....obbo..',
+    '..oooo....oooo..'
+  ],
+  /* そっぽを むいた いぬ（うしろすがた） */
+  sad:[
+    '................',
+    '..oo........oo..',
+    '.oeeo......oeeo.',
+    '.oeeooooooooeeo.',
+    '.oeebbbbbbbbeeo.',
+    '.oeebbbbbbbbeeo.',
+    '.oeebbbbbbbbeeo.',
+    '..obbbbbbbbbbo..',
+    '...obbbbbbbbo...',
+    '..oobbbbbbbboo..',
+    '.obbbbbbbbbbbbo.',
+    '.obbbbbbbbbbbbo.',
+    '.obbbbbbbbbbbbo.',
+    '.oobbbbbbbbbboo.',
+    '..obbo....obbo..',
+    '..oooo....oooo..'
+  ],
+  /* あしあと（いなく なった とき） */
+  paw:[
+    '................',
+    '..oo..oo........',
+    '..oo..oo........',
+    '.oooooooo.......',
+    '.oooooooo.......',
+    '..oooooo........',
+    '................',
+    '................',
+    '........oo..oo..',
+    '........oo..oo..',
+    '.......oooooooo.',
+    '.......oooooooo.',
+    '........oooooo..',
+    '................',
+    '................',
+    '................'
+  ]
+};
+
+/* もじの ならびを SVGの しかくに かえる */
+function pixels(rows, pal){
+  pal = pal || PAL;
+  var h = rows.length, w = 0, y, x, r, c, n, out = '';
+  for(y=0;y<h;y++){ if(rows[y].length > w) w = rows[y].length; }
+  for(y=0;y<h;y++){
+    r = rows[y]; x = 0;
+    while(x < r.length){
+      c = r.charAt(x);
+      if(!pal[c]){ x++; continue; }
+      n = 1;
+      while(x + n < r.length && r.charAt(x + n) === c) n++;
+      out += '<rect x="'+x+'" y="'+y+'" width="'+n+'" height="1" fill="'+pal[c]+'"/>';
+      x += n;
+    }
+  }
+  return { svg: out, w: w, h: h };
+}
+
+function dogSVG(kind, anim){
+  var pal = (kind === 'paw') ? PAL_PAW : PAL;
+  var p = pixels(ART[kind] || ART.puppy, pal);
+  return '<svg class="dog ' + (anim || '') + '" viewBox="0 0 ' + p.w + ' ' + p.h +
+         '" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true">' +
+         p.svg + '</svg>';
+}
+
+function artForLevel(lv){
+  if(lv <= 2) return 'puppy';
+  if(lv <= 4) return 'adult';
+  return 'hero';
+}
+function nameForLevel(lv){
+  if(lv <= 2) return 'こいぬ';
+  if(lv <= 4) return 'わんこ';
+  if(lv <= 7) return 'たくましい 犬';
+  return 'でんせつの 犬';
+}
+
+/* =========================================================
+   2. コース（もんだいの つくりかた）
+   ========================================================= */
+function rnd(min, max){ return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+var COURSES = [
+  {
+    id:'garden', name:'はじまりの にわ', sub:'1けた ＋ 1けた（くりあがり なし）', mark:'🌷',
+    gen:function(){ var a = rnd(1,8), b = rnd(1, 9 - a); return [a,b]; }
+  },
+  {
+    id:'park', name:'ぼうけんの こうえん', sub:'1けた ＋ 1けた（くりあがり あり）', mark:'🌳',
+    gen:function(){ var a = rnd(2,9), b = rnd(10 - a, 9); return [a,b]; }
+  },
+  {
+    id:'forest', name:'むずかしの もり', sub:'2けた ＋ 1けた', mark:'🍄',
+    gen:function(){ return [rnd(10,99), rnd(1,9)]; }
+  },
+  {
+    id:'mountain', name:'でんせつの やま', sub:'2けた ＋ 2けた', mark:'⛰',
+    gen:function(){ return [rnd(10,99), rnd(10,99)]; }
+  }
+];
+function courseById(id){
+  for(var i=0;i<COURSES.length;i++){ if(COURSES[i].id === id) return COURSES[i]; }
+  return COURSES[0];
+}
+function courseIndex(id){
+  for(var i=0;i<COURSES.length;i++){ if(COURSES[i].id === id) return i; }
+  return 0;
+}
+function isUnlocked(i){
+  if(i === 0) return true;
+  return !!save.cleared[COURSES[i-1].id];
+}
+
+/* =========================================================
+   3. セーブデータ
+   ========================================================= */
+function defaultSave(){
+  return { name:'', level:1, affection:0, cleared:{}, mistakes:{}, totalOk:0, totalNg:0, sound:true };
+}
+var save = defaultSave();
+
+function loadSave(){
+  try{
+    var raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return;
+    var d = JSON.parse(raw);
+    if(!d || typeof d !== 'object') return;
+    var s = defaultSave();
+    if(typeof d.name === 'string')      s.name = d.name.slice(0,8);
+    if(typeof d.level === 'number')     s.level = Math.max(1, Math.min(99, d.level|0));
+    if(typeof d.affection === 'number') s.affection = Math.max(0, Math.min(AFFECTION_MAX, d.affection|0));
+    if(d.cleared   && typeof d.cleared   === 'object') s.cleared   = d.cleared;
+    if(d.mistakes  && typeof d.mistakes  === 'object') s.mistakes  = d.mistakes;
+    if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
+    if(typeof d.totalNg === 'number')   s.totalNg = d.totalNg|0;
+    if(typeof d.sound === 'boolean')    s.sound = d.sound;
+    save = s;
+  }catch(e){ /* こわれて いたら さいしょから */ }
+}
+function writeSave(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+}
+
+/* =========================================================
+   4. おと（がいぶファイル なし・WebAudio）
+   ========================================================= */
+var actx = null;
+function tone(freq, start, dur, type, vol){
+  if(!save.sound) return;
+  try{
+    if(!actx){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return;
+      actx = new AC();
+    }
+    if(actx.state === 'suspended') actx.resume();
+    var t = actx.currentTime + start;
+    var o = actx.createOscillator(), g = actx.createGain();
+    o.type = type || 'square';
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.12, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + dur + 0.02);
+  }catch(e){}
+}
+function sfxTap()  { tone(880, 0, .06, 'square', .07); }
+function sfxOk()   { tone(660,0,.09); tone(880,.08,.09); tone(1174,.16,.18); }
+function sfxNg()   { tone(220,0,.16,'sawtooth',.11); tone(150,.15,.30,'sawtooth',.11); }
+function sfxLevel(){ tone(523,0,.1); tone(659,.1,.1); tone(784,.2,.1); tone(1046,.3,.32); }
+function sfxOver() { tone(392,0,.2,'triangle',.12); tone(311,.2,.2,'triangle',.12); tone(233,.4,.5,'triangle',.12); }
+
+/* =========================================================
+   5. がめん きりかえ
+   ========================================================= */
+function $(id){ return document.getElementById(id); }
+var SCREENS = ['title','map','quiz','result','gameover'];
+function show(name){
+  for(var i=0;i<SCREENS.length;i++){
+    $('screen-' + SCREENS[i]).classList.toggle('hidden', SCREENS[i] !== name);
+  }
+  window.scrollTo(0, 0);
+}
+
+function setGauge(barEl, numEl, value, max, suffix){
+  var pct = Math.max(0, Math.min(100, value / max * 100));
+  barEl.style.width = pct + '%';
+  if(numEl) numEl.textContent = suffix === '%' ? Math.round(pct) + '%' : (value + ' / ' + max);
+}
+
+function popFx(container, chars, count){
+  for(var i=0;i<count;i++){
+    (function(i){
+      setTimeout(function(){
+        var s = document.createElement('span');
+        s.textContent = chars.charAt(Math.floor(Math.random() * chars.length));
+        s.style.left = (12 + Math.random() * 74) + '%';
+        s.style.top  = (35 + Math.random() * 40) + '%';
+        container.appendChild(s);
+        setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); }, 1100);
+      }, i * 90);
+    })(i);
+  }
+}
+
+/* =========================================================
+   6. にがて もんだいの きろく
+   ========================================================= */
+function mkey(courseId, a, b){
+  var lo = Math.min(a,b), hi = Math.max(a,b);
+  return courseId + '|' + lo + '+' + hi;
+}
+function weakKeys(courseId){
+  var out = [], k;
+  for(k in save.mistakes){
+    if(save.mistakes.hasOwnProperty(k) && save.mistakes[k] > 0 && k.indexOf(courseId + '|') === 0){
+      out.push(k);
+    }
+  }
+  return out;
+}
+function allWeakSorted(){
+  var out = [], k;
+  for(k in save.mistakes){
+    if(save.mistakes.hasOwnProperty(k) && save.mistakes[k] > 0){
+      out.push({ key:k, n:save.mistakes[k] });
+    }
+  }
+  out.sort(function(x,y){ return y.n - x.n; });
+  return out;
+}
+function keyToText(key){
+  var p = key.split('|')[1].split('+');
+  return p[0] + ' + ' + p[1] + ' = ' + (parseInt(p[0],10) + parseInt(p[1],10));
+}
+
+/* =========================================================
+   7. もんだいを つくる
+   ========================================================= */
+function makeQuestion(course){
+  var a, b, pair, weak = weakKeys(course.id), key;
+  if(weak.length && Math.random() < WEAK_RATE){
+    var parts = weak[Math.floor(Math.random() * weak.length)].split('|')[1].split('+');
+    a = parseInt(parts[0], 10);
+    b = parseInt(parts[1], 10);
+    if(Math.random() < 0.5){ var t = a; a = b; b = t; }
+  }else{
+    pair = course.gen();
+    a = pair[0]; b = pair[1];
+  }
+  key = mkey(course.id, a, b);
+  return {
+    a:a, b:b, ans:a + b, key:key,
+    missCount: save.mistakes[key] || 0,
+    choices: makeChoices(a + b)
+  };
+}
+function makeChoices(ans){
+  /* こたえが 小さいときは ちかい かず、大きいときは けた上がりも まぜる */
+  var offsets = (ans < 20) ? [1,-1,2,-2,3,-3,4,-4]
+                           : [1,-1,2,-2,3,-3,10,-10,20,-20];
+  var pool = {}, list = [ans], guard = 0, v, o;
+  pool[ans] = true;
+  while(list.length < 3 && guard++ < 200){
+    o = offsets[Math.floor(Math.random() * offsets.length)];
+    v = ans + o;
+    if(v > 0 && !pool[v]){ pool[v] = true; list.push(v); }
+  }
+  while(list.length < 3){ var f = ans + list.length + 3; if(!pool[f]){ pool[f] = true; list.push(f); } }
+  /* シャッフル */
+  for(var i = list.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1)), tmp = list[i];
+    list[i] = list[j]; list[j] = tmp;
+  }
+  return list;
+}
+
+/* =========================================================
+   8. タイトルがめん
+   ========================================================= */
+function renderTitle(){
+  $('title-dog').innerHTML = dogSVG(artForLevel(save.level), 'idle');
+  var info = $('save-info');
+  if(save.name){
+    $('input-name').value = save.name;
+    $('btn-start').textContent = 'おせわを つづける';
+    info.innerHTML = 'レベル ' + save.level + ' の ' + nameForLevel(save.level) + ' が まっているよ';
+    info.classList.remove('hidden');
+  }else{
+    $('btn-start').textContent = 'おせわを はじめる';
+    info.classList.add('hidden');
+  }
+}
+
+$('btn-start').addEventListener('click', function(){
+  var v = $('input-name').value.replace(/\s+/g, '').slice(0, 8);
+  if(!v) v = 'ぼうけんしゃ';
+  save.name = v;
+  writeSave();
+  sfxTap();
+  gotoMap();
+});
+
+/* =========================================================
+   9. おさんぽ（コースえらび）
+   ========================================================= */
+function gotoMap(){
+  renderMap();
+  show('map');
+}
+
+function renderMap(){
+  $('map-name').textContent    = save.name + ' と';
+  $('map-dogname').textContent = nameForLevel(save.level);
+  $('map-level').textContent   = save.level;
+  $('map-dog').innerHTML       = dogSVG(artForLevel(save.level), 'idle');
+  setGauge($('map-aff-bar'), $('map-aff-num'), save.affection, AFFECTION_MAX);
+  $('btn-sound').textContent   = save.sound ? '♪' : '×';
+
+  /* コースボタン */
+  var list = $('course-list');
+  list.innerHTML = '';
+  for(var i=0;i<COURSES.length;i++){
+    (function(i){
+      var c  = COURSES[i];
+      var ok = isUnlocked(i);
+      var b  = document.createElement('button');
+      b.className = 'btn' + (i % 2 ? ' purple' : '');
+      b.disabled  = !ok;
+      if(ok){
+        b.innerHTML = c.mark + ' ' + c.name +
+          (save.cleared[c.id] ? ' ✔' : '') +
+          '<span class="sub">' + c.sub + '</span>';
+        b.addEventListener('click', function(){ sfxTap(); startRun(c.id); });
+      }else{
+        b.innerHTML = '🔒 ？？？' +
+          '<span class="lock">' + COURSES[i-1].name + 'を クリアすると あける</span>';
+      }
+      list.appendChild(b);
+    })(i);
+  }
+
+  /* にがてリスト */
+  var weak = allWeakSorted(), ul = $('weak-list');
+  ul.innerHTML = '';
+  if(weak.length === 0){
+    $('weak-win').classList.add('hidden');
+  }else{
+    $('weak-win').classList.remove('hidden');
+    for(var j=0;j<Math.min(5, weak.length); j++){
+      var li = document.createElement('li');
+      li.innerHTML = keyToText(weak[j].key) +
+        ' <span class="cnt">（' + weak[j].n + 'かい まちがえた）</span>';
+      ul.appendChild(li);
+    }
+  }
+}
+
+$('btn-sound').addEventListener('click', function(){
+  save.sound = !save.sound;
+  writeSave();
+  $('btn-sound').textContent = save.sound ? '♪' : '×';
+  if(save.sound) sfxTap();
+});
+
+$('btn-reset').addEventListener('click', function(){
+  if(window.confirm('ぜんぶ さいしょから やりなおします。いいですか？')){
+    save = defaultSave();
+    writeSave();
+    renderTitle();
+    show('title');
+  }
+});
+
+/* =========================================================
+   10. おせわ（クイズ）
+   ========================================================= */
+var run = null;
+
+function startRun(courseId){
+  run = {
+    courseId : courseId,
+    index    : 0,
+    ok       : 0,
+    ng       : 0,
+    mood     : MOOD_MAX,
+    levelUps : 0,
+    answered : false,
+    q        : null
+  };
+  $('quiz-course').textContent = courseById(courseId).name;
+  $('quiz-dogname').textContent = nameForLevel(save.level);
+  $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'idle');
+  show('quiz');
+  nextQuestion();
+}
+
+function nextQuestion(){
+  run.answered = false;
+  run.q = makeQuestion(courseById(run.courseId));
+  var q = run.q;
+
+  $('quiz-wintitle').textContent = 'もんだい';
+  $('quiz-count').textContent = (run.index + 1) + ' もんめ / ' + QUESTIONS_PER_RUN;
+  setGauge($('quiz-mood-bar'), $('quiz-mood-num'), run.mood, MOOD_MAX, '%');
+  updateMoodClass();
+
+  var html = '<div class="q">' + q.a + ' ＋ ' + q.b + ' ＝ ？</div>';
+  if(q.missCount > 0){
+    html += '<div class="note">⚠ ちゅういして こたえよう！<br>まえに ' + q.missCount + 'かい まちがえた もんだいだよ</div>';
+  }
+  $('quiz-msg').innerHTML = html;
+
+  $('btn-next').classList.add('hidden');
+
+  var box = $('quiz-choices');
+  box.innerHTML = '';
+  box.classList.remove('hidden');
+  for(var i=0;i<q.choices.length;i++){
+    (function(v){
+      var b = document.createElement('button');
+      b.className = 'btn choice';
+      b.textContent = v;
+      b.addEventListener('click', function(){ answer(v, b); });
+      box.appendChild(b);
+    })(q.choices[i]);
+  }
+}
+
+function updateMoodClass(){
+  var g = $('quiz-mood-bar').parentNode;
+  g.classList.remove('low','danger');
+  if(run.mood <= 34)      g.classList.add('danger');
+  else if(run.mood <= 68) g.classList.add('low');
+}
+
+function answer(value, btnEl){
+  if(run.answered) return;
+  run.answered = true;
+
+  var q = run.q, correct = (value === q.ans), i, kids = $('quiz-choices').children;
+
+  /* ボタンの みため */
+  for(i=0;i<kids.length;i++){
+    var k = kids[i];
+    if(parseInt(k.textContent,10) === q.ans) k.classList.add('is-correct');
+    else k.classList.add('dim');
+  }
+  if(!correct){ btnEl.classList.remove('dim'); btnEl.classList.add('is-wrong'); }
+
+  var msg = '';
+  if(correct){
+    /* ------- せいかい ------- */
+    run.ok++;
+    save.totalOk++;
+    save.affection += AFFECTION_UP;
+    sfxOk();
+    $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'happy');
+    popFx($('quiz-fx'), '♥✧♪✦', 5);
+
+    msg = '<p class="good">だいせいかい！ いぬが よろこんでいる！</p>' +
+          '<p class="tiny">なつき度 ＋' + AFFECTION_UP + '</p>';
+
+    if(save.affection >= AFFECTION_MAX){
+      save.affection = 0;
+      save.level++;
+      run.levelUps++;
+      sfxLevel();
+      $('quiz-dogname').textContent = nameForLevel(save.level);
+      $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'grow');
+      popFx($('quiz-fx'), '✧✦★', 8);
+      msg = '<p class="good">レベルアップ！ いぬが 大きく なった！</p>' +
+            '<p class="tiny">レベル ' + save.level + ' の ' + nameForLevel(save.level) + ' に なったよ</p>';
+    }
+  }else{
+    /* ------- ふせいかい ------- */
+    run.ng++;
+    save.totalNg++;
+    save.affection = 0;                 /* なつき度は 0に もどる */
+    run.mood -= MOOD_DOWN;
+    if(run.mood < 0) run.mood = 0;
+    save.mistakes[q.key] = (save.mistakes[q.key] || 0) + 1;
+    sfxNg();
+
+    $('quiz-dog').innerHTML = dogSVG('sad', 'sad');
+    document.getElementById('app').classList.add('shake');
+    setTimeout(function(){ document.getElementById('app').classList.remove('shake'); }, 460);
+    popFx($('quiz-fx'), '💧', 3);
+
+    msg = '<p class="bad">ざんねん… いぬは そっぽを むいてしまった。</p>' +
+          '<p class="tiny">こたえは <b>' + q.ans + '</b> だよ。<br>' +
+          'なつき度が 0に もどって、ごきげんが ' + MOOD_DOWN + ' さがった…</p>';
+  }
+
+  writeSave();
+  setGauge($('quiz-mood-bar'), $('quiz-mood-num'), run.mood, MOOD_MAX, '%');
+  updateMoodClass();
+  $('quiz-wintitle').textContent = correct ? 'せいかい！' : 'まちがい…';
+  $('quiz-msg').innerHTML = msg;
+
+  run.index++;
+
+  if(run.mood <= 0){
+    setTimeout(gameOver, 900);
+    return;
+  }
+  var last = (run.index >= QUESTIONS_PER_RUN);
+  var nb = $('btn-next');
+  nb.textContent = last ? 'けっかを みる ▶' : 'つぎへ ▶';
+  nb.classList.remove('hidden');
+}
+
+$('btn-next').addEventListener('click', function(){
+  sfxTap();
+  if(run.index >= QUESTIONS_PER_RUN) finishRun();
+  else nextQuestion();
+});
+
+$('btn-give-up').addEventListener('click', function(){
+  sfxTap();
+  gotoMap();
+});
+
+/* =========================================================
+   11. リザルト
+   ========================================================= */
+function finishRun(){
+  var course = courseById(run.courseId);
+  var idx = courseIndex(run.courseId);
+  var firstClear = !save.cleared[course.id];
+  save.cleared[course.id] = true;
+  writeSave();
+
+  var unlockedNew = firstClear && idx + 1 < COURSES.length;
+
+  var banner = '';
+  if(run.levelUps > 0){
+    banner += '<div class="banner">✧ いぬが おおきく なった！ ✧</div>';
+  }
+  if(unlockedNew){
+    banner += '<div class="banner">🔓 ' + COURSES[idx+1].name + ' が あいた！</div>';
+  }
+  if(run.ng === 0){
+    banner += '<div class="banner">★ ぜんもん せいかい！ ★</div>';
+  }
+  $('result-banner').innerHTML = banner;
+
+  var art = artForLevel(save.level);
+  $('result-dog').innerHTML = dogSVG(art, run.levelUps > 0 ? 'grow' : (run.ng === 0 ? 'happy' : 'idle'));
+  $('result-dogname').textContent = nameForLevel(save.level);
+  if(run.levelUps > 0 || run.ng === 0){
+    popFx($('result-fx'), '♥✧✦♪', 7);
+    sfxLevel();
+  }
+
+  var m = '<p>' + course.name + ' の おせわが おわったよ。</p>';
+  if(run.ng === 0){
+    m += '<p class="good">いぬは とても しあわせそう！</p>';
+  }else if(run.ng <= 2){
+    m += '<p>つぎは まちがえないように がんばろう！</p>';
+  }else{
+    m += '<p class="bad">いぬの ごきげんが ちょっと わるいみたい…</p>';
+  }
+  $('result-msg').innerHTML = m;
+
+  $('result-ok').textContent = run.ok;
+  $('result-ng').textContent = run.ng;
+  setGauge($('result-aff-bar'), $('result-aff-num'), save.affection, AFFECTION_MAX);
+
+  show('result');
+}
+
+$('btn-again').addEventListener('click', function(){ sfxTap(); startRun(run.courseId); });
+$('btn-back-map').addEventListener('click', function(){ sfxTap(); gotoMap(); });
+
+/* =========================================================
+   12. ゲームオーバー
+   ========================================================= */
+function gameOver(){
+  sfxOver();
+  $('over-dog').innerHTML = dogSVG('paw', '');
+  $('over-ok').textContent = run.ok;
+  $('over-ng').textContent = run.ng;
+  save.affection = 0;
+  writeSave();
+  show('gameover');
+}
+$('btn-over-again').addEventListener('click', function(){ sfxTap(); startRun(run.courseId); });
+$('btn-over-map').addEventListener('click', function(){ sfxTap(); gotoMap(); });
+
+/* =========================================================
+   13. スタート
+   ========================================================= */
+loadSave();
+renderTitle();
+show('title');
+
+/* iOSで おとを ならせるように する（さいしょの タップ） */
+document.addEventListener('touchstart', function once(){
+  try{
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(AC && !actx) actx = new AC();
+    if(actx && actx.state === 'suspended') actx.resume();
+  }catch(e){}
+  document.removeEventListener('touchstart', once);
+}, { passive:true });
+
+/* ダブルタップズームを ふせぐ */
+var lastTouch = 0;
+document.addEventListener('touchend', function(e){
+  var now = Date.now();
+  if(now - lastTouch <= 320){ e.preventDefault(); }
+  lastTouch = now;
+}, false);
+
+})();
+</script>
+</body>
+</html>
