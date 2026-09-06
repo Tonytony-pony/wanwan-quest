@@ -122,6 +122,8 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   box-shadow:inset 0 2px 5px rgba(120,60,110,.15),0 0 0 4px rgba(255,111,165,.28);}
 .rule{font-size:13px;text-align:left;color:var(--ink-soft);line-height:1.9;}
 .rule b{color:var(--bad);font-size:14px;}
+.rule b.up{color:var(--good);}
+.rule .hp{color:#ff4d80;}
 
 /* ---------- ステータス ---------- */
 .status{
@@ -152,10 +154,23 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .gauge>i{display:block;height:100%;width:0;
   background:linear-gradient(180deg,#ffd0e4 0%,var(--pink) 45%,#e0407c 100%);
   transition:width .45s cubic-bezier(.3,1.4,.5,1);}
-.gauge.mood>i{background:linear-gradient(180deg,#c9ffe6 0%,var(--good) 45%,#0d7d4d 100%);}
-.gauge.mood.low>i{background:linear-gradient(180deg,#ffe0b0 0%,#ff9a3c 45%,#e06a00 100%);}
-.gauge.mood.danger>i{background:linear-gradient(180deg,#ffc3ce 0%,var(--bad) 45%,#a81030 100%);animation:pulse .55s infinite alternate;}
-@keyframes pulse{from{filter:brightness(1)}to{filter:brightness(1.45)}}
+/* ---------- ♥（おさんぽ中の ごきげん） ---------- */
+.hearts{display:flex;flex-wrap:wrap;gap:1px;font-size:19px;line-height:1.15;min-height:22px;}
+.hearts .h{color:#ff4d80;text-shadow:0 2px 0 #a8123f;}
+.hearts .h.new{animation:heartPop .55s cubic-bezier(.2,1.8,.4,1);}
+.hearts .h.broken{color:#c9a8bb;text-shadow:none;animation:heartBreak 1.2s forwards;}
+.hearts .empty{font-size:13px;color:var(--ink-soft);text-shadow:none;}
+@keyframes heartPop{0%{transform:scale(0) rotate(-40deg)}70%{transform:scale(1.5)}100%{transform:scale(1)}}
+@keyframes heartBreak{0%{opacity:1;transform:translateY(0) scale(1.3)}100%{opacity:0;transform:translateY(16px) scale(.6) rotate(25deg)}}
+.heart-warn{font-size:12px;color:#fff;background:var(--bad);border-radius:8px;
+  padding:1px 8px;margin-top:3px;text-align:center;animation:pulse .6s infinite alternate;}
+@keyframes pulse{from{filter:brightness(1)}to{filter:brightness(1.4)}}
+.heart-result{text-align:center;border:3px dashed var(--pink);border-radius:12px;
+  background:#fff4f9;padding:8px 6px 6px;margin:8px 0;}
+.heart-result .hearts{justify-content:center;font-size:22px;}
+.heart-result .arrow{color:var(--pink-deep);font-size:15px;line-height:1.2;}
+.heart-result .conv{font-size:13px;color:var(--ink-soft);}
+.heart-result .conv b{font-size:19px;color:var(--pink-deep);display:block;}
 
 /* ---------- いぬ ---------- */
 .dog-stage{position:relative;text-align:center;padding:4px 0 2px;min-height:186px;
@@ -256,9 +271,12 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <div class="win purple">
     <span class="win-title">あそびかた</span>
     <p class="rule">
-      たしざんに せいかいすると、いぬが なついて 大きく なります。<br>
-      でも、<b>１つでも まちがえると</b>、いぬの ごきげんが ななめに なって、
-      なつき度が <b>0に もどって</b> しまいます。<br>
+      おさんぽに でると <span class="hp">♥</span> を 3こ もって いきます。<br>
+      せいかいすると <span class="hp">♥</span> が <b class="up">1こ ふえて</b>、
+      <b>まちがえると <span class="hp">♥</span> が 3こ われます</b>。<br>
+      おさんぽが おわったら、のこった <span class="hp">♥</span> の かずだけ
+      なつき度が ふえて、いぬが 大きく なります。<br>
+      <span class="hp">♥</span> が たりなく なると、いぬは どこかへ いって しまいます。
       しんけんに えらんでね！
     </p>
   </div>
@@ -286,7 +304,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <div class="gauge-cap"><span>なつき度</span><span id="map-aff-num">0 / 100</span></div>
       <div class="gauge"><i id="map-aff-bar"></i></div>
     </div>
-    <p class="tiny center" id="map-hint" style="margin:6px 0 0">なつき度が １００に なると レベルアップ！</p>
+    <p class="tiny center" id="map-hint" style="margin:6px 0 0">おさんぽで あつめた ♥ 1こ が なつき度 10。<br>なつき度 １００で レベルアップ！</p>
   </div>
 
   <div class="win purple">
@@ -309,9 +327,10 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <div class="status">
     <div class="who" style="flex:1">
       <span class="nm" id="quiz-course">はじまりの にわ</span>
-      <div class="gauge-wrap" style="margin:2px 0 0">
-        <div class="gauge-cap"><span>いぬの ごきげん</span><span id="quiz-mood-num">100%</span></div>
-        <div class="gauge mood"><i id="quiz-mood-bar"></i></div>
+      <div style="margin:2px 0 0">
+        <div class="gauge-cap"><span>おさんぽ中の ごきげん</span><span id="quiz-heart-num">♥ 3 こ</span></div>
+        <div class="hearts" id="quiz-hearts"></div>
+        <div class="heart-warn hidden" id="quiz-heart-warn"></div>
       </div>
     </div>
   </div>
@@ -350,6 +369,11 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <div class="s-ok">せいかい<b id="result-ok">0</b>もん</div>
       <div class="s-ng">まちがい<b id="result-ng">0</b>もん</div>
     </div>
+    <div class="heart-result">
+      <div class="hearts" id="result-hearts"></div>
+      <div class="conv" id="result-conv"></div>
+      <div class="arrow">▼</div>
+    </div>
     <div class="gauge-wrap">
       <div class="gauge-cap"><span>なつき度</span><span id="result-aff-num">0 / 100</span></div>
       <div class="gauge"><i id="result-aff-bar"></i></div>
@@ -370,7 +394,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <p class="center" style="font-size:19px;color:var(--bad);margin:8px 0 4px">
       いぬが どこかへ いって しまった…
     </p>
-    <p class="tiny center">ごきげんゲージが 0に なって しまったよ。<br>
+    <p class="tiny center">♥が たりなく なって しまったよ。<br>
       でも だいじょうぶ。よんだら もどって きてくれる！</p>
     <div class="score" style="margin-top:10px">
       <div class="s-ok">せいかい<b id="over-ok">0</b>もん</div>
@@ -392,10 +416,11 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
    ========================================================= */
 var SAVE_KEY        = 'wanwanquest_save_v1';
 var QUESTIONS_PER_RUN = 10;   // 1かいの おせわで だす もんだい かず
-var AFFECTION_MAX   = 100;    // なつき度の さいだい
-var AFFECTION_UP    = 10;     // せいかい したときの アップ
-var MOOD_MAX        = 100;    // ごきげんゲージ
-var MOOD_DOWN       = 34;     // まちがい 1かいの ダウン（3かいで 0）
+var AFFECTION_MAX   = 100;    // レベルアップに ひつような なつき度
+var HEART_START     = 3;      // おさんぽ はじめに もっていく ♥ の かず
+var HEART_UP        = 1;      // せいかい 1かいで ふえる ♥
+var HEART_DOWN      = 3;      // まちがい 1かいで われる ♥
+var HEART_TO_AFF    = 10;     // ♥ 1こ = なつき度 いくつ
 var WEAK_RATE       = 0.4;    // にがて もんだいが でる かくりつ
 
 /* =========================================================
@@ -861,8 +886,9 @@ function startRun(courseId){
     index    : 0,
     ok       : 0,
     ng       : 0,
-    mood     : MOOD_MAX,
+    hearts   : HEART_START,
     levelUps : 0,
+    dead     : false,
     answered : false,
     q        : null
   };
@@ -880,8 +906,7 @@ function nextQuestion(){
 
   $('quiz-wintitle').textContent = 'もんだい';
   $('quiz-count').textContent = (run.index + 1) + ' もんめ / ' + QUESTIONS_PER_RUN;
-  setGauge($('quiz-mood-bar'), $('quiz-mood-num'), run.mood, MOOD_MAX, '%');
-  updateMoodClass();
+  renderHearts(null, 0);
 
   var html = '<div class="q">' + q.a + ' ＋ ' + q.b + ' ＝ ？</div>';
   if(q.missCount > 0){
@@ -905,11 +930,36 @@ function nextQuestion(){
   }
 }
 
-function updateMoodClass(){
-  var g = $('quiz-mood-bar').parentNode;
-  g.classList.remove('low','danger');
-  if(run.mood <= 34)      g.classList.add('danger');
-  else if(run.mood <= 68) g.classList.add('low');
+/* ♥ を えがく。mode: 'add'=ふえた / 'break'=われた / null=そのまま */
+function renderHearts(mode, broke){
+  var html = '', i;
+  for(i = 0; i < run.hearts; i++){
+    html += '<span class="h' + (mode === 'add' && i === run.hearts - 1 ? ' new' : '') + '">♥</span>';
+  }
+  if(mode === 'break'){
+    for(i = 0; i < broke; i++) html += '<span class="h broken">♡</span>';
+  }
+  if(run.hearts === 0 && mode !== 'break'){
+    html += '<span class="empty">♥が ひとつも ない…</span>';
+  }
+  $('quiz-hearts').innerHTML = html;
+  $('quiz-heart-num').textContent = '♥ ' + run.hearts + ' こ';
+
+  var warn = $('quiz-heart-warn');
+  if(run.hearts < HEART_DOWN && !run.dead){
+    warn.textContent = 'あぶない！ つぎ まちがえると いぬが いって しまう';
+    warn.classList.remove('hidden');
+  }else{
+    warn.classList.add('hidden');
+  }
+}
+
+/* リザルト用の ♥ ならび */
+function heartsHTML(count){
+  var html = '', i;
+  for(i = 0; i < count; i++) html += '<span class="h">♥</span>';
+  if(count === 0) html += '<span class="empty">♥ 0こ…</span>';
+  return html;
 }
 
 function answer(value, btnEl){
@@ -931,55 +981,51 @@ function answer(value, btnEl){
     /* ------- せいかい ------- */
     run.ok++;
     save.totalOk++;
-    save.affection += AFFECTION_UP;
+    run.hearts += HEART_UP;
     sfxOk();
     $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'happy');
     popFx($('quiz-fx'), '♥✧♪✦', 5);
+    renderHearts('add', 0);
 
     msg = '<p class="good">だいせいかい！ いぬが よろこんでいる！</p>' +
-          '<p class="tiny">なつき度 ＋' + AFFECTION_UP + '</p>';
-
-    if(save.affection >= AFFECTION_MAX){
-      save.affection = 0;
-      save.level++;
-      run.levelUps++;
-      sfxLevel();
-      $('quiz-dogname').textContent = nameForLevel(save.level);
-      $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'grow');
-      popFx($('quiz-fx'), '✧✦★', 8);
-      msg = '<p class="good">レベルアップ！ いぬが 大きく なった！</p>' +
-            '<p class="tiny">レベル ' + save.level + ' の ' + nameForLevel(save.level) + ' に なったよ</p>';
-    }
+          '<p class="tiny">♥ が ' + HEART_UP + 'こ ふえて、ぜんぶで <b>♥ ' + run.hearts + 'こ</b>！</p>';
   }else{
     /* ------- ふせいかい ------- */
     run.ng++;
     save.totalNg++;
-    save.affection = 0;                 /* なつき度は 0に もどる */
-    run.mood -= MOOD_DOWN;
-    if(run.mood < 0) run.mood = 0;
     save.mistakes[q.key] = (save.mistakes[q.key] || 0) + 1;
     sfxNg();
 
+    $('quiz-fx').innerHTML = '';       /* せいかいの ♥ を けす */
     $('quiz-dog').innerHTML = dogSVG('sad', 'sad');
     document.getElementById('app').classList.add('shake');
     setTimeout(function(){ document.getElementById('app').classList.remove('shake'); }, 460);
     popFx($('quiz-fx'), '💧', 3);
 
-    msg = '<p class="bad">ざんねん… いぬは そっぽを むいてしまった。</p>' +
-          '<p class="tiny">こたえは <b>' + q.ans + '</b> だよ。<br>' +
-          'なつき度が 0に もどって、ごきげんが ' + MOOD_DOWN + ' さがった…</p>';
+    if(run.hearts < HEART_DOWN){
+      /* われる ♥ が たりない → いぬは いって しまう */
+      run.dead   = true;
+      run.hearts = 0;
+      renderHearts('break', HEART_DOWN);
+      msg = '<p class="bad">ざんねん… ♥が たりなく なって しまった。</p>' +
+            '<p class="tiny">こたえは <b>' + q.ans + '</b> だよ。</p>';
+    }else{
+      run.hearts -= HEART_DOWN;
+      renderHearts('break', HEART_DOWN);
+      msg = '<p class="bad">ざんねん… いぬは そっぽを むいてしまった。</p>' +
+            '<p class="tiny">こたえは <b>' + q.ans + '</b> だよ。<br>' +
+            '♥ が ' + HEART_DOWN + 'こ われて、のこり <b>♥ ' + run.hearts + 'こ</b>…</p>';
+    }
   }
 
   writeSave();
-  setGauge($('quiz-mood-bar'), $('quiz-mood-num'), run.mood, MOOD_MAX, '%');
-  updateMoodClass();
   $('quiz-wintitle').textContent = correct ? 'せいかい！' : 'まちがい…';
   $('quiz-msg').innerHTML = msg;
 
   run.index++;
 
-  if(run.mood <= 0){
-    setTimeout(gameOver, 900);
+  if(run.dead){
+    setTimeout(gameOver, 1200);
     return;
   }
   var last = (run.index >= QUESTIONS_PER_RUN);
@@ -1007,6 +1053,17 @@ function finishRun(){
   var idx = courseIndex(run.courseId);
   var firstClear = !save.cleared[course.id];
   save.cleared[course.id] = true;
+
+  /* のこった ♥ の かずだけ なつき度が ふえる */
+  var gained  = run.hearts * HEART_TO_AFF;
+  var affFrom = save.affection;
+  save.affection += gained;
+  run.levelUps = 0;
+  while(save.affection >= AFFECTION_MAX){
+    save.affection -= AFFECTION_MAX;
+    save.level++;
+    run.levelUps++;
+  }
   writeSave();
 
   var unlockedNew = firstClear && idx + 1 < COURSES.length;
@@ -1031,6 +1088,10 @@ function finishRun(){
     sfxLevel();
   }
 
+  $('result-hearts').innerHTML = heartsHTML(run.hearts);
+  $('result-conv').innerHTML =
+    '♥ ' + run.hearts + 'こ × ' + HEART_TO_AFF + ' ＝ <b>なつき度 ＋' + gained + '</b>';
+
   var m = '<p>' + course.name + ' の おせわが おわったよ。</p>';
   if(run.ng === 0){
     m += '<p class="good">いぬは とても しあわせそう！</p>';
@@ -1043,7 +1104,11 @@ function finishRun(){
 
   $('result-ok').textContent = run.ok;
   $('result-ng').textContent = run.ng;
-  setGauge($('result-aff-bar'), $('result-aff-num'), save.affection, AFFECTION_MAX);
+  /* ゲージは まえの あたいから アニメで のばす */
+  setGauge($('result-aff-bar'), $('result-aff-num'), affFrom, AFFECTION_MAX);
+  setTimeout(function(){
+    setGauge($('result-aff-bar'), $('result-aff-num'), save.affection, AFFECTION_MAX);
+  }, 500);
 
   show('result');
 }
@@ -1059,7 +1124,6 @@ function gameOver(){
   $('over-dog').innerHTML = dogSVG('paw', '');
   $('over-ok').textContent = run.ok;
   $('over-ng').textContent = run.ng;
-  save.affection = 0;
   writeSave();
   show('gameover');
 }
