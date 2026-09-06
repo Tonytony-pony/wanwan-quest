@@ -276,7 +276,8 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <b>まちがえると <span class="hp">♥</span> が 3こ われます</b>。<br>
       おさんぽが おわったら、のこった <span class="hp">♥</span> の かずだけ
       なつき度が ふえて、いぬが 大きく なります。<br>
-      <span class="hp">♥</span> が たりなく なると、いぬは どこかへ いって しまいます。
+      <span class="hp">♥</span> が たりなく なると、いぬは どこかへ いって しまいます。<br>
+      まいにち おさんぽして <span class="hp">♥</span> を 70こ ためると レベルアップ！
       しんけんに えらんでね！
     </p>
   </div>
@@ -301,10 +302,10 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <div id="map-dog"></div>
     </div>
     <div class="gauge-wrap">
-      <div class="gauge-cap"><span>なつき度</span><span id="map-aff-num">0 / 100</span></div>
+      <div class="gauge-cap"><span>なつき度</span><span id="map-aff-num">♥ 0 / 70</span></div>
       <div class="gauge"><i id="map-aff-bar"></i></div>
     </div>
-    <p class="tiny center" id="map-hint" style="margin:6px 0 0">おさんぽで あつめた ♥ 1こ が なつき度 10。<br>なつき度 １００で レベルアップ！</p>
+    <p class="tiny center" id="map-hint" style="margin:6px 0 0">あつめた ♥ が そのまま なつき度に なるよ。<br>まいにち おさんぽして ♥ を ためよう！</p>
   </div>
 
   <div class="win purple">
@@ -375,7 +376,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <div class="arrow">▼</div>
     </div>
     <div class="gauge-wrap">
-      <div class="gauge-cap"><span>なつき度</span><span id="result-aff-num">0 / 100</span></div>
+      <div class="gauge-cap"><span>なつき度</span><span id="result-aff-num">♥ 0 / 70</span></div>
       <div class="gauge"><i id="result-aff-bar"></i></div>
     </div>
   </div>
@@ -416,11 +417,13 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
    ========================================================= */
 var SAVE_KEY        = 'wanwanquest_save_v1';
 var QUESTIONS_PER_RUN = 10;   // 1かいの おせわで だす もんだい かず
-var AFFECTION_MAX   = 100;    // レベルアップに ひつような なつき度
+/* なつき度 = いままでの おさんぽで あつめた ♥ の ごうけい。
+   1日1コース（10もん）で ♥ は 9〜13こ たまるので、
+   70こ = だいたい 1しゅうかんで レベルアップ する ペース。 */
+var AFFECTION_MAX   = 70;     // レベルアップに ひつような ♥ の かず
 var HEART_START     = 3;      // おさんぽ はじめに もっていく ♥ の かず
 var HEART_UP        = 1;      // せいかい 1かいで ふえる ♥
 var HEART_DOWN      = 3;      // まちがい 1かいで われる ♥
-var HEART_TO_AFF    = 10;     // ♥ 1こ = なつき度 いくつ
 var WEAK_RATE       = 0.4;    // にがて もんだいが でる かくりつ
 
 /* =========================================================
@@ -685,10 +688,10 @@ function show(name){
   window.scrollTo(0, 0);
 }
 
-function setGauge(barEl, numEl, value, max, suffix){
+function setGauge(barEl, numEl, value, max){
   var pct = Math.max(0, Math.min(100, value / max * 100));
   barEl.style.width = pct + '%';
-  if(numEl) numEl.textContent = suffix === '%' ? Math.round(pct) + '%' : (value + ' / ' + max);
+  if(numEl) numEl.textContent = '♥ ' + value + ' / ' + max;
 }
 
 function popFx(container, chars, count){
@@ -1054,8 +1057,8 @@ function finishRun(){
   var firstClear = !save.cleared[course.id];
   save.cleared[course.id] = true;
 
-  /* のこった ♥ の かずだけ なつき度が ふえる */
-  var gained  = run.hearts * HEART_TO_AFF;
+  /* のこった ♥ が そのまま なつき度に なる */
+  var gained  = run.hearts;
   var affFrom = save.affection;
   save.affection += gained;
   run.levelUps = 0;
@@ -1090,7 +1093,7 @@ function finishRun(){
 
   $('result-hearts').innerHTML = heartsHTML(run.hearts);
   $('result-conv').innerHTML =
-    '♥ ' + run.hearts + 'こ × ' + HEART_TO_AFF + ' ＝ <b>なつき度 ＋' + gained + '</b>';
+    'あつめた ♥ ' + run.hearts + 'こ ＝ <b>なつき度 ＋' + gained + '</b>';
 
   var m = '<p>' + course.name + ' の おせわが おわったよ。</p>';
   if(run.ng === 0){
@@ -1104,11 +1107,16 @@ function finishRun(){
 
   $('result-ok').textContent = run.ok;
   $('result-ng').textContent = run.ng;
-  /* ゲージは まえの あたいから アニメで のばす */
-  setGauge($('result-aff-bar'), $('result-aff-num'), affFrom, AFFECTION_MAX);
-  setTimeout(function(){
-    setGauge($('result-aff-bar'), $('result-aff-num'), save.affection, AFFECTION_MAX);
-  }, 500);
+  /* ゲージは まえの あたいから アニメで のばす。
+     レベルアップした ときは いちど まんたんに してから 0に もどす。 */
+  var aBar = $('result-aff-bar'), aNum = $('result-aff-num');
+  setGauge(aBar, aNum, affFrom, AFFECTION_MAX);
+  if(run.levelUps > 0){
+    setTimeout(function(){ setGauge(aBar, aNum, AFFECTION_MAX, AFFECTION_MAX); }, 500);
+    setTimeout(function(){ setGauge(aBar, aNum, save.affection, AFFECTION_MAX); }, 1500);
+  }else{
+    setTimeout(function(){ setGauge(aBar, aNum, save.affection, AFFECTION_MAX); }, 500);
+  }
 
   show('result');
 }
