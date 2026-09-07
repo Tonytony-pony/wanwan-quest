@@ -90,6 +90,10 @@ body{
   box-shadow:inset 0 2px 0 rgba(255,255,255,.6), 0 4px 0 var(--purple-deep), 0 7px 10px rgba(90,50,130,.25);
 }
 .btn.purple:active{box-shadow:inset 0 2px 0 rgba(255,255,255,.4), 0 0 0 var(--purple-deep);}
+.btn.gold{background:linear-gradient(180deg,#ffe488 0%,#ffc23f 55%,#efa100 100%);
+  border-color:#b97a00;color:#6d4200;text-shadow:0 2px 0 rgba(255,255,255,.6);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.75),0 4px 0 #b97a00,0 7px 10px rgba(150,100,0,.25);}
+.btn.gold:active{box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 0 0 #b97a00;}
 .btn.small{font-size:14px;padding:8px;}
 .btn[disabled]{filter:grayscale(.8) brightness(.95);cursor:not-allowed;opacity:.7;}
 .btn .sub{display:block;font-size:12px;opacity:.95;text-shadow:none;margin-top:2px;}
@@ -200,6 +204,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   letter-spacing:.05em;line-height:1.25;margin:2px 0 4px;text-shadow:0 2px 0 #ecdcf8;}
 .msg .note{font-size:12.5px;text-align:center;color:#a24d07;background:#fff2d6;
   border:2px dashed #e8a640;border-radius:10px;padding:2px 8px;margin-top:6px;}
+.msg .note.rev{color:#0a5c38;background:#e9fff5;border-color:#5fd6a0;}
 .msg .good{color:var(--good);}
 .msg .bad{color:var(--bad);}
 .msg .cursor::after{content:'▼';margin-left:6px;animation:blink .8s steps(1) infinite;color:var(--pink);}
@@ -261,9 +266,11 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   </div>
 
   <div class="win">
-    <span class="win-title">きみの なまえ</span>
-    <div class="field-label">▼ なまえを いれてね</div>
+    <span class="win-title">なまえを きめよう</span>
+    <div class="field-label">▼ きみの なまえ</div>
     <input type="text" id="input-name" maxlength="8" placeholder="さくら" autocomplete="off" spellcheck="false">
+    <div class="field-label" style="margin-top:10px">▼ いぬの なまえ</div>
+    <input type="text" id="input-dogname" maxlength="8" placeholder="ポチ" autocomplete="off" spellcheck="false">
     <div id="save-info" class="tiny center hidden"></div>
     <button class="btn" id="btn-start">おせわを はじめる</button>
   </div>
@@ -381,6 +388,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     </div>
   </div>
 
+  <button class="btn gold hidden" id="btn-review"></button>
   <button class="btn" id="btn-again">もういちど おせわする</button>
   <button class="btn purple" id="btn-back-map">おさんぽへ もどる</button>
 </section>
@@ -393,7 +401,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <div id="over-dog"></div>
     </div>
     <p class="center" style="font-size:19px;color:var(--bad);margin:8px 0 4px">
-      いぬが どこかへ いって しまった…
+      <span id="over-name">いぬ</span>が どこかへ いって しまった…
     </p>
     <p class="tiny center">♥が たりなく なって しまったよ。<br>
       でも だいじょうぶ。よんだら もどって きてくれる！</p>
@@ -616,6 +624,11 @@ function artForLevel(lv){
   if(lv <= 4) return 'adult';
   return 'hero';
 }
+/* いぬの なまえ（きめて いない ときは「いぬ」） */
+function dogN(){ return save.dogName || 'いぬ'; }
+/* 「ポチ（こいぬ）」のような ひょうじ */
+function dogLabel(){ return dogN() + '（' + nameForLevel(save.level) + '）'; }
+
 function nameForLevel(lv){
   if(lv <= 2) return 'こいぬ';
   if(lv <= 4) return 'わんこ';
@@ -663,7 +676,8 @@ function isUnlocked(i){
    3. セーブデータ
    ========================================================= */
 function defaultSave(){
-  return { name:'', level:1, affection:0, cleared:{}, mistakes:{}, totalOk:0, totalNg:0, sound:true };
+  return { name:'', dogName:'', level:1, affection:0, cleared:{}, mistakes:{},
+           totalOk:0, totalNg:0, sound:true };
 }
 var save = defaultSave();
 
@@ -675,6 +689,7 @@ function loadSave(){
     if(!d || typeof d !== 'object') return;
     var s = defaultSave();
     if(typeof d.name === 'string')      s.name = d.name.slice(0,8);
+    if(typeof d.dogName === 'string')   s.dogName = d.dogName.slice(0,8);
     if(typeof d.level === 'number')     s.level = Math.max(1, Math.min(99, d.level|0));
     if(typeof d.affection === 'number') s.affection = Math.max(0, Math.min(AFFECTION_MAX, d.affection|0));
     if(d.cleared   && typeof d.cleared   === 'object') s.cleared   = d.cleared;
@@ -832,8 +847,9 @@ function renderTitle(){
   var info = $('save-info');
   if(save.name){
     $('input-name').value = save.name;
+    $('input-dogname').value = save.dogName;
     $('btn-start').textContent = 'おせわを つづける';
-    info.innerHTML = 'レベル ' + save.level + ' の ' + nameForLevel(save.level) + ' が まっているよ';
+    info.innerHTML = 'レベル ' + save.level + ' の ' + dogLabel() + ' が まっているよ';
     info.classList.remove('hidden');
   }else{
     $('btn-start').textContent = 'おせわを はじめる';
@@ -843,8 +859,11 @@ function renderTitle(){
 
 $('btn-start').addEventListener('click', function(){
   var v = $('input-name').value.replace(/\s+/g, '').slice(0, 8);
+  var d = $('input-dogname').value.replace(/\s+/g, '').slice(0, 8);
   if(!v) v = 'ぼうけんしゃ';
-  save.name = v;
+  if(!d) d = 'ポチ';
+  save.name    = v;
+  save.dogName = d;
   writeSave();
   sfxTap();
   gotoMap();
@@ -859,7 +878,7 @@ function gotoMap(){
 }
 
 function renderMap(){
-  $('map-name').textContent    = save.name + ' と';
+  $('map-name').textContent    = save.name + ' と ' + dogN();
   $('map-dogname').textContent = nameForLevel(save.level);
   $('map-level').textContent   = save.level;
   $('map-dog').innerHTML       = dogSVG(artForLevel(save.level), 'idle');
@@ -936,10 +955,20 @@ function startRun(courseId){
     levelUps : 0,
     dead     : false,
     answered : false,
-    q        : null
+    q        : null,
+    missed   : [],          /* まちがえた もんだい */
+    mode     : 'normal',    /* 'normal' か 'review' */
+    reviewList : [],
+    reviewIdx  : 0,
+    reviewOk   : 0,
+    reviewNg   : 0,
+    reviewDone : false,
+    reviewLevelUp : false,
+    banner   : '',
+    affFrom  : 0
   };
   $('quiz-course').textContent = courseById(courseId).name;
-  $('quiz-dogname').textContent = nameForLevel(save.level);
+  $('quiz-dogname').textContent = dogLabel();
   $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'idle');
   show('quiz');
   nextQuestion();
@@ -947,15 +976,28 @@ function startRun(courseId){
 
 function nextQuestion(){
   run.answered = false;
-  run.q = makeQuestion(courseById(run.courseId));
+  var isRev = (run.mode === 'review');
+
+  if(isRev){
+    var rq = run.reviewList[run.reviewIdx];
+    run.q = { a:rq.a, b:rq.b, ans:rq.ans, key:rq.key,
+              missCount: save.mistakes[rq.key] || 0,
+              choices: makeChoices(rq.ans) };
+  }else{
+    run.q = makeQuestion(courseById(run.courseId));
+  }
   var q = run.q;
 
-  $('quiz-wintitle').textContent = 'もんだい';
-  $('quiz-count').textContent = (run.index + 1) + ' もんめ / ' + QUESTIONS_PER_RUN;
+  $('quiz-wintitle').textContent = isRev ? 'おさらい' : 'もんだい';
+  $('quiz-count').textContent = isRev
+    ? (run.reviewIdx + 1) + ' もんめ / ' + run.reviewList.length
+    : (run.index + 1) + ' もんめ / ' + QUESTIONS_PER_RUN;
   renderHearts(null, 0);
 
   var html = '<div class="q">' + q.a + ' ＋ ' + q.b + ' ＝ ？</div>';
-  if(q.missCount > 0){
+  if(isRev){
+    html += '<div class="note rev">おさらいだよ。まちがえても ♥は へらないから、おちついて こたえてね</div>';
+  }else if(q.missCount > 0){
     html += '<div class="note">⚠ ちゅういして こたえよう！<br>まえに ' + q.missCount + 'かい まちがえた もんだいだよ</div>';
   }
   $('quiz-msg').innerHTML = html;
@@ -993,7 +1035,7 @@ function renderHearts(mode, broke){
 
   var warn = $('quiz-heart-warn');
   if(run.hearts < HEART_DOWN && !run.dead){
-    warn.textContent = 'あぶない！ つぎ まちがえると いぬが いって しまう';
+    warn.textContent = 'あぶない！ つぎ まちがえると ' + dogN() + 'が いって しまう';
     warn.classList.remove('hidden');
   }else{
     warn.classList.add('hidden');
@@ -1022,6 +1064,8 @@ function answer(value, btnEl){
   }
   if(!correct){ btnEl.classList.remove('dim'); btnEl.classList.add('is-wrong'); }
 
+  if(run.mode === 'review'){ answerReview(q, correct); return; }
+
   var msg = '';
   if(correct){
     /* ------- せいかい ------- */
@@ -1033,7 +1077,7 @@ function answer(value, btnEl){
     popFx($('quiz-fx'), '♥✧♪✦', 5);
     renderHearts('add', 0);
 
-    msg = '<p class="good">だいせいかい！ いぬが よろこんでいる！</p>' +
+    msg = '<p class="good">だいせいかい！ ' + dogN() + 'が よろこんでいる！</p>' +
           '<p class="tiny">♥ が ' + HEART_UP + 'こ ふえて、ぜんぶで <b>♥ ' + run.hearts + 'こ</b>！</p>';
   }else{
     /* ------- ふせいかい ------- */
@@ -1041,6 +1085,13 @@ function answer(value, btnEl){
     save.totalNg++;
     save.mistakes[q.key] = (save.mistakes[q.key] || 0) + 1;
     sfxNg();
+
+    /* おさらい用に とっておく（おなじ しきは 1かいだけ） */
+    var dup = false;
+    for(i = 0; i < run.missed.length; i++){
+      if(run.missed[i].key === q.key) dup = true;
+    }
+    if(!dup) run.missed.push({ a:q.a, b:q.b, ans:q.ans, key:q.key });
 
     $('quiz-fx').innerHTML = '';       /* せいかいの ♥ を けす */
     $('quiz-dog').innerHTML = dogSVG('sad', 'sad');
@@ -1058,7 +1109,7 @@ function answer(value, btnEl){
     }else{
       run.hearts -= HEART_DOWN;
       renderHearts('break', HEART_DOWN);
-      msg = '<p class="bad">ざんねん… いぬは そっぽを むいてしまった。</p>' +
+      msg = '<p class="bad">ざんねん… ' + dogN() + 'は そっぽを むいてしまった。</p>' +
             '<p class="tiny">こたえは <b>' + q.ans + '</b> だよ。<br>' +
             '♥ が ' + HEART_DOWN + 'こ われて、のこり <b>♥ ' + run.hearts + 'こ</b>…</p>';
     }
@@ -1080,8 +1131,93 @@ function answer(value, btnEl){
   nb.classList.remove('hidden');
 }
 
+/* ------- おさらい（まちがえた もんだいの もういちど） ------- */
+function startReview(){
+  run.mode      = 'review';
+  run.reviewList = run.missed.slice();
+  run.reviewIdx = 0;
+  run.reviewOk  = 0;
+  run.reviewNg  = 0;
+  run.answered  = false;
+  $('quiz-course').textContent  = 'おさらい';
+  $('quiz-dogname').textContent = dogLabel();
+  $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'idle');
+  $('quiz-fx').innerHTML  = '';
+  show('quiz');
+  nextQuestion();
+}
+
+function answerReview(q, correct){
+  var msg;
+  if(correct){
+    run.reviewOk++;
+    save.totalOk++;
+    run.hearts     += HEART_UP;
+    save.affection += HEART_UP;
+    sfxOk();
+    $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'happy');
+    popFx($('quiz-fx'), '♥✧♪✦', 5);
+    renderHearts('add', 0);
+
+    /* おぼえたので にがて どを 1つ へらす */
+    if(save.mistakes[q.key]){
+      save.mistakes[q.key]--;
+      if(save.mistakes[q.key] <= 0) delete save.mistakes[q.key];
+    }
+
+    msg = '<p class="good">せいかい！ こんどは できたね！</p>' +
+          '<p class="tiny">♥ が ' + HEART_UP + 'こ ふえて、ぜんぶで <b>♥ ' + run.hearts + 'こ</b>！</p>';
+
+    if(save.affection >= AFFECTION_MAX){
+      save.affection -= AFFECTION_MAX;
+      save.level++;
+      run.levelUps++;
+      run.reviewLevelUp = true;
+      sfxLevel();
+      $('quiz-dogname').textContent = dogLabel();
+      $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'grow');
+      popFx($('quiz-fx'), '✧✦★', 8);
+      msg = '<p class="good">レベルアップ！ ' + dogN() + 'が 大きく なった！</p>' +
+            '<p class="tiny">レベル ' + save.level + ' の ' + nameForLevel(save.level) + ' に なったよ</p>';
+    }
+  }else{
+    run.reviewNg++;
+    save.totalNg++;
+    save.mistakes[q.key] = (save.mistakes[q.key] || 0) + 1;
+    sfxNg();
+    $('quiz-fx').innerHTML = '';
+    msg = '<p class="bad">おしい… こたえは <b>' + q.ans + '</b> だよ。</p>' +
+          '<p class="tiny">おさらいでは ♥は へらないよ。よく みて おぼえよう！</p>';
+  }
+
+  writeSave();
+  $('quiz-wintitle').textContent = correct ? 'せいかい！' : 'おしい…';
+  $('quiz-msg').innerHTML = msg;
+
+  run.reviewIdx++;
+  var nb = $('btn-next');
+  nb.textContent = (run.reviewIdx >= run.reviewList.length) ? 'けっかを みる ▶' : 'つぎへ ▶';
+  nb.classList.remove('hidden');
+}
+
+function finishReview(){
+  run.mode = 'normal';
+  run.reviewDone = true;
+  if(run.reviewLevelUp && run.banner.indexOf('おおきく') < 0){
+    run.banner = '<div class="banner">✧ ' + dogN() + 'が おおきく なった！ ✧</div>' + run.banner;
+  }
+  renderResult(true);
+}
+
+$('btn-review').addEventListener('click', function(){ sfxTap(); startReview(); });
+
 $('btn-next').addEventListener('click', function(){
   sfxTap();
+  if(run.mode === 'review'){
+    if(run.reviewIdx >= run.reviewList.length) finishReview();
+    else nextQuestion();
+    return;
+  }
   if(run.index >= QUESTIONS_PER_RUN) finishRun();
   else nextQuestion();
 });
@@ -1101,9 +1237,8 @@ function finishRun(){
   save.cleared[course.id] = true;
 
   /* のこった ♥ が そのまま なつき度に なる */
-  var gained  = run.hearts;
-  var affFrom = save.affection;
-  save.affection += gained;
+  run.affFrom = save.affection;
+  save.affection += run.hearts;
   run.levelUps = 0;
   while(save.affection >= AFFECTION_MAX){
     save.affection -= AFFECTION_MAX;
@@ -1112,53 +1247,83 @@ function finishRun(){
   }
   writeSave();
 
-  var unlockedNew = firstClear && idx + 1 < COURSES.length;
-
-  var banner = '';
+  run.banner = '';
   if(run.levelUps > 0){
-    banner += '<div class="banner">✧ いぬが おおきく なった！ ✧</div>';
+    run.banner += '<div class="banner">✧ ' + dogN() + 'が おおきく なった！ ✧</div>';
   }
-  if(unlockedNew){
-    banner += '<div class="banner">🔓 ' + COURSES[idx+1].name + ' が あいた！</div>';
+  if(firstClear && idx + 1 < COURSES.length){
+    run.banner += '<div class="banner">🔓 ' + COURSES[idx+1].name + ' が あいた！</div>';
   }
   if(run.ng === 0){
-    banner += '<div class="banner">★ ぜんもん せいかい！ ★</div>';
+    run.banner += '<div class="banner">★ ぜんもん せいかい！ ★</div>';
   }
-  $('result-banner').innerHTML = banner;
+
+  renderResult(false);
+}
+
+/* リザルトを えがく。fromReview=true は おさらいの あと */
+function renderResult(fromReview){
+  $('result-banner').innerHTML = run.banner;
 
   var art = artForLevel(save.level);
   $('result-dog').innerHTML = dogSVG(art, run.levelUps > 0 ? 'grow' : (run.ng === 0 ? 'happy' : 'idle'));
-  $('result-dogname').textContent = nameForLevel(save.level);
-  if(run.levelUps > 0 || run.ng === 0){
+  $('result-dogname').textContent = dogLabel();
+  if(!fromReview && (run.levelUps > 0 || run.ng === 0)){
     popFx($('result-fx'), '♥✧✦♪', 7);
     sfxLevel();
   }
 
   $('result-hearts').innerHTML = heartsHTML(run.hearts);
   $('result-conv').innerHTML =
-    'あつめた ♥ ' + run.hearts + 'こ ＝ <b>なつき度 ＋' + gained + '</b>';
+    'あつめた ♥ ' + run.hearts + 'こ ＝ <b>なつき度 ＋' + run.hearts + '</b>';
 
-  var m = '<p>' + course.name + ' の おせわが おわったよ。</p>';
-  if(run.ng === 0){
-    m += '<p class="good">いぬは とても しあわせそう！</p>';
-  }else if(run.ng <= 2){
-    m += '<p>つぎは まちがえないように がんばろう！</p>';
+  var m;
+  if(fromReview){
+    m = '<p class="good">おさらい おわり！</p>';
+    if(run.reviewOk > 0){
+      m += '<p class="tiny">' + run.reviewOk + 'もん せいかいして、♥ が ' +
+           run.reviewOk + 'こ ふえたよ。</p>';
+    }else{
+      m += '<p class="tiny">つぎは きっと できる！ また ちょうせん しよう。</p>';
+    }
   }else{
-    m += '<p class="bad">いぬの ごきげんが ちょっと わるいみたい…</p>';
+    m = '<p>' + courseById(run.courseId).name + ' の おせわが おわったよ。</p>';
+    if(run.ng === 0){
+      m += '<p class="good">' + dogN() + 'は とても しあわせそう！</p>';
+    }else if(run.ng <= 2){
+      m += '<p>つぎは まちがえないように がんばろう！</p>';
+    }else{
+      m += '<p class="bad">' + dogN() + 'の ごきげんが ちょっと わるいみたい…</p>';
+    }
   }
   $('result-msg').innerHTML = m;
 
   $('result-ok').textContent = run.ok;
   $('result-ng').textContent = run.ng;
+
   /* ゲージは まえの あたいから アニメで のばす。
      レベルアップした ときは いちど まんたんに してから 0に もどす。 */
   var aBar = $('result-aff-bar'), aNum = $('result-aff-num');
-  setGauge(aBar, aNum, affFrom, AFFECTION_MAX);
-  if(run.levelUps > 0){
-    setTimeout(function(){ setGauge(aBar, aNum, AFFECTION_MAX, AFFECTION_MAX); }, 500);
-    setTimeout(function(){ setGauge(aBar, aNum, save.affection, AFFECTION_MAX); }, 1500);
+  if(fromReview){
+    setGauge(aBar, aNum, save.affection, AFFECTION_MAX);
   }else{
-    setTimeout(function(){ setGauge(aBar, aNum, save.affection, AFFECTION_MAX); }, 500);
+    setGauge(aBar, aNum, run.affFrom, AFFECTION_MAX);
+    if(run.levelUps > 0){
+      setTimeout(function(){ setGauge(aBar, aNum, AFFECTION_MAX, AFFECTION_MAX); }, 500);
+      setTimeout(function(){ setGauge(aBar, aNum, save.affection, AFFECTION_MAX); }, 1500);
+    }else{
+      setTimeout(function(){ setGauge(aBar, aNum, save.affection, AFFECTION_MAX); }, 500);
+    }
+  }
+
+  /* まちがえた もんだいが あれば おさらいボタン */
+  var rb = $('btn-review');
+  if(run.missed.length > 0 && !run.reviewDone){
+    rb.innerHTML = 'まちがえた ' + run.missed.length + 'もんに もう一かい こたえる' +
+      '<span class="sub">せいかいで ♥ ＋1／まちがえても へらない</span>';
+    rb.classList.remove('hidden');
+  }else{
+    rb.classList.add('hidden');
   }
 
   show('result');
@@ -1172,6 +1337,7 @@ $('btn-back-map').addEventListener('click', function(){ sfxTap(); gotoMap(); });
    ========================================================= */
 function gameOver(){
   sfxOver();
+  $('over-name').textContent = dogN();
   $('over-dog').innerHTML = dogSVG('paw', '');
   $('over-ok').textContent = run.ok;
   $('over-ng').textContent = run.ng;
