@@ -2,10 +2,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f8c3dd">
 <meta name="description" content="たしざんで いぬを そだてる レトロRPGふうの さんすうアプリ">
 <title>わんわんクエスト</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="わんわん">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
@@ -28,7 +34,15 @@
   --win-bg:     #fffafd;
   --shadow:     #d38ab4;
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;}
+/* こどもが ボタンを ながおししても もじが えらばれない ように。
+   なまえの にゅうりょくらんだけは えらべる ままに する。 */
+body{-webkit-user-select:none;-ms-user-select:none;user-select:none;
+  overscroll-behavior-y:none;}
+input,textarea{-webkit-user-select:text;user-select:text;}
+/* 2どタップの ズームを けして、ボタンの はんのうを はやく する */
+button,.dogcard,.tab{touch-action:manipulation;}
 html,body{margin:0;padding:0;}
 body{
   font-family:'DotGothic16','Yu Gothic','MS Gothic','Hiragino Kaku Gothic ProN',monospace;
