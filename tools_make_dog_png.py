@@ -22,7 +22,7 @@ Geminiの しゅつりょくを JPGで ほぞんすると、とうめいぶぶ�
 """
 import os, sys
 from collections import deque
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageChops
 
 SRC_ROOT = 'イラスト犬'
 OUT_DIR  = 'img'
@@ -46,28 +46,162 @@ def find_src(folder, stem):
             return f
     return None
 
-# はいけい はんてい: いろみが なくて あかるい ドット
+# はいけい はんてい: いろみが なくて「はいいろ」の ドット
+#   いちまつもようの はいマス = 214 / したじの ベタ = 211  -> はいけい
+#   いぬの しろい からだ     = 253 / いちまつの しろマス = 255 -> はいけいに しない
+# しろマスは よこと たてで となりあわない（ななめだけ）ので、
+# ちいさい かたまりの まま のこり、あとの 2% フィルタで おちる。
 SAT_MAX   = 26          # R,G,B の さ が これいか なら むちゃくしょく
 LIGHT_MIN = 178         # いちばん くらい チャンネルが これいじょう なら あかるい
+WHITE_MIN = 249         # これいじょう しろい ものは いぬの しろ かも しれないので のこす
 ERODE     = 2           # ふちを けずる ドットすう
 MIN_BLOB_RATIO = 0.02   # いちばん おおきい かたまりの 2% いじょう なら のこす
+SEPARATE  = 6           # いちまつの しろマスと いぬの ほそい つながりを きる ドットすう
 
 
 def is_bg(px):
     r, g, b = px[0], px[1], px[2]
-    return (max(r, g, b) - min(r, g, b) <= SAT_MAX) and (min(r, g, b) >= LIGHT_MIN)
+    if max(r, g, b) - min(r, g, b) > SAT_MAX:
+        return False                      # いろが ついている -> いぬ
+    m = min(r, g, b)
+    return LIGHT_MIN <= m < WHITE_MIN     # はいいろ だけ はいけい。まっしろは のこす
+
+
+def detect_grid(im):
+    """いちまつもようの ますの おおきさと ずれを しらべる。
+    がめんの はしを はしって、しろマスと はいマスの きりかわる いちを ひろう。"""
+    w, h = im.size
+    px = im.load()
+
+    def scan(get):
+        edges, prev = [], None
+        for t in range(len(get.rng)):
+            r, g, b = get(t)
+            if max(r, g, b) - min(r, g, b) > SAT_MAX:
+                prev = None; continue
+            v = 1 if min(r, g, b) >= 240 else 0
+            if prev is not None and v != prev:
+                edges.append(t)
+            prev = v
+        return edges
+
+    class H:
+        rng = range(w)
+        def __call__(self, t): return px[t, 2]
+    class V:
+        rng = range(h)
+        def __call__(self, t): return px[2, t]
+
+    ex, ey = scan(H()), scan(V())
+    if len(ex) < 4 or len(ey) < 4:
+        return None
+    d = sorted([ex[i+1] - ex[i] for i in range(len(ex) - 1)] +
+               [ey[i+1] - ey[i] for i in range(len(ey) - 1)])
+    P = d[len(d) // 2]
+    if P < 8 or P > 250:
+        return None
+    return P, ex[0] % P, ey[0] % P
+
+
+def checker_mask(im):
+    """いちまつの しろマスの ばしょに 1 を たてた マスク。
+
+    しろマスは「まわりを はいマスに かこまれた まっしろな ましかく」。
+    いぬの しろい からだは まわりも しろい ので、この じょうけんで はずれる。
+    """
+    w, h = im.size
+    px = im.load()
+    m = bytearray(w * h)
+    grid = detect_grid(im)
+    if not grid:
+        return m, 0
+    P, offx, offy = grid
+
+    xs = list(range(offx - P, w + P, P))
+    ys = list(range(offy - P, h + P, P))
+    W, H = len(xs), len(ys)
+
+    def cell_kind(x0, y0):
+        """0=それいがい  1=まっしろな ましかく  2=はいいろの ましかく"""
+        vals = []
+        for dy in (P // 4, P // 2, P * 3 // 4):
+            for dx in (P // 4, P // 2, P * 3 // 4):
+                x, y = x0 + dx, y0 + dy
+                if not (0 <= x < w and 0 <= y < h):
+                    return 2                      # がめんの そとは はいけい あつかい
+                r, g, b = px[x, y]
+                if max(r, g, b) - min(r, g, b) > SAT_MAX:
+                    return 0                      # いろが ついている
+                vals.append(min(r, g, b))
+        if max(vals) - min(vals) > 12:
+            return 0                              # むらが ある = ましかくでは ない
+        lo = min(vals)
+        if lo >= 245:
+            return 1
+        if LIGHT_MIN <= lo < 245:
+            return 2
+        return 0
+
+    kind = [[cell_kind(xs[i], ys[j]) for i in range(W)] for j in range(H)]
+
+    def paint(x0, y0, white_only=False):
+        for y in range(max(0, y0), min(h, y0 + P)):
+            base = y * w
+            for x in range(max(0, x0), min(w, x0 + P)):
+                if white_only:
+                    r, g, b = px[x, y]
+                    if max(r, g, b) - min(r, g, b) > SAT_MAX or min(r, g, b) < 245:
+                        continue
+                m[base + x] = 1
+
+    cells = 0
+    for j in range(H):
+        for i in range(W):
+            if kind[j][i] != 1:
+                continue
+            # いちまつの しろマスは、となりが かならず はいマス。
+            # いぬの しろい からだは となりも しろい ので ここで はずれる。
+            grey = white = 0
+            for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                ni, nj = i + di, j + dj
+                k = kind[nj][ni] if (0 <= ni < W and 0 <= nj < H) else 2
+                if k == 2:   grey += 1
+                elif k == 1: white += 1
+            if white > 0 or grey < 2:
+                continue
+            cells += 1
+            paint(xs[i], ys[j])
+
+    # いぬの りんかくが かかった マスは「ましかく」に ならないので うえで もれる。
+    # まわりの ようすから いちまつの ばしょだと わかる マスは、
+    # マスぜんぶ ではなく「まっしろな てん だけ」を けす。
+    for j in range(H):
+        for i in range(W):
+            if kind[j][i] != 0:
+                continue
+            grey = white = 0
+            for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                ni, nj = i + di, j + dj
+                k = kind[nj][ni] if (0 <= ni < W and 0 <= nj < H) else 2
+                if k == 2:   grey += 1
+                elif k == 1: white += 1
+            if white > 0 or grey < 2:
+                continue
+            paint(xs[i], ys[j], white_only=True)
+    return m, cells
 
 
 def background_mask(im):
     """がめんの ふちから つながっている はいけいを ぬりつぶす"""
     w, h = im.size
     px = im.load()
+    chk, ncell = checker_mask(im)
     bg = bytearray(w * h)
     q = deque()
 
     def push(x, y):
         i = y * w + x
-        if not bg[i] and is_bg(px[x, y]):
+        if not bg[i] and (chk[i] or is_bg(px[x, y])):
             bg[i] = 1
             q.append((x, y))
 
@@ -82,18 +216,18 @@ def background_mask(im):
         if x < w - 1: push(x + 1, y)
         if y > 0:     push(x, y - 1)
         if y < h - 1: push(x, y + 1)
-    return bg, w, h
+    return bg, w, h, ncell
 
 
-def keep_blobs(bg, w, h):
-    """はいけい いがいの かたまりを あつめる。
+def keep_blobs(fg, w, h):
+    """まえけい（fg が 0いがい）の かたまりを あつめる。
     ちいさすぎる ゴミは すてるが、あしあとの ように はなれた ものは のこす。"""
     seen = bytearray(w * h)
     comps = []
     for sy in range(h):
         for sx in range(w):
             i0 = sy * w + sx
-            if bg[i0] or seen[i0]:
+            if not fg[i0] or seen[i0]:
                 continue
             comp, q = [], deque([(sx, sy)])
             seen[i0] = 1
@@ -104,7 +238,7 @@ def keep_blobs(bg, w, h):
                     nx, ny = x + dx, y + dy
                     if 0 <= nx < w and 0 <= ny < h:
                         j = ny * w + nx
-                        if not bg[j] and not seen[j]:
+                        if fg[j] and not seen[j]:
                             seen[j] = 1
                             q.append((nx, ny))
             comps.append(comp)
@@ -122,16 +256,45 @@ def keep_blobs(bg, w, h):
 
 
 def process(src_path, out_name, target_h, align='bottom'):
-    im = Image.open(src_path).convert('RGB')
-    bg, w, h = background_mask(im)
-    keep, n, ncomp = keep_blobs(bg, w, h)
+    im0 = Image.open(src_path)
+
+    # とうめいの ある PNG なら、はいけいを けす しょりは いらない。
+    # そのまま つかえるので いちばん きれいに しあがる。
+    if im0.mode in ('RGBA', 'LA') or 'transparency' in im0.info:
+        rgba  = im0.convert('RGBA')
+        alpha = rgba.getchannel('A')
+        return finish(rgba, alpha, out_name, target_h, align, src_path, 'とうめいPNG')
+
+    im = im0.convert('RGB')
+    bg, w, h, ncell = background_mask(im)
+
+    fg_img = Image.frombytes('L', (w, h),
+                             bytes(bytearray(0 if v else 255 for v in bg)))
+
+    # いちまつの しろマスは いぬと ほそく つながる ことが ある。
+    # いちど やせさせて きりはなし、かたまりを えらんでから ふとらせて もどす。
+    thin = fg_img
+    for _ in range(SEPARATE):
+        thin = thin.filter(ImageFilter.MinFilter(3))
+    keep, n, ncomp = keep_blobs(thin.tobytes(), w, h)
 
     alpha = Image.frombytes('L', (w, h), bytes(keep))
+    for _ in range(SEPARATE):
+        alpha = alpha.filter(ImageFilter.MaxFilter(3))
+    alpha = ImageChops.multiply(alpha, fg_img)   # もとの りんかくに もどす
+
     for _ in range(ERODE):                       # JPGの にじみを けずる
         alpha = alpha.filter(ImageFilter.MinFilter(3))
     alpha = alpha.filter(ImageFilter.GaussianBlur(0.8))
 
     rgba = im.convert('RGBA')
+    return finish(rgba, alpha, out_name, target_h, align, src_path,
+                  'しろマス=%d かたまり=%d' % (ncell, ncomp))
+
+
+def finish(rgba, alpha, out_name, target_h, align, src_path, note):
+    """きりぬき -> おおきさそろえ -> 512x512 に はいち -> ほぞん"""
+    rgba = rgba.copy()
     rgba.putalpha(alpha)
     box = alpha.point(lambda v: 255 if v > 8 else 0).getbbox()
     rgba = rgba.crop(box)
@@ -151,8 +314,8 @@ def process(src_path, out_name, target_h, align='bottom'):
         os.makedirs(OUT_DIR)
     path = os.path.join(OUT_DIR, out_name)
     out.save(path, 'PNG', optimize=True)
-    print('  %-16s <- %-32s %dx%d  かたまり=%d  %.0fKB'
-          % (out_name, src_path, nw, nh, ncomp, os.path.getsize(path) / 1024.0))
+    print('  %-16s <- %-30s %dx%d  %s  %.0fKB'
+          % (out_name, src_path, nw, nh, note, os.path.getsize(path) / 1024.0))
 
 
 def breeds():
