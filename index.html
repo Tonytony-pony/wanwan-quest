@@ -69,6 +69,7 @@ body{
   background:var(--pink-deep);color:#fff;
   border:3px solid #fff;border-radius:999px;
   font-size:13px;padding:1px 14px;white-space:nowrap;
+  max-width:calc(100% - 20px);overflow:hidden;text-overflow:ellipsis;
   box-shadow:0 2px 0 var(--shadow);
 }
 .win.purple .win-title{background:var(--purple-deep);box-shadow:0 2px 0 #9878c4;}
@@ -204,7 +205,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   display:flex;align-items:flex-end;justify-content:center;}
 .dog-stage::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
   width:132px;height:13px;border-radius:50%;background:rgba(160,80,140,.2);filter:blur(2px);}
-.dog{position:relative;z-index:1;width:215px;height:auto;display:block;
+.dog{position:relative;z-index:1;width:215px;height:auto;aspect-ratio:1/1;display:block;
   filter:drop-shadow(0 4px 0 rgba(150,70,130,.22));}
 .dog.idle{animation:idle 1.7s ease-in-out infinite;}
 @keyframes idle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-5px) scaleY(1.03)}}
@@ -357,7 +358,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   </div>
 
   <div class="win">
-    <span class="win-title">いぬの ようす</span>
+    <span class="win-title" id="map-win-title">いぬの ようす</span>
     <div class="dog-stage" style="min-height:200px">
       <div id="map-dog"></div>
     </div>
@@ -517,6 +518,19 @@ function breedName(id){ return breedById(id).name; }
 function picSrc(breedId, kind){
   if(kind === 'paw') return 'img/paw.png';
   return 'img/' + (breedId || FIRST_BREED) + '_' + kind + '.png';
+}
+
+/* その いぬの がぞう 4まいを さきに よみこむ。
+   よみこみ まえの <img> は たかさが 0に なって、いぬが きえて みえるため。 */
+var preloaded = {};
+function preloadDog(breedId){
+  if(!breedId || preloaded[breedId]) return;
+  preloaded[breedId] = true;
+  var kinds = ['lv1', 'lv3', 'lv5', 'sad'], i, im;
+  for(i = 0; i < kinds.length; i++){
+    im = new Image();
+    im.src = picSrc(breedId, kinds[i]);
+  }
 }
 
 function dogPic(kind, anim, breedId){
@@ -857,6 +871,7 @@ function chooseDog(id){
     gotoMap();
     return;
   }
+  preloadDog(id);
   pendingBreed = id;          /* はじめての いぬ → なまえを つける */
   $('sel-newdog').innerHTML = dogPic('lv1', 'idle', id);
   $('sel-breed').textContent = breedName(id);
@@ -896,11 +911,13 @@ $('btn-sound2').addEventListener('click', function(){
    ========================================================= */
 function gotoMap(){
   if(!save.dogs[save.current]){ gotoSelect(); return; }
+  preloadDog(save.current);
   renderMap();
   show('map');
 }
 
 function renderMap(){
+  $('map-win-title').textContent = dogN() + ' の ようす';
   $('map-name').textContent    = save.name + ' と ' + dogN();
   $('map-dogname').textContent = nameForLevel(pet().level);
   $('map-level').textContent   = pet().level;
@@ -1376,6 +1393,8 @@ $('btn-over-map').addEventListener('click', function(){ sfxTap(); gotoMap(); });
    13. スタート
    ========================================================= */
 loadSave();
+(function(){ var im = new Image(); im.src = 'img/paw.png'; })();
+preloadDog(save.current);
 renderTitle();
 show('title');
 
