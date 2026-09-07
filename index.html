@@ -117,13 +117,16 @@ body{
 /* ---------- うえに くっつく タブ ---------- */
 .tabs{
   position:sticky; top:0; z-index:5;
-  display:flex; gap:5px; padding:6px 0 8px;
+  display:flex; gap:4px; padding:6px 0 8px;
   background:linear-gradient(180deg,
     rgba(255,214,236,.97) 0%, rgba(255,214,236,.97) 72%, rgba(255,214,236,0) 100%);
 }
 .tab{
-  flex:1; font-family:inherit; font-size:14px; cursor:pointer; line-height:1.3;
-  padding:8px 2px; border-radius:12px; color:#fff;
+  flex:1; min-width:0; font-family:inherit; cursor:pointer; line-height:1.25;
+  /* タブ5つを 1ぎょうに おさめる。「あそびかた」が おりかえさない ように
+     がめんの はばに あわせて もじを ちいさく する。 */
+  font-size:clamp(10px, 3.05vw, 13px); white-space:nowrap;
+  padding:8px 1px; border-radius:11px; color:#fff; letter-spacing:-.02em;
   background:linear-gradient(180deg,#c79bf0 0%,var(--purple) 55%,#8f4fd0 100%);
   border:3px solid var(--purple-deep);
   text-shadow:0 2px 0 rgba(70,30,120,.5);
@@ -192,6 +195,55 @@ body{
   border:3px solid #fff;border-radius:12px;padding:5px;
   box-shadow:0 3px 0 var(--shadow);animation:pop .5s cubic-bezier(.2,1.7,.4,1);}
 .stampget img{height:26px;vertical-align:-7px;margin-right:4px;}
+
+/* ---------- たからもの ずかん ---------- */
+.zsum{text-align:center;margin:2px 0 10px;}
+.zsum .big{font-size:15px;color:var(--purple-deep);}
+.zsum .big b{font-size:24px;color:var(--pink);margin:0 2px;}
+.zbar{height:12px;border-radius:999px;background:#f2dfec;
+  border:2px solid var(--purple-deep);overflow:hidden;margin-top:5px;}
+.zbar i{display:block;height:100%;border-radius:999px;
+  background:linear-gradient(90deg,#ffd36e,#ff8dbb,#c79bf0);transition:width .5s;}
+
+.zgroup{margin-bottom:12px;}
+.zgroup:last-child{margin-bottom:0;}
+.zhead{display:flex;align-items:center;gap:5px;font-size:13px;
+  color:var(--purple-deep);border-bottom:2px dotted #f0cfe2;padding-bottom:3px;margin-bottom:6px;}
+.zhead .num{margin-left:auto;font-size:11.5px;color:var(--ink-soft);}
+.zhead .done{margin-left:auto;font-size:11px;color:#7a4a00;background:var(--gold);
+  border:2px solid #b98c00;border-radius:999px;padding:0 8px;white-space:nowrap;}
+
+.zgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+.zcell{position:relative;border-radius:11px;padding:6px 3px 5px;text-align:center;
+  background:linear-gradient(180deg,#fffafd,#ffeef7);border:2px solid #f0cfe2;
+  min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.zcell .em{font-size:27px;line-height:1.15;}
+.zcell .nm{font-size:10.5px;line-height:1.25;margin-top:2px;color:var(--ink);
+  word-break:break-word;}
+.zcell .st{position:absolute;top:2px;right:4px;font-size:8.5px;color:var(--gold);
+  text-shadow:0 1px 0 rgba(150,90,0,.35);letter-spacing:-1px;}
+.zcell .cnt{position:absolute;bottom:2px;right:5px;font-size:9.5px;color:var(--pink-deep);}
+/* まだ みつけて いない */
+.zcell.no{background:#f7edf4;border-color:#e6d3e0;}
+.zcell.no .em{opacity:.3;filter:grayscale(1);}
+.zcell.no .nm{color:#b9a3b4;}
+/* レア度で わくの いろを かえる */
+.zcell.r1{border-color:#8fbaf0;}
+.zcell.r2{border-color:var(--gold);}
+.zcell.r3{border-color:#ff7fc0;box-shadow:0 0 0 2px #ffe0f2 inset;}
+
+/* けっか がめん: ひろって きた もの */
+.tget{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:6px 9px;
+  border-radius:12px;background:linear-gradient(180deg,#fff6fb,#ffe4f2);
+  border:3px solid #fff;box-shadow:0 3px 0 var(--shadow);
+  animation:pop .5s cubic-bezier(.2,1.7,.4,1);}
+.tget .em{font-size:30px;line-height:1;flex:none;}
+.tget .tx{font-size:13px;color:var(--ink);line-height:1.45;text-align:left;}
+.tget .tx b{color:var(--purple-deep);}
+.tget.new{background:linear-gradient(180deg,#fff6de,#ffdf9b);box-shadow:0 3px 0 #b97a00;}
+.tget .tag{display:inline-block;font-size:10.5px;margin-left:4px;padding:0 7px;
+  border-radius:999px;background:var(--gold);color:#7a4a00;border:2px solid #b98c00;}
+.tget .cnt{font-size:11px;color:var(--ink-soft);margin-left:4px;}
 
 /* ---------- アイテム いちらん ---------- */
 .itemrow{display:flex;gap:10px;align-items:flex-start;
@@ -486,6 +538,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <div class="tabs">
     <button class="tab on" id="tab-play">あそぶ</button>
     <button class="tab" id="tab-stamp">スタンプ</button>
+    <button class="tab" id="tab-zukan">ずかん</button>
     <button class="tab" id="tab-items">アイテム</button>
     <button class="tab" id="tab-how">あそびかた</button>
   </div>
@@ -511,6 +564,19 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <div class="cal" id="cal-grid"></div>
     <p class="tiny center" id="stamp-sum" style="margin:8px 0 0"></p>
     <div class="bonus-list" id="stamp-bonus"></div>
+  </div>
+
+  <div class="win hidden" id="pane-zukan">
+    <span class="win-title">たからもの ずかん</span>
+    <div class="zsum">
+      <div class="big" id="zukan-count"></div>
+      <div class="zbar"><i id="zukan-bar"></i></div>
+    </div>
+    <div id="zukan-body"></div>
+    <p class="tiny center" style="margin-top:10px">
+      おさんぽから かえると、いぬが 1こ ひろってきて くれるよ。<br>
+      ぜんもん せいかいなら もう 1こ！<br>
+      コースごとに でる ものが ちがうので、いろんな コースに いってみよう。</p>
   </div>
 
   <div class="win hidden" id="pane-items">
@@ -631,6 +697,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 <!-- ============ 5. リザルト ============ -->
 <section id="screen-result" class="screen hidden">
   <div id="result-banner"></div>
+  <div id="result-treasure"></div>
   <div class="dog-stage">
     <div id="result-dog"></div>
     <div class="fx" id="result-fx"></div>
@@ -724,6 +791,102 @@ var STREAK_BONUS = [
 var STREAK_LOOP     = 7;    // 7日を こえたら なん日ごとに ボーナスか
 var STREAK_LOOP_AFF = 10;   // そのときの なつき度
 var WDAY = ['にち','げつ','か','すい','もく','きん','ど'];
+
+/* たからもの。おさんぽの おわりに いぬが ひろって くる。
+   c は でる コース（'any' は どの コースでも まれに でる）。
+   r は でにくさ 0=ふつう 1=めずらしい 2=とても めずらしい 3=でんせつ */
+var TREASURES = [
+  /* 🌷 はじまりの にわ */
+  { id:'flower',    em:'🌼',  name:'しろい おはな',        c:'garden',   r:0 },
+  { id:'ladybug',   em:'🐞',  name:'てんとうむし',          c:'garden',   r:0 },
+  { id:'snail',     em:'🐌',  name:'かたつむり',            c:'garden',   r:0 },
+  { id:'butterfly', em:'🦋',  name:'ちょうちょ',            c:'garden',   r:1 },
+  { id:'berry',     em:'🍓',  name:'あまい いちご',          c:'garden',   r:1 },
+  { id:'clover',    em:'🍀',  name:'よつばの クローバー',    c:'garden',   r:2 },
+
+  /* 🌳 ぼうけんの こうえん */
+  { id:'acorn',     em:'🌰',  name:'どんぐり',              c:'park',     r:0 },
+  { id:'maple',     em:'🍁',  name:'もみじの は',           c:'park',     r:0 },
+  { id:'balloon',   em:'🎈',  name:'とんできた ふうせん',    c:'park',     r:0 },
+  { id:'ribbon',    em:'🎀',  name:'おちていた リボン',      c:'park',     r:1 },
+  { id:'kite',      em:'🪁',  name:'たこ',                  c:'park',     r:1 },
+  { id:'bell',      em:'🔔',  name:'きんいろの すず',        c:'park',     r:2 },
+
+  /* 🍄 むずかしの もり */
+  { id:'mushroom',  em:'🍄',  name:'きのこ',                c:'forest',   r:0 },
+  { id:'herb',      em:'🌿',  name:'ふしぎな くさ',          c:'forest',   r:0 },
+  { id:'squirrel',  em:'🐿️', name:'もりの りす',            c:'forest',   r:0 },
+  { id:'grape',     em:'🍇',  name:'やまぶどう',              c:'forest',   r:1 },
+  { id:'candle',    em:'🕯️', name:'ふるい ろうそく',        c:'forest',   r:1 },
+  { id:'orb',       em:'🔮',  name:'ふしぎな 玉',            c:'forest',   r:2 },
+
+  /* ⛰ でんせつの やま */
+  { id:'cloud',     em:'☁️', name:'ちぎれた くも',          c:'mountain', r:0 },
+  { id:'snow',      em:'❄️', name:'とけない ゆき',          c:'mountain', r:0 },
+  { id:'grass',     em:'🌾',  name:'やまの くさ',            c:'mountain', r:0 },
+  { id:'key',       em:'🗝️', name:'ふるい かぎ',            c:'mountain', r:1 },
+  { id:'drop',      em:'💧',  name:'わきみずの しずく',      c:'mountain', r:1 },
+  { id:'gem',       em:'💎',  name:'ひかる ほうせき',        c:'mountain', r:2 },
+
+  /* 🌟 どこでも まれに */
+  { id:'rainbow',   em:'🌈',  name:'にじの かけら',          c:'any',      r:3 }
+];
+var RARITY = [
+  { name:'ふつう',            star:''    },
+  { name:'めずらしい',        star:'★'   },
+  { name:'とても めずらしい', star:'★★'  },
+  { name:'でんせつ',          star:'★★★' }
+];
+var ZUKAN_COURSE_AFF = 10;   // 1コース ぜんぶ そろえた ごほうび
+var ZUKAN_ALL_AFF    = 50;   // ぜんぶ そろえた ごほうび
+
+/* コースと でにくさで しぼる */
+function treasuresOf(courseId, tier){
+  var out = [], i, t;
+  for(i = 0; i < TREASURES.length; i++){
+    t = TREASURES[i];
+    if(tier !== undefined && t.r !== tier) continue;
+    if(courseId && t.c !== 'any' && t.c !== courseId) continue;
+    out.push(t);
+  }
+  return out;
+}
+
+/* おさんぽ 1かいぶんの ちゅうせん */
+function drawTreasure(courseId){
+  var roll = Math.random() * 100, tier, pool;
+  if     (roll <  3) tier = 3;   /* でんせつ            3% */
+  else if(roll < 13) tier = 2;   /* とても めずらしい  10% */
+  else if(roll < 43) tier = 1;   /* めずらしい         30% */
+  else               tier = 0;   /* ふつう             57% */
+
+  pool = treasuresOf(courseId, tier);
+  if(!pool.length) pool = treasuresOf(courseId, 0);   /* ねんのため */
+  return pool[rnd(0, pool.length - 1)];
+}
+
+/* ひろった ことを きろくする */
+function pickUp(t){
+  var first = !save.found[t.id];
+  save.found[t.id] = (save.found[t.id] | 0) + 1;
+  return { t:t, first:first, n:save.found[t.id] };
+}
+
+function foundCount(){
+  var c = 0, i;
+  for(i = 0; i < TREASURES.length; i++){ if(save.found[TREASURES[i].id]) c++; }
+  return c;
+}
+/* その コースの たからものを ぜんぶ みつけたか */
+function courseZukanDone(courseId){
+  var list = treasuresOf(courseId), i;
+  for(i = 0; i < list.length; i++){
+    if(list[i].c === 'any') continue;          /* にじの かけらは べつあつかい */
+    if(!save.found[list[i].id]) return false;
+  }
+  return true;
+}
+function allZukanDone(){ return foundCount() >= TREASURES.length; }
 
 var HOUSE_HEART = 1;    // いぬ小屋: はじめの ♥ を ふやす かず
 var BALL_STREAK = 3;    // ボール: なんもん つづけて せいかいで ボーナスか
@@ -912,6 +1075,8 @@ function defaultSave(){
     dogs    : {},      /* いぬしゅ -> { dogName, level, affection } */
     /* ここから したは いぬに よらず きょうよう（こどもの がくしゅう きろく） */
     cleared : {}, mistakes:{}, totalOk:0, totalNg:0,
+    found   : {},      /* たからもの id -> みつけた かず */
+    zbonus  : {},      /* ずかんの ごほうびを もらったか（コースid / 'all'） */
     days    : {},      /* 'YYYY-MM-DD' -> その日 おさんぽした かいすう */
     streak  : 0,       /* いま なん日 つづいて いるか */
     best    : 0,       /* これまでの さいちょう きろく */
@@ -963,6 +1128,14 @@ function loadSave(){
     if(d.mistakes  && typeof d.mistakes  === 'object') s.mistakes  = d.mistakes;
     if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
     if(typeof d.totalNg === 'number')   s.totalNg = d.totalNg|0;
+    if(d.found && typeof d.found === 'object'){
+      for(var fk in d.found){
+        if(d.found.hasOwnProperty(fk) && d.found[fk] > 0) s.found[fk] = d.found[fk]|0;
+      }
+    }
+    if(d.zbonus && typeof d.zbonus === 'object'){
+      for(var zk in d.zbonus){ if(d.zbonus[zk]) s.zbonus[zk] = true; }
+    }
     if(d.days && typeof d.days === 'object'){
       for(var dk in d.days){
         if(d.days.hasOwnProperty(dk) && /^\d{4}-\d{2}-\d{2}$/.test(dk)){
@@ -1212,6 +1385,9 @@ var RULE_HTML =
   'レベル 10・15・20・25 で <b class="up">アイテム</b>も もらえるよ。<br>' +
   'おさんぽを 1かい おえると <b class="up">きょうの スタンプ</b>が もらえます。' +
   'まちがえても もらえるよ。まいにち つづけると なつき度の ごほうびも！<br>' +
+  'おさんぽから かえると <b class="up">たからもの</b>を 1こ ひろってくるよ。' +
+  'ぜんもん せいかいなら もう 1こ！ コースごとに でる ものが ちがうので、' +
+  'いろんな コースに いってみてね。<br>' +
   'しんけんに えらんでね！';
 function renderTitle(){
   $('title-rule').innerHTML = RULE_HTML;
@@ -1256,11 +1432,13 @@ function gotoSelect(tab){
 
 /* タブの きりかえ。'play' / 'items' / 'how' / 'name' / 'reset' */
 function showPane(which){
-  var panes = { play:'sel-list-win', stamp:'pane-stamp', items:'pane-items',
-                how:'pane-how', name:'sel-name-win', reset:'pane-reset' }, k;
+  var panes = { play:'sel-list-win', stamp:'pane-stamp', zukan:'pane-zukan',
+                items:'pane-items', how:'pane-how',
+                name:'sel-name-win', reset:'pane-reset' }, k;
   for(k in panes){ $(panes[k]).classList.toggle('hidden', k !== which); }
   $('tab-play').classList.toggle('on',  which === 'play' || which === 'name');
   $('tab-stamp').classList.toggle('on', which === 'stamp');
+  $('tab-zukan').classList.toggle('on', which === 'zukan');
   $('tab-items').classList.toggle('on', which === 'items');
   $('tab-how').classList.toggle('on',   which === 'how' || which === 'reset');
   window.scrollTo(0, 0);
@@ -1268,6 +1446,7 @@ function showPane(which){
 
 $('tab-play').addEventListener('click',  function(){ sfxTap(); selTab='play';  renderSelect(); });
 $('tab-stamp').addEventListener('click', function(){ sfxTap(); selTab='stamp'; renderSelect(); });
+$('tab-zukan').addEventListener('click', function(){ sfxTap(); selTab='zukan'; renderSelect(); });
 $('tab-items').addEventListener('click', function(){ sfxTap(); selTab='items'; renderSelect(); });
 $('tab-how').addEventListener('click',   function(){ sfxTap(); selTab='how';   renderSelect(); });
 
@@ -1357,6 +1536,53 @@ $('cal-next').addEventListener('click', function(){
   renderStamp();
 });
 
+/* その コースの たからものだけ とりだす */
+function treasuresByCourse(courseId){
+  var out = [], i;
+  for(i = 0; i < TREASURES.length; i++){
+    if(TREASURES[i].c === courseId) out.push(TREASURES[i]);
+  }
+  return out;
+}
+
+/* ますめ 1つ。まだ みつけて いない ものは ？ に する */
+function zukanCell(t){
+  var got = save.found[t.id] | 0;
+  return '<div class="zcell r' + t.r + (got ? '' : ' no') + '">' +
+    (RARITY[t.r].star ? '<span class="st">' + RARITY[t.r].star + '</span>' : '') +
+    '<span class="em">' + (got ? t.em : '？') + '</span>' +
+    '<span class="nm">' + (got ? t.name : '？？？') + '</span>' +
+    (got > 1 ? '<span class="cnt">' + got + 'こ</span>' : '') +
+  '</div>';
+}
+
+/* コース 1つぶんの かたまり */
+function zukanGroup(mark, name, list, done){
+  var got = 0, i, h;
+  for(i = 0; i < list.length; i++){ if(save.found[list[i].id]) got++; }
+  h = '<div class="zgroup"><div class="zhead"><span>' + mark + ' ' + name + '</span>' +
+      (done ? '<span class="done">✔ そろった！</span>'
+            : '<span class="num">' + got + ' / ' + list.length + '</span>') +
+      '</div><div class="zgrid">';
+  for(i = 0; i < list.length; i++) h += zukanCell(list[i]);
+  return h + '</div></div>';
+}
+
+function renderZukan(){
+  var got = foundCount(), all = TREASURES.length, html = '', i, c;
+
+  $('zukan-count').innerHTML = all + 'こ のうち <b>' + got + '</b>こ みつけたよ';
+  $('zukan-bar').style.width = (got / all * 100) + '%';
+
+  for(i = 0; i < COURSES.length; i++){
+    c = COURSES[i];
+    html += zukanGroup(c.mark, c.name, treasuresByCourse(c.id), courseZukanDone(c.id));
+  }
+  html += zukanGroup('🌟', 'どこでも まれに', treasuresByCourse('any'),
+                     allZukanDone());
+  $('zukan-body').innerHTML = html;
+}
+
 /* アイテム いちらん。だれが もっているかも みせる */
 function renderItems(){
   var box = $('item-list'), html = '', i, k, owners;
@@ -1388,6 +1614,7 @@ function renderSelect(){
   $('how-text').innerHTML = RULE_HTML;
   calYM = null;            /* ひらく たびに こんげつに もどす */
   renderStamp();
+  renderZukan();
   renderItems();
   showPane(selTab);
 
@@ -1915,9 +2142,32 @@ function finishRun(){
   /* きょうの スタンプ。せいせきに かんけいなく 1日 1こ もらえる */
   run.stamp = stampToday();
 
+  /* いぬが たからものを ひろって くる。ぜんもん せいかいなら もう 1こ。
+     ゲームオーバーの ときは ひろって こない（さいごまで あるけて いないため）。 */
+  run.gets = [ pickUp(drawTreasure(run.courseId)) ];
+  if(run.ng === 0) run.gets.push(pickUp(drawTreasure(run.courseId)));
+
+  /* ずかんが そろった ごほうび。1かいだけ もらえる */
+  run.zBonus = 0; run.zBanner = '';
+  for(var zi = 0; zi < COURSES.length; zi++){
+    if(!save.zbonus[COURSES[zi].id] && courseZukanDone(COURSES[zi].id)){
+      save.zbonus[COURSES[zi].id] = true;
+      run.zBonus += ZUKAN_COURSE_AFF;
+      run.zBanner += '<div class="banner">✧ ' + COURSES[zi].mark + ' ' +
+                     COURSES[zi].name + ' の たからもの ぜんぶ そろった！<br>' +
+                     'なつき度 ＋' + ZUKAN_COURSE_AFF + ' ✧</div>';
+    }
+  }
+  if(!save.zbonus.all && allZukanDone()){
+    save.zbonus.all = true;
+    run.zBonus += ZUKAN_ALL_AFF;
+    run.zBanner += '<div class="banner">☆ ずかん コンプリート！ ☆<br>' +
+                   'なつき度 ＋' + ZUKAN_ALL_AFF + ' ☆</div>';
+  }
+
   /* のこった ♥ が そのまま なつき度に なる（メダルと スタンプの おまけつき） */
   run.medalBonus = hasItem('medal', pet().level) ? MEDAL_BONUS : 0;
-  run.gained  = run.hearts + run.medalBonus + run.stamp.bonus;
+  run.gained  = run.hearts + run.medalBonus + run.stamp.bonus + run.zBonus;
   run.affFrom = pet().affection;
   pet().affection += run.gained;
   run.levelUps = 0;
@@ -1941,6 +2191,7 @@ function finishRun(){
       }
     }
   }
+  run.banner += run.zBanner;
   if(run.stamp.first){
     run.banner += '<div class="stampget"><img src="img/stamp.png" alt="">' +
                   'きょうの スタンプ ゲット！<br><span class="tiny">' +
@@ -1964,6 +2215,19 @@ function finishRun(){
 function renderResult(fromReview){
   $('result-banner').innerHTML = run.banner;
 
+  /* いぬが ひろって きた たからもの */
+  var th = '', gi, g;
+  for(gi = 0; gi < (run.gets ? run.gets.length : 0); gi++){
+    g = run.gets[gi];
+    th += '<div class="tget' + (g.first ? ' new' : '') + '">' +
+          '<span class="em">' + g.t.em + '</span>' +
+          '<span class="tx"><b>' + g.t.name + '</b>を ひろってきた！' +
+          (g.first ? '<span class="tag">はじめて！</span>'
+                   : '<span class="cnt">' + g.n + 'こめ</span>') +
+          '</span></div>';
+  }
+  $('result-treasure').innerHTML = th;
+
   var art = artForLevel(pet().level);
   $('result-dog').innerHTML = dogPic(art, run.levelUps > 0 ? 'grow' : (run.ng === 0 ? 'happy' : 'idle'));
   $('result-dogname').textContent = dogLabel();
@@ -1981,6 +2245,7 @@ function renderResult(fromReview){
     (run.stamp && run.stamp.bonus
       ? ' ＋ <img class="inline-item" src="img/stamp.png" alt="">' + run.stamp.bonus
       : '') +
+    (run.zBonus ? ' ＋ 📖' + run.zBonus : '') +
     ' ＝ <b>なつき度 ＋' + (run.gained || run.hearts) + '</b>';
 
   var m;
