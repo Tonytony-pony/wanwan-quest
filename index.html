@@ -98,6 +98,29 @@ body{
 .btn[disabled]{filter:grayscale(.8) brightness(.95);cursor:not-allowed;opacity:.7;}
 .btn .sub{display:block;font-size:12px;opacity:.95;text-shadow:none;margin-top:2px;}
 .btn .lock{display:block;font-size:12px;text-shadow:none;}
+/* ---------- いぬを えらぶ ---------- */
+.dog-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 4px;}
+.dogcard{
+  font-family:inherit;cursor:pointer;padding:6px 4px 8px;
+  background:linear-gradient(180deg,#fff 0%,#ffeaf4 70%,#ffd6e8 100%);
+  border:3px solid var(--pink-deep);border-radius:14px;
+  box-shadow:inset 0 2px 0 #fff,0 4px 0 var(--shadow);
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  transition:transform .06s,box-shadow .06s;
+}
+.dogcard:active{transform:translateY(3px);box-shadow:inset 0 2px 0 #fff,0 1px 0 var(--shadow);}
+.dogcard img{width:84px;height:84px;object-fit:contain;display:block;}
+.dogcard .ph{width:84px;height:84px;display:flex;align-items:center;justify-content:center;
+  font-size:36px;filter:grayscale(1);opacity:.5;}
+.dogcard .nm2{font-size:14px;color:var(--purple-deep);line-height:1.2;}
+.dogcard .bn{font-size:11px;color:var(--ink-soft);line-height:1.2;}
+.dogcard .st{font-size:11px;line-height:1.5;padding:0 9px;border-radius:999px;}
+.dogcard .st.lv{color:#7a4a00;background:var(--gold);border:2px solid #b98c00;}
+.dogcard .st.new{color:#fff;background:var(--good);}
+.dogcard .st.soon{color:#fff;background:#b39ab0;}
+.dogcard[disabled]{cursor:not-allowed;border-color:#c2aec0;background:#f3ecf2;box-shadow:none;}
+.dogcard.on{border-color:var(--purple-deep);
+  box-shadow:inset 0 2px 0 #fff,0 4px 0 #9878c4,0 0 0 4px rgba(167,111,224,.35);}
 .row{display:flex;gap:8px;}
 .row .btn{margin:9px 0;}
 
@@ -183,7 +206,6 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   width:132px;height:13px;border-radius:50%;background:rgba(160,80,140,.2);filter:blur(2px);}
 .dog{position:relative;z-index:1;width:215px;height:auto;display:block;
   filter:drop-shadow(0 4px 0 rgba(150,70,130,.22));}
-svg.dog{image-rendering:pixelated;image-rendering:crisp-edges;}
 .dog.idle{animation:idle 1.7s ease-in-out infinite;}
 @keyframes idle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-5px) scaleY(1.03)}}
 .dog.happy{animation:happy .42s ease-in-out 3;}
@@ -269,10 +291,8 @@ svg.dog{image-rendering:pixelated;image-rendering:crisp-edges;}
     <span class="win-title">なまえを きめよう</span>
     <div class="field-label">▼ きみの なまえ</div>
     <input type="text" id="input-name" maxlength="8" placeholder="さくら" autocomplete="off" spellcheck="false">
-    <div class="field-label" style="margin-top:10px">▼ いぬの なまえ</div>
-    <input type="text" id="input-dogname" maxlength="8" placeholder="ポチ" autocomplete="off" spellcheck="false">
     <div id="save-info" class="tiny center hidden"></div>
-    <button class="btn" id="btn-start">おせわを はじめる</button>
+    <button class="btn" id="btn-start">いぬを えらぶ</button>
   </div>
 
   <div class="win purple">
@@ -292,7 +312,40 @@ svg.dog{image-rendering:pixelated;image-rendering:crisp-edges;}
   <div class="center tiny">© わんわんクエスト</div>
 </section>
 
-<!-- ============ 2. おさんぽ（コースえらび） ============ -->
+<!-- ============ 2. いぬを えらぶ ============ -->
+<section id="screen-select" class="screen hidden">
+  <div class="status">
+    <div class="who">
+      <span class="nm" id="sel-player">――</span>
+      <span class="tiny">の いぬハウス</span>
+    </div>
+    <button class="iconbtn" id="btn-sound2" title="おと">♪</button>
+  </div>
+
+  <div class="win" id="sel-list-win">
+    <span class="win-title">いっしょに あそぶ いぬ</span>
+    <div class="dog-grid" id="dog-grid"></div>
+    <p class="tiny center">すきな いぬを えらんでね。<br>
+      なんびきでも そだてられて、レベルは いぬごとに たまるよ。</p>
+  </div>
+
+  <div class="win purple hidden" id="sel-name-win">
+    <span class="win-title">なまえを つけよう</span>
+    <div class="dog-stage" style="min-height:190px">
+      <div id="sel-newdog"></div>
+    </div>
+    <div class="center" style="margin-bottom:8px"><span class="dogname" id="sel-breed"></span></div>
+    <div class="field-label">▼ この いぬの なまえ</div>
+    <input type="text" id="input-dogname" maxlength="8" placeholder="ポチ" autocomplete="off" spellcheck="false">
+    <button class="btn" id="btn-adopt">この いぬと おさんぽ！</button>
+    <button class="btn small purple" id="btn-adopt-back">やっぱり ほかの いぬ</button>
+  </div>
+
+  <div class="spacer"></div>
+  <button class="btn small purple" id="btn-reset">さいしょから やりなおす</button>
+</section>
+
+<!-- ============ 3. おさんぽ（コースえらび） ============ -->
 <section id="screen-map" class="screen hidden">
   <div class="status">
     <div class="who">
@@ -327,10 +380,10 @@ svg.dog{image-rendering:pixelated;image-rendering:crisp-edges;}
   </div>
 
   <div class="spacer"></div>
-  <button class="btn small purple" id="btn-reset">さいしょから やりなおす</button>
+  <button class="btn small purple" id="btn-to-select">ほかの いぬに する</button>
 </section>
 
-<!-- ============ 3. おせわ（クイズ） ============ -->
+<!-- ============ 4. おせわ（クイズ） ============ -->
 <section id="screen-quiz" class="screen hidden">
   <div class="status">
     <div class="who" style="flex:1">
@@ -361,7 +414,7 @@ svg.dog{image-rendering:pixelated;image-rendering:crisp-edges;}
   <button class="btn small purple" id="btn-give-up">おさんぽへ もどる</button>
 </section>
 
-<!-- ============ 4. リザルト ============ -->
+<!-- ============ 5. リザルト ============ -->
 <section id="screen-result" class="screen hidden">
   <div id="result-banner"></div>
   <div class="dog-stage">
@@ -393,7 +446,7 @@ svg.dog{image-rendering:pixelated;image-rendering:crisp-edges;}
   <button class="btn purple" id="btn-back-map">おさんぽへ もどる</button>
 </section>
 
-<!-- ============ 5. ゲームオーバー ============ -->
+<!-- ============ 6. ゲームオーバー ============ -->
 <section id="screen-gameover" class="screen hidden">
   <div class="win purple" style="margin-top:26px">
     <span class="win-title">…‥…‥…</span>
@@ -435,471 +488,51 @@ var HEART_DOWN      = 3;      // まちがい 1かいで われる ♥
 var WEAK_RATE       = 0.4;    // にがて もんだいが でる かくりつ
 
 /* =========================================================
-   1. ドットえ（16 × 16 の もじで えを かく）
+   1. いぬの イラスト
    ========================================================= */
-var PAL = {
-  o:'#5a3320',  /* せん      */
-  b:'#fff3dc',  /* からだ    */
-  d:'#f3ddb8',  /* からだの かげ */
-  e:'#e0a06a',  /* みみ・もよう */
-  f:'#c07f45',  /* みみの うちがわ */
-  n:'#3a2114',  /* め・はな  */
-  p:'#ff8fb0',  /* した      */
-  w:'#ffffff',  /* おなか    */
-  y:'#ffd447',  /* かんむり  */
-  z:'#d9a300',  /* かんむり こいめ */
-  v:'#b06fe0',  /* マント    */
-  u:'#7a3fb8'   /* マント ふち */
-};
-var PAL_PAW = { o:'#c96fa0', b:'#f3bcd8' };
 
-var ART = {
-  /* こいぬ（レベル 1〜2） */
-  puppy:[
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '......................................o.....................................',
-    '................................ooooooooooooo...............................',
-    '..............................ooooooooboooooooo.............................',
-    '............................oooobbbbbbbbbbbbboooo...........................',
-    '..........................oooobbbbbbbbbbbbbbbbboooo.........................',
-    '.........................ooobbbbbbbbbbbbbbbbbbbbbooo........................',
-    '........................oobbbbbbbbbbbbbbbbbbbbbbbbboo.......................',
-    '.............o.........oobbbbbbbbbbbbbbbbbbbbbbbbbbboo.........o............',
-    '..........ooooooo.....oobbbbbbbbbbbbbbbbbbbbbbbbbbbbboo.....ooooooo.........',
-    '.........ooooeoooo....oobbbbbbbbbbbbbbbbbbbbbbbbbbbbboo....ooooeoooo........',
-    '........ooeeeeeeeoo..oobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbboo..ooeeeeeeeoo.......',
-    '.......ooeeeeeeeeeoo.oobbbbbbnbbbbbbbbbbbbbbbbbnbbbbbboo.ooeeeeeeeeeoo......',
-    '......ooeeeeeeeeeeeooobbbbbwnnnnbbbbbbbbbbbbbwnnnnbbbbboooeeeeeeeeeeeoo.....',
-    '......ooeeeeeeeeeeeeobbbbbwwwnnnnbbbbbbbbbbbwwwnnnnbbbbboeeeeeeeeeeeeoo.....',
-    '.....ooeeeefeeeeeeebbbbbbwwwwwnnnnbbbbbbbbbwwwwwnnnnbbbbbbeeeeeeefeeeeoo....',
-    '.....ooeefffffeeeeebbbbbbnwwwnnnnnbbbbbbbbbnwwwnnnnnbbbbbbeeeeefffffeeoo....',
-    '.....ooeefffffeeeeebbbbbbnnwnnnnnnbbbbbbbbbnnwnnnnnnbbbbbbeeeeefffffeeoo....',
-    '....ooeefffffffeeeebbbbbnnnnnnnnnnnbbbbbbbnnnnnnnnnnnbbbbbeeeefffffffeeoo...',
-    '....ooeefffffffeeeebbbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbbeeeefffffffeeoo...',
-    '....ooefffffffffeeebbbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbbeeefffffffffeoo...',
-    '....ooefffffffffeebbbbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbbbeefffffffffeoo...',
-    '....ooefffffffffeeebbbbbbbnnnnnnnbbbbbbbbbbbnnnnnnnbbbbbbbeeefffffffffeoo...',
-    '....ooefffffffffeeebbbbbbbbnnnnnbbbbbbwbbbbbbnnnnnbbbbbbbbeeefffffffffeoo...',
-    '...ooeefffffffffeeebbbbbbbbbbnbbbwwwwwwwwwwwbbbnbbbbbbbbbbeeefffffffffeeoo..',
-    '....ooefffffffffeeebbbbbbbbbbbwwwwwwwwnwwwwwwwwbbbbbbbbbbbeeefffffffffeoo...',
-    '....oofffffffffffeebbbbbbbbbbwwwwwwnnnnnnnwwwwwwbbbbbbbbbbeefffffffffffoo...',
-    '....ooefffffffffeeebbbbbbbbbwwwwwwnnnnnnnnnwwwwwwbbbbbbbbbeeefffffffffeoo...',
-    '....ooefffffffffeeeebbbbbbbwwwwwwwnnnnnnnnnwwwwwwwbbbbbbbeeeefffffffffeoo...',
-    '....ooefffffffffeeeebbbbbbwwwwwwwnnnnnnnnnnnwwwwwwwbbbbbbeeeefffffffffeoo...',
-    '....ooefffffffffeeeeebbbbbwwwwwwwwnnnnnnnnnwwwwwwwwbbbbbeeeeefffffffffeoo...',
-    '.....oofffffffffeeeeebbbbbwwwwwwwwnnnnnnnnnwwwwwwwwbbbbbeeeeefffffffffoo....',
-    '.....oofffffffffeeeeeoobbwwwwwwwwwwnnnnnnnwwwwwwwwwwbbooeeeeefffffffffoo....',
-    '.....ooefffffffeeeeeoooobbwwwwwwwwwwwwnwwwwwwwwwwwwbbooooeeeeefffffffeoo....',
-    '......oofffffffeeeeoo..oobwwwwwwwwwwwwpwwwwwwwwwwwwboo..ooeeeefffffffoo.....',
-    '......ooefffffeeeeeoo...oowwwwwwwwwpppppppwwwwwwwwwoo...ooeeeeefffffeoo.....',
-    '.......oofffffeeeeoo.....oowwwwwwwpppppppppwwwwwwwoo.....ooeeeefffffoo......',
-    '........ooefeeeeeoo.......oowwwwwwpppppppppwwwwwwoo.......ooeeeeefeoo.......',
-    '.........ooooeoooo.......oobbwwwwpppppppppppwwwwbboo.......ooooeoooo........',
-    '..........ooooooo.......oobbbbwwwwpppppppppwwwwbbbboo.......ooooooo.........',
-    '.............o........ooobbbbbbwwwpppppppppwwwbbbbbbooo........o............',
-    '.....................ooobbbbbwwwwwwpppppppwwwwwwbbbbbooo....................',
-    '....................oobbbbbbwwwwwwwwwwpwwwwwwwwwwbbbbbboo...................',
-    '...................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo..................',
-    '..................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo.................',
-    '..................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo.................',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo................',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo................',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo................',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo................',
-    '................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo...............',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbbboo................',
-    '.................oobbbbbdwwwwwwwwwwwwwwwwwwwwwwwwwwwdbbbbboo................',
-    '.................oobbbbddwwwwwwwwwwwwwwwwwwwwwwwwwwwddbbbboo................',
-    '.................oobbddddwwwwwwwwwwwwwwwwwwwwwwwwwwwddddbboo................',
-    '..................oobdddddwwwwwwwwwwwwwwwwwwwwwwwwwdddddboo.................',
-    '..................ooddddddwwwwwwwwwwwwwwwwwwwwwwwwwddddddoo.................',
-    '...................ooddddddwwwwwwwwwwwwwwwwwwwwwwwddddddoo..................',
-    '....................ooddddddowwwwwwwwwwwwwwwwwwwoddddddoo...................',
-    '.....................oodooooooooowwwwwwwwwwwooooooooodoo....................',
-    '......................oooooodooooowwwwwwwwwooooodoooooo.....................',
-    '......................oodddddddddoowwwwwwwoodddddddddoo.....................',
-    '.....................oobbdddddddddooddwddoodddddddddbboo....................',
-    '.....................oobbbbbddddddoooodooooddddddbbbbboo....................',
-    '....................oobbbbbbbbbddddoooooooddddbbbbbbbbboo...................',
-    '.....................oobbbbbbbbbbboo..o..oobbbbbbbbbbboo....................',
-    '.....................oobbbbbbbbbbboo.....oobbbbbbbbbbboo....................',
-    '......................oobbbbbbbbboo.......oobbbbbbbbboo.....................',
-    '.......................ooooobooooo.........ooooobooooo......................',
-    '........................ooooooooo...........ooooooooo.......................',
-    '............................o...................o...........................'
-  ],
-  /* わんこ（レベル 3〜4） */
-  adult:[
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '......................................o.....................................',
-    '................................ooooooooooooo...............................',
-    '..............................ooooooooboooooooo.............................',
-    '............................oooobbbbbbbbbbbbboooo...........................',
-    '...........................ooobbbbbbbbbbbbbbbbbooo..........................',
-    '.........................ooobbbbbbbbbbbbbbbbbbbbbooo........................',
-    '..............o.........ooobbbbbbbbbbbbbbbbbbbbbbbooo.........o.............',
-    '...........ooooooo.....oobbbbbbbbbbbbbbbbbbbbbbbbbbboo.....ooooooo..........',
-    '..........ooooeoooo....oobbbbbbbbbbbbbbbbbbbbbbbbbbboo....ooooeoooo.........',
-    '.........ooeeeeeeeoo..oobbbbbnbbbbbbbbbbbbbbbbbnbbbbboo..ooeeeeeeeoo........',
-    '........ooeeeeeeeeeoooobbbbwnnnnbbbbbbbbbbbbbwnnnnbbbbooooeeeeeeeeeoo.......',
-    '........ooeeeeeeeeeeoobbbbwwwnnnnbbbbbbbbbbbwwwnnnnbbbbooeeeeeeeeeeoo.......',
-    '.......ooeeeeeeeeeeeebbbbwwwwwnnnnbbbbbbbbbwwwwwnnnnbbbbeeeeeeeeeeeeoo......',
-    '.......ooeeefeeeeeeebbbbbnwwwnnnnnbbbbbbbbbnwwwnnnnnbbbbbeeeeeeefeeeoo......',
-    '.......ooefffffeeeeebbbbbnnwnnnnnnbbbbbbbbbnnwnnnnnnbbbbbeeeeefffffeoo......',
-    '......ooefffffffeeeebbbbnnnnnnnnnnnbbbbbbbnnnnnnnnnnnbbbbeeeefffffffeoo.....',
-    '......ooefffffffeeeebbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbeeeefffffffeoo.....',
-    '......oofffffffffeeebbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbeeefffffffffoo.....',
-    '......oofffffffffeebbbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbbeefffffffffoo.....',
-    '......oofffffffffeeebbbbbbnnnnnnnbbbbbbbbbbbnnnnnnnbbbbbbeeefffffffffoo.....',
-    '......oofffffffffeeebbbbbbbnnnnnbbbbbbbbbbbbbnnnnnbbbbbbbeeefffffffffoo.....',
-    '.....ooefffffffffeeebbbbbbbbbnbbbbbbbbnbbbbbbbbnbbbbbbbbbeeefffffffffeoo....',
-    '......oofffffffffeeebbbbbbbbbbbbbwwnnnnnnnwwbbbbbbbbbbbbbeeefffffffffoo.....',
-    '......ooffffffffffeebbbbbbbbbbbwwwnnnnnnnnnwwwbbbbbbbbbbbeeffffffffffoo.....',
-    '......oofffffffffeeeebbbbbbbbwwwwwnnnnnnnnnwwwwwbbbbbbbbeeeefffffffffoo.....',
-    '......oofffffffffeeeebbbbbbbwwwwwnnnnnnnnnnnwwwwwbbbbbbbeeeefffffffffoo.....',
-    '......oofffffffffeeeebobbbbwwwwwwwnnnnnnnnnwwwwwwwbbbbobeeeefffffffffoo.....',
-    '......oofffffffffeeeeooobbbwwwwwwwnnnnnnnnnwwwwwwwbbboooeeeefffffffffoo.....',
-    '.......ooffffffffeeeoo.oobbwwwwwwwwnnnnnnnwwwwwwwwbboo.ooeeeffffffffoo......',
-    '.......ooffffffffeeeoo.oobwwwwwwwwwwwwnwwwwwwwwwwwwboo.ooeeefffffffffoo.....',
-    '.......oofffffffeeeeoo..ooowwwwwwwwwwwwwwwwwwwwwwwooo..ooeeeeffffffooooooo..',
-    '........ooffffffeeeoo....ooowwwwwwwwwwpwwwwwwwwwwooo....ooeeefffffooooeoooo.',
-    '........oofffffeeeeoo......ooowwwwwpppppppwwwwwooo......ooeeeeffffooeeeeeoo.',
-    '.........ooefeeeeeoo........ooowwwpppppppppwwwooo........ooeeeeefooeeeeeeeoo',
-    '..........ooooeoooo..........woowwpppppppppwwoow..........ooooeoooeeeeeeeeoo',
-    '...........ooooooo..........ooowwpppppppppppwwooo..........oooooooeeeeeeeeoo',
-    '..............o...........oooobbbwpppppppppwbbboooo...........o.ooeeeeeeeeoo',
-    '........................oooobbbbbwpppppppppwbbbbboooo.........o.ooeeeeeeeeoo',
-    '.......................ooobbbbbwwwwpppppppwwwwbbbbbooo.....ooooooeeeeeeeeeoo',
-    '......................oobbbbbwwwwwwwwwpwwwwwwwwwbbbbboo...ooooeoeeeeeeeeeeoo',
-    '.....................oobbbbbwwwwwwwwwwwwwwwwwwwwwbbbbboo.ooeeeeeeeeeeeeeeeoo',
-    '....................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwbbbbboooeeeeeeeeeeeeeeeeoo',
-    '...................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbboobeeeeeeeeeeeeeeeeoo',
-    '...................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbboobeeeeeeeeeeeeeeeeoo',
-    '..................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbboobbbeeeeeeeeeeeeeeeoo',
-    '..................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbboobbbeeeeeeeeeeeeeeeoo',
-    '..................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbboobbbeeeeeeeeeeeeeeoo.',
-    '..................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbboobbbeeeeeeeeeeeeeooo.',
-    '.................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwwwboobbbbeeeeeeeeeeeooo..',
-    '..................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwboobbbbeeeeeeeeeeeoo....',
-    '..................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbboobbbeeeeeeeeeeoo.....',
-    '..................oobbbbdwwwwwwwwwwwwwwwwwwwwwwwwwwwdboobbbeeeeeeeeeeoo.....',
-    '..................oobbdddwwwwwwwwwwwwwwwwwwwwwwwwwwwddoobbbeeeeeeeeeeoo.....',
-    '...................oobddddwoowwwwwwwwwwwwwwwwwwwoowdddoobbeeeeeeeeeeeoo.....',
-    '...................oodddoooooooowwwwwwwwwwwwwoooooooodoobbeeeeeeeeeeeoo.....',
-    '....................oodoooowwoooowwwwwwwwwwwoooowwoooodooeeeeeeeeeeeoo......',
-    '.....................oooodddwwwoowwwwwwwwwwwoowwwdddoooooeeeeeeeeeeeoo......',
-    '......................oooddddwwoowwwwwwwwwwwoowwddddooo.ooeeeeeeeeeoo.......',
-    '......................oodddddddwoowwwwwwwwwoowdddddddoo..ooeeeeeeeoo........',
-    '......................ooddddddddoowwwwwwwwwooddddddddoo...ooooeoooo.........',
-    '......................oobbddddddooddddwddddooddddddbboo....ooooooo..........',
-    '......................oobbbbddddoooooodooooooddddbbbboo.......o.............',
-    '......................oobbbbbbbdooooooooooooodbbbbbbboo.....................',
-    '......................oobbbbbbbboo....o....oobbbbbbbboo.....................',
-    '......................oobbbbbbbboo.........oobbbbbbbboo.....................',
-    '......................oobbbbbbbboo.........oobbbbbbbboo.....................',
-    '......................oobbbbbbbboo.........oobbbbbbbboo.....................',
-    '.......................oobbbbbboo...........oobbbbbboo......................',
-    '.......................oobbbbbboo...........oobbbbbboo......................',
-    '.......................oooobboooo...........oooobboooo......................',
-    '........................oooooooo.............oooooooo.......................',
-    '...........................oo...................oo..........................',
-    '............................................................................'
-  ],
-  /* たくましい 犬 / でんせつの 犬（レベル 5〜） */
-  hero:[
-    '......................................z.....................................',
-    '............................z.........z.........z...........................',
-    '............................z........zzz........z...........................',
-    '...........................zzz......zzyzz......zzz..........................',
-    '...........................zzz......zzyzz......zzz..........................',
-    '..........................zzyzz.....zzyzz.....zzyzz.........................',
-    '..........................zzyzz....zzyyyzz....zzyzz.........................',
-    '.........................zzyyyzz..zzyyyyyzz..zzyyyzz........................',
-    '.........................zzyyyzz..zzyyyyyzz..zzyyyzz........................',
-    '........................zzyyyyyzz.zzyyyyyzz.zzyyyyyzz.......................',
-    '........................zzyyyyyyzzzyyyyyyyzzzyyyyyyzz.......................',
-    '.......................zzyyyyyyyyzyyyyyyyyyzyyyyyyyyzz......................',
-    '.......................zzyyyyyyyyyyyyyyyyyyyyyyyyyyyzz......................',
-    '.......................zzyyyyyyyyyyyyyyyyyyyyyyyyyyyzz......................',
-    '.......................zzyyyyyyyyyyyyyyyyyyyyyyyyyyyzz......................',
-    '.......................zzyyyyyyyyyyyyyyyyyyyyyyyyyyyzz......................',
-    '.......................zzyyyyyyyyyyyyyyyyyyyyyyyyyyyzz......................',
-    '........................zzyyyyyyyyyyyyyyyyyyyyyyyyyzz.......................',
-    '........................zzzzzzzzzzzzzzzzzzzzzzzzzzzzz.......................',
-    '..........................zzzzzzzzzzzzzzzzzzzzzzzzz.........................',
-    '..........................oooobbbbbbbbbbbbbbbbboooo.........................',
-    '...............o.........ooobbbbbbbbbbbbbbbbbbbbbooo.........o..............',
-    '............ooooooo.....oobbbbbbbbbbbbbbbbbbbbbbbbboo.....ooooooo...........',
-    '...........ooooeoooo...oobbbbbbbbbbbbbbbbbbbbbbbbbbboo...ooooeoooo..........',
-    '..........ooeeeeeeeoo.oobbbbbnbbbbbbbbbbbbbbbbbnbbbbboo.ooeeeeeeeoo.........',
-    '.........ooeeeeeeeeeooobbbbwnnnnbbbbbbbbbbbbbwnnnnbbbboooeeeeeeeeeoo........',
-    '.........ooeeeeeeeeeeobbbbwwwnnnnbbbbbbbbbbbwwwnnnnbbbboeeeeeeeeeeoo........',
-    '........ooeeeeeeeeeeebbbbwwwwwnnnnbbbbbbbbbwwwwwnnnnbbbbeeeeeeeeeeeoo.......',
-    '........ooeeefeeeeeebbbbbnwwwnnnnnbbbbbbbbbnwwwnnnnnbbbbbeeeeeefeeeoo.......',
-    '.......ooeefffffeeeebbbbbnnwnnnnnnbbbbbbbbbnnwnnnnnnbbbbbeeeefffffeeoo......',
-    '.......ooefffffffeeebbbbnnnnnnnnnnnbbbbbbbnnnnnnnnnnnbbbbeeefffffffeoo......',
-    '.......ooefffffffeeebbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbeeefffffffeoo......',
-    '.......oofffffffffeebbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbeefffffffffoo......',
-    '.......oofffffffffebbbbbbnnnnnnnnnbbbbbbbbbnnnnnnnnnbbbbbbefffffffffoo......',
-    '.......oofffffffffeebbbbbbnnnnnnnbbbbbbbbbbbnnnnnnnbbbbbbeefffffffffoo......',
-    '......ooefffffffffeebbbbbbbnnnnnbbbbbbwbbbbbbnnnnnbbbbbbbeefffffffffeoo.....',
-    '.......oofffffffffeebbbbbbbbbnbbbwwwwwnwwwwwbbbnbbbbbbbbbeefffffffffoo......',
-    '.......ooffffffffffebbbbbbbbbbbwwwwnnnnnnnwwwwbbbbbbbbbbbeffffffffffoo......',
-    '.......oofffffffffeebbbbbbbbbwwwwwnnnnnnnnnwwwwwbbbbbbbbbeefffffffffoo......',
-    '.......oofffffffffeeebbbbbbbwwwwwwnnnnnnnnnwwwwwwbbbbbbbeeefffffffffoo......',
-    '.......oofffffffffeeebbbbbbwwwwwwnnnnnnnnnnnwwwwwwbbbbbbeeefffffffffoo......',
-    '.......oofffffffffeeeebbbbbwwwwwwwnnnnnnnnnwwwwwwwbbbbbeeeefffffffffoo......',
-    '........ooffffffffeeeeoobbbwwwwwwwnnnnnnnnnwwwwwwwbbbooeeeeffffffffoo.......',
-    '........oofffffffeeeeoooobwwwwwwwwwnnnnnnnwwwwwwwwwbooooeeeefffffffoo.......',
-    '.........ooffffffeeeoo..oobwwwwwwwwwwwnwwwwwwwwwwwboo..ooeeeffffffoo........',
-    '.........oofffffeeeeoo...ooowwwwwwwwwwpwwwwwwwwwwooo...ooeeeefffffoo........',
-    '..........ooefeeeeeoo.....ooowwwwwwpppppppwwwwwwooo.....ooeeeeefeoo.........',
-    '...........ooooeoooo.....uuuoowwwwpppppppppwwwwoouuu.....ooooeoooo..........',
-    '............ooooooo.....uuooowwwwwpppppppppwwwwwooouu.....ooooooo...........',
-    '...............o........uooobbbwwpppppppppppwwbbbooou........o..............',
-    '.......................ooobbbbbwwwpppppppppwwwbbbbbooo......................',
-    '......................ooobbbbbwwwwpppppppppwwwwbbbbbooo.....................',
-    '.....................oobbbbbwwwwwwwpppppppwwwwwwwbbbbboo....................',
-    '....................oobbbbbbwwwwwwwwwwpwwwwwwwwwwbbbbbboo...................',
-    '....................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwbbbbboo...................',
-    '...................oobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbbboo..................',
-    '..................uoobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbbboou.................',
-    '..................uoobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbbboou.................',
-    '.................uuoobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbbboouu................',
-    '................uuoobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwbbbbboouu...............',
-    '................uuvoobbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbbbbboovuu...............',
-    '...............uuvvoobbbbdwwwwwwwwwwwwwwwwwwwwwwwwwdbbbboovvuu..............',
-    '..............uuvvvoobbbddwwwowwwwwwwwwwwwwwwwwowwwddbbboovvvuu.............',
-    '.............uuvvvvoobbdddooooooowwwwwwwwwwwooooooodddbboovvvvuu............',
-    '............uuvvvvvvoodddoooowoooowwwwwwwwwoooowoooodddoovvvvvvuu...........',
-    '............uuvvvvvvoodddoodwwwwoowwwwwwwwwoowwwwdoodddoovvvvvvuu...........',
-    '...........uuvvvvvvvvooddoodwwwwoowwwwwwwwwoowwwwdooddoovvvvvvvvuu..........',
-    '..........uuvvvvvvvvvvooooddddwwwoowwwwwwwoowwwddddoooovvvvvvvvvvuu.........',
-    '..........uuvvvvvvvvvvvooodddddwwoowwwwwwwoowwdddddooovvvvvvvvvvvuu.........',
-    '.........uuvvvvvvvvvvvvvoodddddddoowwwwwwwoodddddddoovvvvvvvvvvvvvuu........',
-    '........uuvvvvvvvvvvvvvvvoodddddooddddwddddoodddddoovvvvvvvvvvvvvvvuu.......',
-    '.......uuuvvvvvvvvvvvvvvvoobddddoooooodooooooddddboovvvvvvvvvvvvvvvuuu......',
-    '........uuuuuuvvvvvvvvvvvooooboooooooooooooooooboooovvvvvvvvvvvuuuuuu.......',
-    '..........uuuuuuuuuuuuuuuuooooooouuuuuouuuuuooooooouuuuuuuuuuuuuuuu.........',
-    '..............uuuuuuuuuuuuuuuouuuuuuuuuuuuuuuuuouuuuuuuuuuuuuuu.............',
-    '............................................................................'
-  ],
-  /* そっぽを むいた いぬ（うしろすがた） */
-  sad:[
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '......................................o.....................................',
-    '................................ooooooooooooo...............................',
-    '..............................ooooooooboooooooo.............................',
-    '............................oooobbbbbbbbbbbbboooo...........................',
-    '..........................oooobbbbbbbbbbbbbbbbboooo.........................',
-    '.........................ooobbbbbbbbbbbbbbbbbbbbbooo........................',
-    '........................oobbbbbbbbbbbbbbbbbbbbbbbbboo.......................',
-    '.............o.........oobbbbbbbbbbbbbbbbbbbbbbbbbbboo.........o............',
-    '..........ooooooo.....oobbbbbbbbbbbbbbbbbbbbbbbbbbbbboo.....ooooooo.........',
-    '.........ooooeoooo....oobbbbbbbbbbbbbbbbbbbbbbbbbbbbboo....ooooeoooo........',
-    '........ooeeeeeeeoo..oobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbboo..ooeeeeeeeoo.......',
-    '.......ooeeeeeeeeeoo.oobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbboo.ooeeeeeeeeeoo......',
-    '......ooeeeeeeeeeeeooobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbboooeeeeeeeeeeeoo.....',
-    '......ooeeeeeeeeeeeeobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbboeeeeeeeeeeeeoo.....',
-    '.....ooeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeoo....',
-    '.....ooeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeoo....',
-    '.....ooeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeoo....',
-    '....ooeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeoo...',
-    '...ooeeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeeoo..',
-    '....ooeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeeoo...',
-    '....ooeeeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeeeoo...',
-    '.....ooeeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbeeeeeeeeeeeeeeoo....',
-    '.....ooeeeeeeeeeeeeeeoobbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbooeeeeeeeeeeeeeeoo....',
-    '.....ooeeeeeeeeeeeeeoooobbbbbbbbbbbbbbbbbbbbbbbbbbbbbooooeeeeeeeeeeeeeoo....',
-    '......ooeeeeeeeeeeeoo..oobbbbbbbbbbbbbbbbbbbbbbbbbbboo..ooeeoeeeeeeeeoo.....',
-    '......ooeeeeeeeeeeeoo...oobbbbbbbbbbbbbbbbbbbbbbbbboo...ooooooooeeeeeoo.....',
-    '.......ooeeeeeeeeeoo.....oobbbbbbbbbbbbbbbbbbbbbbboo....ooooeooooeeeoo......',
-    '........ooeeeeeeeoo.......oobbbbbbbbbbbbbbbbbbbbboo....ooeeeeeeeooeoo.......',
-    '.........ooooeoooo.......oobbbbbbbbbbbwbbbbbbbbbbboo...ooeeeeeeeoooo........',
-    '..........ooooooo.......oobbbbbbbwwwwwwwwwwwbbbbbbboo.ooeeeeeeeeeoo.........',
-    '.............o........ooobbbbbbwwwwwwwwwwwwwwwbbbbbbooooeeeeeeeeeoo.........',
-    '.....................ooobbbbbwwwwwwwwwwwwwwwwwwwbbbbboobeeeeeeeeeeoo........',
-    '....................oobbbbbbwwwwwwwwwwwwwwwwwwwwwbbbboobbeeeeeeeeeoo........',
-    '...................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwbbboobbbeeeeeeeeoo........',
-    '..................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbboobbbbeeeeeeeoo........',
-    '..................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwbboobbbbeeeeeeeoo........',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwboobbbbbeeeeeeoo........',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwoobbbbbbeeeeeeeoo.......',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwboobbbbbeeeeeeoo........',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwboobbbbbeeeeeeoo........',
-    '................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwwwoobbbbbbeeeeeoo........',
-    '.................oobbbbbbwwwwwwwwwwwwwwwwwwwwwwwwwwwboobbbbbeeeeeeoo........',
-    '.................oobbbbbdwwwwwwwwwwwwwwwwwwwwwwwwwwwdoobbbbbeeeeeeoo........',
-    '.................oobbbbddwwwwwwwwwwwwwwwwwwwwwwwwwwwdoobbbbbeeeeeeoo........',
-    '.................oobbddddwwwwwwwwwwwwwwwwwwwwwwwwwwwddoobbbbeeeeeoo.........',
-    '..................oobdddddwwwwwwwwwwwwwwwwwwwwwwwwwdddoobbbeeeeeeoo.........',
-    '..................ooddddddwwwwwwwwwwwwwwwwwwwwwwwwwddddoobbeeeeeoo..........',
-    '...................ooddddddwwwwwwwwwwwwwwwwwwwwwwwdddddoobeeeeeeoo..........',
-    '....................ooddddddowwwwwwwwwwwwwwwwwwwoddddddoooooeoooo...........',
-    '.....................oodooooooooowwwwwwwwwwwooooooooodoo.ooooooo............',
-    '......................oooooodooooowwwwwwwwwooooodoooooo.....o...............',
-    '......................oodddddddddoowwwwwwwoodddddddddoo.....................',
-    '.....................oobbdddddddddooddwddoodddddddddbboo....................',
-    '.....................oobbbbbddddddoooodooooddddddbbbbboo....................',
-    '....................oobbbbbbbbbddddoooooooddddbbbbbbbbboo...................',
-    '.....................oobbbbbbbbbbboo..o..oobbbbbbbbbbboo....................',
-    '.....................oobbbbbbbbbbboo.....oobbbbbbbbbbboo....................',
-    '......................oobbbbbbbbboo.......oobbbbbbbbboo.....................',
-    '.......................ooooobooooo.........ooooobooooo......................',
-    '........................ooooooooo...........ooooooooo.......................',
-    '............................o...................o...........................'
-  ],
-  /* あしあと（いなく なった とき） */
-  paw:[
-    '............................................................................',
-    '............................................................................',
-    '.................ooooo...ooooo..............................................',
-    '................ooooooo.ooooooo.............................................',
-    '...............oobbbbbooobbbbboo............................................',
-    '...............oobbbbbbobbbbbboo............................................',
-    '...............oobbbbbbbbbbbbboo............................................',
-    '...........o..oobbbbbbbbbbbbbbboo..o........................................',
-    '.........ooooo.oobbbbbbbbbbbbboo.ooooo......................................',
-    '........oooboooobbbbbbbobbbbbbboooobooo.....................................',
-    '.......oobbbbbobobbbbbooobbbbbobobbbbboo....................................',
-    '.......oobbbbbboooooooo.oooooooobbbbbboo....................................',
-    '.......oobbbbboo.ooooo...ooooo.oobbbbboo....................................',
-    '.......oobbbbboo...............oobbbbboo....................................',
-    '.......oobbbbboo...............oobbbbboo....................................',
-    '........ooobooo.................ooobooo.....................................',
-    '.........ooooo...................ooooo......................................',
-    '...........o.......................o........................................',
-    '.......................o....................................................',
-    '..................ooooooooooo...............................................',
-    '................ooooooobooooooo.............................................',
-    '..............oooobbbbbbbbbbboooo...........................................',
-    '.............ooobbbbbbbbbbbbbbbooo..........................................',
-    '............oobbbbbbbbbbbbbbbbbbboo.........................................',
-    '............oobbbbbbbbbbbbbbbbbbboo.........................................',
-    '...........oobbbbbbbbbbbbbbbbbbbbboo........................................',
-    '...........oobbbbbbbbbbbbbbbbbbbbboo........................................',
-    '...........oobbbbbbbbbbbbbbbbbbbbboo........................................',
-    '..........oobbbbbbbbbbbbbbbbbbbbbbboo.......................................',
-    '...........oobbbbbbbbbbbbbbbbbbbbboo........................................',
-    '...........oobbbbbbbbbbbbbbbbbbbbboo........................................',
-    '...........oobbbbbbbbbbbbbbbbbbbbboo........................................',
-    '............oobbbbbbbbbbbbbbbbbbboo............ooooo...ooooo................',
-    '............oobbbbbbbbbbbbbbbbbbboo...........ooooooo.ooooooo...............',
-    '.............ooobbbbbbbbbbbbbbbooo...........oobbbbbooobbbbboo..............',
-    '..............oooobbbbbbbbbbboooo............oobbbbbbobbbbbboo..............',
-    '................ooooooobooooooo..............oobbbbbbbbbbbbboo..............',
-    '..................ooooooooooo............o..oobbbbbbbbbbbbbbboo..o..........',
-    '.......................o...............ooooo.oobbbbbbbbbbbbboo.ooooo........',
-    '......................................oooboooobbbbbbbobbbbbbboooobooo.......',
-    '.....................................oobbbbbobobbbbbooobbbbbobobbbbboo......',
-    '.....................................oobbbbbboooooooo.oooooooobbbbbboo......',
-    '.....................................oobbbbboo.ooooo...ooooo.oobbbbboo......',
-    '.....................................oobbbbboo...............oobbbbboo......',
-    '.....................................oobbbbboo...............oobbbbboo......',
-    '......................................ooobooo.................ooobooo.......',
-    '.......................................ooooo...................ooooo........',
-    '.........................................o.......................o..........',
-    '.....................................................o......................',
-    '................................................ooooooooooo.................',
-    '..............................................ooooooobooooooo...............',
-    '............................................oooobbbbbbbbbbboooo.............',
-    '...........................................ooobbbbbbbbbbbbbbbooo............',
-    '..........................................oobbbbbbbbbbbbbbbbbbboo...........',
-    '..........................................oobbbbbbbbbbbbbbbbbbboo...........',
-    '.........................................oobbbbbbbbbbbbbbbbbbbbboo..........',
-    '.........................................oobbbbbbbbbbbbbbbbbbbbboo..........',
-    '.........................................oobbbbbbbbbbbbbbbbbbbbboo..........',
-    '........................................oobbbbbbbbbbbbbbbbbbbbbbboo.........',
-    '.........................................oobbbbbbbbbbbbbbbbbbbbboo..........',
-    '.........................................oobbbbbbbbbbbbbbbbbbbbboo..........',
-    '.........................................oobbbbbbbbbbbbbbbbbbbbboo..........',
-    '..........................................oobbbbbbbbbbbbbbbbbbboo...........',
-    '..........................................oobbbbbbbbbbbbbbbbbbboo...........',
-    '...........................................ooobbbbbbbbbbbbbbbooo............',
-    '............................................oooobbbbbbbbbbboooo.............',
-    '..............................................ooooooobooooooo...............',
-    '................................................ooooooooooo.................',
-    '.....................................................o......................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................',
-    '............................................................................'
-  ]
-};
+/* そだてられる いぬ。ready が false の いぬは まだ イラストが ない。
+   がぞうは  img/<id>_lv1.png  _lv3.png  _lv5.png  _sad.png  の 4まい。
+   あしあと（img/paw.png）は ぜんぶの いぬで きょうよう。 */
+var BREEDS = [
+  { id:'beagle',        name:'ビーグル',             ready:true  },
+  { id:'shiba',         name:'しばいぬ',             ready:false },
+  { id:'corgi',         name:'コーギー',             ready:false },
+  { id:'pomeranian',    name:'ポメラニアン',         ready:false },
+  { id:'chihuahua',     name:'チワワ',               ready:false },
+  { id:'frenchbulldog', name:'フレンチブルドッグ',   ready:false },
+  { id:'bichon',        name:'ビションフリーゼ',     ready:false },
+  { id:'golden',        name:'ゴールデンレトリバー', ready:false },
+  { id:'husky',         name:'ハスキー',             ready:false }
+];
+var FIRST_BREED = 'beagle';
 
-/* もじの ならびを SVGの しかくに かえる */
-function pixels(rows, pal){
-  pal = pal || PAL;
-  var h = rows.length, w = 0, y, x, r, c, n, out = '';
-  for(y=0;y<h;y++){ if(rows[y].length > w) w = rows[y].length; }
-  for(y=0;y<h;y++){
-    r = rows[y]; x = 0;
-    while(x < r.length){
-      c = r.charAt(x);
-      if(!pal[c]){ x++; continue; }
-      n = 1;
-      while(x + n < r.length && r.charAt(x + n) === c) n++;
-      out += '<rect x="'+x+'" y="'+y+'" width="'+n+'" height="1" fill="'+pal[c]+'"/>';
-      x += n;
-    }
-  }
-  return { svg: out, w: w, h: h };
+function breedById(id){
+  for(var i = 0; i < BREEDS.length; i++){ if(BREEDS[i].id === id) return BREEDS[i]; }
+  return BREEDS[0];
+}
+function breedName(id){ return breedById(id).name; }
+
+/* いぬの がぞうの みちすじ。kind: 'lv1' 'lv3' 'lv5' 'sad' 'paw' */
+function picSrc(breedId, kind){
+  if(kind === 'paw') return 'img/paw.png';
+  return 'img/' + (breedId || FIRST_BREED) + '_' + kind + '.png';
 }
 
-/* Geminiで つくった イラスト。ここに ない ものは ドットえを つかう */
-var DOG_IMG = {
-  puppy : 'img/dog_lv1.png',   /* レベル 1〜2 */
-  adult : 'img/dog_lv3.png',   /* レベル 3〜4 */
-  hero  : 'img/dog_lv5.png',   /* レベル 5〜  */
-  sad   : 'img/dog_sad.png',   /* そっぽを むいた いぬ */
-  paw   : 'img/paw.png'        /* あしあと */
-};
-
-function dogSVG(kind, anim){
-  if(DOG_IMG[kind]){
-    return '<img class="dog ' + (anim || '') + '" src="' + DOG_IMG[kind] +
-           '" alt="" draggable="false">';
-  }
-  var pal = (kind === 'paw') ? PAL_PAW : PAL;
-  var p = pixels(ART[kind] || ART.puppy, pal);
-  return '<svg class="dog ' + (anim || '') + '" viewBox="0 0 ' + p.w + ' ' + p.h +
-         '" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true">' +
-         p.svg + '</svg>';
+function dogPic(kind, anim, breedId){
+  return '<img class="dog ' + (anim || '') + '" src="' +
+         picSrc(breedId || save.current, kind) + '" alt="" draggable="false">';
 }
 
 function artForLevel(lv){
-  if(lv <= 2) return 'puppy';
-  if(lv <= 4) return 'adult';
-  return 'hero';
+  if(lv <= 2) return 'lv1';
+  if(lv <= 4) return 'lv3';
+  return 'lv5';
 }
 /* いぬの なまえ（きめて いない ときは「いぬ」） */
-function dogN(){ return save.dogName || 'いぬ'; }
+function dogN(){ return pet().dogName; }
 /* 「ポチ（こいぬ）」のような ひょうじ */
-function dogLabel(){ return dogN() + '（' + nameForLevel(save.level) + '）'; }
+function dogLabel(){ return dogN() + '（' + nameForLevel(pet().level) + '）'; }
 
 function nameForLevel(lv){
   if(lv <= 2) return 'こいぬ';
@@ -948,8 +581,18 @@ function isUnlocked(i){
    3. セーブデータ
    ========================================================= */
 function defaultSave(){
-  return { name:'', dogName:'', level:1, affection:0, cleared:{}, mistakes:{},
-           totalOk:0, totalNg:0, sound:true };
+  return {
+    name    : '',      /* かいぬしの なまえ */
+    current : '',      /* いま えらんでいる いぬしゅ */
+    dogs    : {},      /* いぬしゅ -> { dogName, level, affection } */
+    /* ここから したは いぬに よらず きょうよう（こどもの がくしゅう きろく） */
+    cleared : {}, mistakes:{}, totalOk:0, totalNg:0, sound:true
+  };
+}
+
+/* いま そだてている いぬ。まだ えらんで いない ときの ための からデータも かえす */
+function pet(){
+  return save.dogs[save.current] || { dogName:'いぬ', level:1, affection:0 };
 }
 var save = defaultSave();
 
@@ -960,10 +603,31 @@ function loadSave(){
     var d = JSON.parse(raw);
     if(!d || typeof d !== 'object') return;
     var s = defaultSave();
-    if(typeof d.name === 'string')      s.name = d.name.slice(0,8);
-    if(typeof d.dogName === 'string')   s.dogName = d.dogName.slice(0,8);
-    if(typeof d.level === 'number')     s.level = Math.max(1, Math.min(99, d.level|0));
-    if(typeof d.affection === 'number') s.affection = Math.max(0, Math.min(AFFECTION_MAX, d.affection|0));
+    if(typeof d.name === 'string') s.name = d.name.slice(0,8);
+
+    if(d.dogs && typeof d.dogs === 'object'){
+      /* いまの かたち */
+      for(var k in d.dogs){
+        if(!d.dogs.hasOwnProperty(k)) continue;
+        var o = d.dogs[k];
+        if(!o || typeof o !== 'object') continue;
+        s.dogs[k] = {
+          dogName   : (typeof o.dogName === 'string' ? o.dogName.slice(0,8) : 'ポチ'),
+          level     : Math.max(1, Math.min(99, o.level|0 || 1)),
+          affection : Math.max(0, Math.min(AFFECTION_MAX, o.affection|0))
+        };
+      }
+      if(typeof d.current === 'string' && s.dogs[d.current]) s.current = d.current;
+    }else if(typeof d.dogName === 'string'){
+      /* ふるい かたち（いぬ 1ぴきだけ）から ひっこし */
+      s.dogs[FIRST_BREED] = {
+        dogName   : d.dogName.slice(0,8) || 'ポチ',
+        level     : Math.max(1, Math.min(99, d.level|0 || 1)),
+        affection : Math.max(0, Math.min(AFFECTION_MAX, d.affection|0))
+      };
+      s.current = FIRST_BREED;
+    }
+
     if(d.cleared   && typeof d.cleared   === 'object') s.cleared   = d.cleared;
     if(d.mistakes  && typeof d.mistakes  === 'object') s.mistakes  = d.mistakes;
     if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
@@ -1010,7 +674,7 @@ function sfxOver() { tone(392,0,.2,'triangle',.12); tone(311,.2,.2,'triangle',.1
    5. がめん きりかえ
    ========================================================= */
 function $(id){ return document.getElementById(id); }
-var SCREENS = ['title','map','quiz','result','gameover'];
+var SCREENS = ['title','select','map','quiz','result','gameover'];
 function show(name){
   for(var i=0;i<SCREENS.length;i++){
     $('screen-' + SCREENS[i]).classList.toggle('hidden', SCREENS[i] !== name);
@@ -1115,46 +779,133 @@ function makeChoices(ans){
    8. タイトルがめん
    ========================================================= */
 function renderTitle(){
-  $('title-dog').innerHTML = dogSVG(artForLevel(save.level), 'idle');
-  var info = $('save-info');
+  $('title-dog').innerHTML = dogPic('lv1', 'idle', save.current || FIRST_BREED);
+  var info = $('save-info'), num = 0, k;
+  for(k in save.dogs){ if(save.dogs.hasOwnProperty(k)) num++; }
   if(save.name){
     $('input-name').value = save.name;
-    $('input-dogname').value = save.dogName;
     $('btn-start').textContent = 'おせわを つづける';
-    info.innerHTML = 'レベル ' + save.level + ' の ' + dogLabel() + ' が まっているよ';
+    info.innerHTML = num > 0
+      ? (num + 'ひきの いぬが まっているよ')
+      : 'いぬを えらんで はじめよう';
     info.classList.remove('hidden');
   }else{
-    $('btn-start').textContent = 'おせわを はじめる';
+    $('btn-start').textContent = 'いぬを えらぶ';
     info.classList.add('hidden');
   }
 }
 
 $('btn-start').addEventListener('click', function(){
   var v = $('input-name').value.replace(/\s+/g, '').slice(0, 8);
-  var d = $('input-dogname').value.replace(/\s+/g, '').slice(0, 8);
   if(!v) v = 'ぼうけんしゃ';
+  save.name = v;
+  writeSave();
+  sfxTap();
+  gotoSelect();
+});
+
+/* =========================================================
+   9b. いぬを えらぶ（トップメニュー）
+   ========================================================= */
+var pendingBreed = null;
+
+function gotoSelect(){
+  renderSelect();
+  show('select');
+}
+
+function renderSelect(){
+  $('sel-player').textContent  = save.name;
+  $('btn-sound2').textContent  = save.sound ? '♪' : '×';
+  $('sel-list-win').classList.remove('hidden');
+  $('sel-name-win').classList.add('hidden');
+
+  var g = $('dog-grid');
+  g.innerHTML = '';
+  for(var i = 0; i < BREEDS.length; i++){
+    (function(b){
+      var owned = save.dogs[b.id];
+      var card  = document.createElement('button');
+      card.className = 'dogcard' + (save.current === b.id ? ' on' : '');
+
+      var html;
+      if(b.ready){
+        html = '<img src="' + picSrc(b.id, artForLevel(owned ? owned.level : 1)) + '" alt="">';
+      }else{
+        html = '<span class="ph">🐾</span>';
+        card.disabled = true;
+      }
+      if(owned) html += '<span class="nm2">' + owned.dogName + '</span>';
+      html += '<span class="bn">' + b.name + '</span>';
+      html += !b.ready ? '<span class="st soon">じゅんびちゅう</span>'
+            : owned    ? '<span class="st lv">レベル ' + owned.level + '</span>'
+                       : '<span class="st new">はじめて</span>';
+      card.innerHTML = html;
+
+      if(b.ready){
+        card.addEventListener('click', function(){ sfxTap(); chooseDog(b.id); });
+      }
+      g.appendChild(card);
+    })(BREEDS[i]);
+  }
+}
+
+function chooseDog(id){
+  if(save.dogs[id]){          /* もう そだてている いぬ */
+    save.current = id;
+    writeSave();
+    gotoMap();
+    return;
+  }
+  pendingBreed = id;          /* はじめての いぬ → なまえを つける */
+  $('sel-newdog').innerHTML = dogPic('lv1', 'idle', id);
+  $('sel-breed').textContent = breedName(id);
+  $('input-dogname').value = '';
+  $('sel-list-win').classList.add('hidden');
+  $('sel-name-win').classList.remove('hidden');
+  window.scrollTo(0, 0);
+}
+
+$('btn-adopt').addEventListener('click', function(){
+  if(!pendingBreed) return;
+  var d = $('input-dogname').value.replace(/\s+/g, '').slice(0, 8);
   if(!d) d = 'ポチ';
-  save.name    = v;
-  save.dogName = d;
+  save.dogs[pendingBreed] = { dogName:d, level:1, affection:0 };
+  save.current = pendingBreed;
+  pendingBreed = null;
   writeSave();
   sfxTap();
   gotoMap();
+});
+
+$('btn-adopt-back').addEventListener('click', function(){
+  pendingBreed = null;
+  sfxTap();
+  renderSelect();
+});
+
+$('btn-sound2').addEventListener('click', function(){
+  save.sound = !save.sound;
+  writeSave();
+  $('btn-sound2').textContent = save.sound ? '♪' : '×';
+  if(save.sound) sfxTap();
 });
 
 /* =========================================================
    9. おさんぽ（コースえらび）
    ========================================================= */
 function gotoMap(){
+  if(!save.dogs[save.current]){ gotoSelect(); return; }
   renderMap();
   show('map');
 }
 
 function renderMap(){
   $('map-name').textContent    = save.name + ' と ' + dogN();
-  $('map-dogname').textContent = nameForLevel(save.level);
-  $('map-level').textContent   = save.level;
-  $('map-dog').innerHTML       = dogSVG(artForLevel(save.level), 'idle');
-  setGauge($('map-aff-bar'), $('map-aff-num'), save.affection, AFFECTION_MAX);
+  $('map-dogname').textContent = nameForLevel(pet().level);
+  $('map-level').textContent   = pet().level;
+  $('map-dog').innerHTML       = dogPic(artForLevel(pet().level), 'idle');
+  setGauge($('map-aff-bar'), $('map-aff-num'), pet().affection, AFFECTION_MAX);
   $('btn-sound').textContent   = save.sound ? '♪' : '×';
 
   /* コースボタン */
@@ -1203,6 +954,8 @@ $('btn-sound').addEventListener('click', function(){
   if(save.sound) sfxTap();
 });
 
+$('btn-to-select').addEventListener('click', function(){ sfxTap(); gotoSelect(); });
+
 $('btn-reset').addEventListener('click', function(){
   if(window.confirm('ぜんぶ さいしょから やりなおします。いいですか？')){
     save = defaultSave();
@@ -1241,7 +994,7 @@ function startRun(courseId){
   };
   $('quiz-course').textContent = courseById(courseId).name;
   $('quiz-dogname').textContent = dogLabel();
-  $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'idle');
+  $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
   show('quiz');
   nextQuestion();
 }
@@ -1345,7 +1098,7 @@ function answer(value, btnEl){
     save.totalOk++;
     run.hearts += HEART_UP;
     sfxOk();
-    $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'happy');
+    $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
     popFx($('quiz-fx'), '♥✧♪✦', 5);
     renderHearts('add', 0);
 
@@ -1366,7 +1119,7 @@ function answer(value, btnEl){
     if(!dup) run.missed.push({ a:q.a, b:q.b, ans:q.ans, key:q.key });
 
     $('quiz-fx').innerHTML = '';       /* せいかいの ♥ を けす */
-    $('quiz-dog').innerHTML = dogSVG('sad', 'sad');
+    $('quiz-dog').innerHTML = dogPic('sad', 'sad');
     document.getElementById('app').classList.add('shake');
     setTimeout(function(){ document.getElementById('app').classList.remove('shake'); }, 460);
     popFx($('quiz-fx'), '💧', 3);
@@ -1413,7 +1166,7 @@ function startReview(){
   run.answered  = false;
   $('quiz-course').textContent  = 'おさらい';
   $('quiz-dogname').textContent = dogLabel();
-  $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'idle');
+  $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
   $('quiz-fx').innerHTML  = '';
   show('quiz');
   nextQuestion();
@@ -1425,9 +1178,9 @@ function answerReview(q, correct){
     run.reviewOk++;
     save.totalOk++;
     run.hearts     += HEART_UP;
-    save.affection += HEART_UP;
+    pet().affection += HEART_UP;
     sfxOk();
-    $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'happy');
+    $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
     popFx($('quiz-fx'), '♥✧♪✦', 5);
     renderHearts('add', 0);
 
@@ -1440,17 +1193,17 @@ function answerReview(q, correct){
     msg = '<p class="good">せいかい！ こんどは できたね！</p>' +
           '<p class="tiny">♥ が ' + HEART_UP + 'こ ふえて、ぜんぶで <b>♥ ' + run.hearts + 'こ</b>！</p>';
 
-    if(save.affection >= AFFECTION_MAX){
-      save.affection -= AFFECTION_MAX;
-      save.level++;
+    if(pet().affection >= AFFECTION_MAX){
+      pet().affection -= AFFECTION_MAX;
+      pet().level++;
       run.levelUps++;
       run.reviewLevelUp = true;
       sfxLevel();
       $('quiz-dogname').textContent = dogLabel();
-      $('quiz-dog').innerHTML = dogSVG(artForLevel(save.level), 'grow');
+      $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'grow');
       popFx($('quiz-fx'), '✧✦★', 8);
       msg = '<p class="good">レベルアップ！ ' + dogN() + 'が 大きく なった！</p>' +
-            '<p class="tiny">レベル ' + save.level + ' の ' + nameForLevel(save.level) + ' に なったよ</p>';
+            '<p class="tiny">レベル ' + pet().level + ' の ' + nameForLevel(pet().level) + ' に なったよ</p>';
     }
   }else{
     run.reviewNg++;
@@ -1509,12 +1262,12 @@ function finishRun(){
   save.cleared[course.id] = true;
 
   /* のこった ♥ が そのまま なつき度に なる */
-  run.affFrom = save.affection;
-  save.affection += run.hearts;
+  run.affFrom = pet().affection;
+  pet().affection += run.hearts;
   run.levelUps = 0;
-  while(save.affection >= AFFECTION_MAX){
-    save.affection -= AFFECTION_MAX;
-    save.level++;
+  while(pet().affection >= AFFECTION_MAX){
+    pet().affection -= AFFECTION_MAX;
+    pet().level++;
     run.levelUps++;
   }
   writeSave();
@@ -1537,8 +1290,8 @@ function finishRun(){
 function renderResult(fromReview){
   $('result-banner').innerHTML = run.banner;
 
-  var art = artForLevel(save.level);
-  $('result-dog').innerHTML = dogSVG(art, run.levelUps > 0 ? 'grow' : (run.ng === 0 ? 'happy' : 'idle'));
+  var art = artForLevel(pet().level);
+  $('result-dog').innerHTML = dogPic(art, run.levelUps > 0 ? 'grow' : (run.ng === 0 ? 'happy' : 'idle'));
   $('result-dogname').textContent = dogLabel();
   if(!fromReview && (run.levelUps > 0 || run.ng === 0)){
     popFx($('result-fx'), '♥✧✦♪', 7);
@@ -1577,14 +1330,14 @@ function renderResult(fromReview){
      レベルアップした ときは いちど まんたんに してから 0に もどす。 */
   var aBar = $('result-aff-bar'), aNum = $('result-aff-num');
   if(fromReview){
-    setGauge(aBar, aNum, save.affection, AFFECTION_MAX);
+    setGauge(aBar, aNum, pet().affection, AFFECTION_MAX);
   }else{
     setGauge(aBar, aNum, run.affFrom, AFFECTION_MAX);
     if(run.levelUps > 0){
       setTimeout(function(){ setGauge(aBar, aNum, AFFECTION_MAX, AFFECTION_MAX); }, 500);
-      setTimeout(function(){ setGauge(aBar, aNum, save.affection, AFFECTION_MAX); }, 1500);
+      setTimeout(function(){ setGauge(aBar, aNum, pet().affection, AFFECTION_MAX); }, 1500);
     }else{
-      setTimeout(function(){ setGauge(aBar, aNum, save.affection, AFFECTION_MAX); }, 500);
+      setTimeout(function(){ setGauge(aBar, aNum, pet().affection, AFFECTION_MAX); }, 500);
     }
   }
 
@@ -1610,7 +1363,7 @@ $('btn-back-map').addEventListener('click', function(){ sfxTap(); gotoMap(); });
 function gameOver(){
   sfxOver();
   $('over-name').textContent = dogN();
-  $('over-dog').innerHTML = dogSVG('paw', '');
+  $('over-dog').innerHTML = dogPic('paw', '');
   $('over-ok').textContent = run.ok;
   $('over-ng').textContent = run.ng;
   writeSave();

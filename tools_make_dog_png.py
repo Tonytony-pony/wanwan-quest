@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-イラスト犬1/*.jpg  ->  img/*.png
+イラスト犬/<いぬしゅ>/01〜04.jpg  ->  img/<いぬしゅ>_lv1,_lv3,_lv5,_sad.png
+イラスト犬/paw.jpg                ->  img/paw.png
 
 Geminiの しゅつりょくを JPGで ほぞんすると、とうめいぶぶんが
 「いちまつもよう」として やきこまれて しまう。
@@ -9,36 +10,39 @@ Geminiの しゅつりょくを JPGで ほぞんすると、とうめいぶぶ�
 
 やること:
   1. がめんの ふちから ぬりつぶして「はいけい（むちゃくしょくで あかるい）」を みつける
-  2. いちばん おおきい かたまり（＝いぬ）だけ のこす
+  2. ちいさすぎる ゴミを すてる（あしあとの ように はなれた かたちは のこす）
   3. ふちを 2ドット けずって JPGの にじみを とる
-  4. 512x512 の キャンバスに したそろえ・まんなかぞろえで はいち
-     （たかさを そろえるので、レベルアップで がぞうが とんで みえない）
+  4. 512x512 の キャンバスに はいち。いぬは したそろえ、あしあとは まんなか
+     （あしもとの たかさを そろえるので、レベルアップで がぞうが とばない）
 
-つかいかた:  python tools_make_dog_png.py
+つかいかた:
+  python tools_make_dog_png.py              ぜんぶ
+  python tools_make_dog_png.py shiba        しばいぬ だけ
+  python tools_make_dog_png.py paw          あしあと だけ
 """
-import io, os, sys
+import os, sys
 from collections import deque
 from PIL import Image, ImageFilter
 
-SRC_DIR = 'イラスト犬1'
-OUT_DIR = 'img'
-CANVAS = 512          # しゅつりょくの おおきさ
-BOTTOM = 496          # あしもとの いち（したから 16ドット あける）
+SRC_ROOT = 'イラスト犬'
+OUT_DIR  = 'img'
+CANVAS   = 512          # しゅつりょくの おおきさ
+BOTTOM   = 496          # あしもとの いち（したから 16ドット あける）
 MARGIN_X = 16
 
-# (もとファイル, しゅつりょくファイル, たかさ, たてのそろえかた)
-JOBS = [
-    ('01.jpg', 'dog_lv1.png', 360, 'bottom'),   # こいぬ
-    ('02.jpg', 'dog_lv3.png', 400, 'bottom'),   # わんこ
-    ('03.jpg', 'dog_lv5.png', 440, 'bottom'),   # でんせつの犬
-    ('04.jpg', 'dog_sad.png', 400, 'bottom'),   # そっぽを むいた いぬ
-    ('05.jpg', 'paw.png',     300, 'center'),   # あしあと
+# もとファイル -> しゅつりょくの すえおき, たかさ
+POSES = [
+    ('01.jpg', 'lv1', 360),   # こいぬ    （レベル 1〜2）
+    ('02.jpg', 'lv3', 400),   # わんこ    （レベル 3〜4）
+    ('03.jpg', 'lv5', 440),   # でんせつ  （レベル 5〜）
+    ('04.jpg', 'sad', 400),   # そっぽを むいた すがた
 ]
 
 # はいけい はんてい: いろみが なくて あかるい ドット
-SAT_MAX = 26          # R,G,B の さ が これいか なら むちゃくしょく
-LIGHT_MIN = 178       # いちばん くらい チャンネルが これいじょう なら あかるい
-ERODE = 2             # ふちを けずる ドットすう
+SAT_MAX   = 26          # R,G,B の さ が これいか なら むちゃくしょく
+LIGHT_MIN = 178         # いちばん くらい チャンネルが これいじょう なら あかるい
+ERODE     = 2           # ふちを けずる ドットすう
+MIN_BLOB_RATIO = 0.02   # いちばん おおきい かたまりの 2% いじょう なら のこす
 
 
 def is_bg(px):
@@ -73,8 +77,6 @@ def background_mask(im):
     return bg, w, h
 
 
-MIN_BLOB_RATIO = 0.02   # いちばん おおきい かたまりの 2% いじょう なら のこす
-
 def keep_blobs(bg, w, h):
     """はいけい いがいの かたまりを あつめる。
     ちいさすぎる ゴミは すてるが、あしあとの ように はなれた ものは のこす。"""
@@ -99,9 +101,10 @@ def keep_blobs(bg, w, h):
                             q.append((nx, ny))
             comps.append(comp)
 
+    if not comps:
+        return bytearray(w * h), 0, 0
     biggest = max(len(c) for c in comps)
-    keep = bytearray(w * h)
-    total = 0
+    keep, total = bytearray(w * h), 0
     for c in comps:
         if len(c) >= biggest * MIN_BLOB_RATIO:
             total += len(c)
@@ -110,14 +113,13 @@ def keep_blobs(bg, w, h):
     return keep, total, len(comps)
 
 
-def process(src, dst, target_h, align='bottom'):
-    im = Image.open(os.path.join(SRC_DIR, src)).convert('RGB')
+def process(src_path, out_name, target_h, align='bottom'):
+    im = Image.open(src_path).convert('RGB')
     bg, w, h = background_mask(im)
     keep, n, ncomp = keep_blobs(bg, w, h)
 
     alpha = Image.frombytes('L', (w, h), bytes(keep))
-    # JPGの にじみを けずる
-    for _ in range(ERODE):
+    for _ in range(ERODE):                       # JPGの にじみを けずる
         alpha = alpha.filter(ImageFilter.MinFilter(3))
     alpha = alpha.filter(ImageFilter.GaussianBlur(0.8))
 
@@ -139,16 +141,41 @@ def process(src, dst, target_h, align='bottom'):
 
     if not os.path.isdir(OUT_DIR):
         os.makedirs(OUT_DIR)
-    path = os.path.join(OUT_DIR, dst)
+    path = os.path.join(OUT_DIR, out_name)
     out.save(path, 'PNG', optimize=True)
-    return path, (w, h), box, (nw, nh), n, ncomp, os.path.getsize(path)
+    print('  %-16s <- %-32s %dx%d  かたまり=%d  %.0fKB'
+          % (out_name, src_path, nw, nh, ncomp, os.path.getsize(path) / 1024.0))
+
+
+def breeds():
+    if not os.path.isdir(SRC_ROOT):
+        return []
+    return sorted(d for d in os.listdir(SRC_ROOT)
+                  if os.path.isdir(os.path.join(SRC_ROOT, d)))
 
 
 if __name__ == '__main__':
-    only = sys.argv[1:]      # 'python tools_make_dog_png.py 05.jpg' で 1まいだけ
-    for src, dst, th, al in JOBS:
-        if only and src not in only:
+    only = sys.argv[1:]
+    done = 0
+
+    for b in breeds():
+        if only and b not in only:
             continue
-        path, size, box, fin, n, ncomp, bytes_ = process(src, dst, th, al)
-        print('%s -> %s  crop=%s  final=%dx%d  かたまり=%d  px=%d  %.0fKB'
-              % (src, path, box, fin[0], fin[1], ncomp, n, bytes_ / 1024.0))
+        print(b)
+        for fn, pose, th in POSES:
+            src = os.path.join(SRC_ROOT, b, fn)
+            if not os.path.isfile(src):
+                print('  %-16s (%s が ないので とばす)' % (b + '_' + pose, fn))
+                continue
+            process(src, '%s_%s.png' % (b, pose), th, 'bottom')
+            done += 1
+
+    paw = os.path.join(SRC_ROOT, 'paw.jpg')
+    if os.path.isfile(paw) and (not only or 'paw' in only):
+        print('あしあと（ぜんぶの いぬで きょうよう）')
+        process(paw, 'paw.png', 300, 'center')
+        done += 1
+
+    if done == 0:
+        print('つくるものが ありません。イラスト犬/<いぬしゅ>/01〜04.jpg を おいてね。')
+        print('いま ある いぬしゅ:', ', '.join(breeds()) or 'なし')
