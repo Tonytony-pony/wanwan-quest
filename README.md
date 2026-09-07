@@ -216,6 +216,7 @@ python tools_make_dog_png.py
 | ポメラニアン | `pomeranian` | ✅ |
 | フレンチブルドッグ | `frenchbulldog` | ✅ |
 | コーギー | `corgi` | 未 |
+| ミニチュアダックス | `dachshund` | 未 |
 | チワワ | `chihuahua` | 未 |
 | ビションフリーゼ | `bichon` | 未 |
 | ゴールデンレトリバー | `golden` | 未 |
