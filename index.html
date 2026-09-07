@@ -177,13 +177,15 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .heart-result .conv b{font-size:19px;color:var(--pink-deep);display:block;}
 
 /* ---------- いぬ ---------- */
-.dog-stage{position:relative;text-align:center;padding:4px 0 2px;min-height:186px;
+.dog-stage{position:relative;text-align:center;padding:4px 0 2px;min-height:200px;
   display:flex;align-items:flex-end;justify-content:center;}
 .dog-stage::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
-  width:120px;height:14px;border-radius:50%;background:rgba(160,80,140,.2);filter:blur(2px);}
-.dog{position:relative;z-index:1;width:170px;height:auto;display:block;
-  image-rendering:pixelated;image-rendering:crisp-edges;
+  width:132px;height:13px;border-radius:50%;background:rgba(160,80,140,.2);filter:blur(2px);}
+.dog{position:relative;z-index:1;width:215px;height:auto;display:block;
   filter:drop-shadow(0 4px 0 rgba(150,70,130,.22));}
+svg.dog{image-rendering:pixelated;image-rendering:crisp-edges;}
+/* そっぽを むいた いぬの イラストが そろうまでの かりの みため */
+.dog.is-sad{filter:grayscale(.6) brightness(.92) drop-shadow(0 4px 0 rgba(150,70,130,.2));}
 .dog.idle{animation:idle 1.7s ease-in-out infinite;}
 @keyframes idle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-5px) scaleY(1.03)}}
 .dog.happy{animation:happy .42s ease-in-out 3;}
@@ -245,7 +247,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .shake{animation:shakeAll .45s;}
 @keyframes shakeAll{0%,100%{transform:translate(0)}20%{transform:translate(-3.5px,1.5px)}40%{transform:translate(3.5px,-1.5px)}60%{transform:translate(-2.5px,1px)}80%{transform:translate(2.5px,-1px)}}
 @media (max-height:660px){
-  .dog{width:130px;} .dog-stage{min-height:142px;} .logo{font-size:33px;margin-top:6px;}
+  .dog{width:165px;} .dog-stage{min-height:155px;} .logo{font-size:33px;margin-top:6px;}
   .win{padding:12px 14px;}
 }
 @media (prefers-reduced-motion:reduce){
@@ -261,7 +263,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <div class="sparkle">･ﾟ✧ ✦ ✧ﾟ･</div>
   <h1 class="logo">わんわん<br>クエスト</h1>
   <div class="subtitle">さんすうで いぬを そだてよう</div>
-  <div class="dog-stage" style="min-height:150px">
+  <div class="dog-stage" style="min-height:180px">
     <div id="title-dog"></div>
   </div>
 
@@ -305,7 +307,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 
   <div class="win">
     <span class="win-title">いぬの ようす</span>
-    <div class="dog-stage" style="min-height:170px">
+    <div class="dog-stage" style="min-height:200px">
       <div id="map-dog"></div>
     </div>
     <div class="gauge-wrap">
@@ -397,7 +399,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 <section id="screen-gameover" class="screen hidden">
   <div class="win purple" style="margin-top:26px">
     <span class="win-title">…‥…‥…</span>
-    <div class="dog-stage" style="min-height:160px">
+    <div class="dog-stage" style="min-height:170px">
       <div id="over-dog"></div>
     </div>
     <p class="center" style="font-size:19px;color:var(--bad);margin:8px 0 4px">
@@ -870,7 +872,27 @@ function pixels(rows, pal){
   return { svg: out, w: w, h: h };
 }
 
+/* Geminiで つくった イラスト。ここに ない ものは ドットえを つかう */
+var DOG_IMG = {
+  puppy : 'img/dog_lv1.png',
+  adult : 'img/dog_lv3.png',
+  hero  : 'img/dog_lv5.png'
+};
+
 function dogSVG(kind, anim){
+  /* そっぽを むいた いぬの イラストは まだ ないので、
+     いまの レベルの イラストを いろあせさせて つかう */
+  if(kind === 'sad'){
+    var lv = artForLevel(save.level);
+    if(DOG_IMG[lv]){
+      return '<img class="dog is-sad ' + (anim || '') + '" src="' + DOG_IMG[lv] +
+             '" alt="" draggable="false">';
+    }
+  }
+  if(DOG_IMG[kind]){
+    return '<img class="dog ' + (anim || '') + '" src="' + DOG_IMG[kind] +
+           '" alt="" draggable="false">';
+  }
   var pal = (kind === 'paw') ? PAL_PAW : PAL;
   var p = pixels(ART[kind] || ART.puppy, pal);
   return '<svg class="dog ' + (anim || '') + '" viewBox="0 0 ' + p.w + ' ' + p.h +
