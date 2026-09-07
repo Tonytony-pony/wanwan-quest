@@ -1422,9 +1422,12 @@ function ensureAudio(){
    ファイルの まえうしろの むおんを じどうで きりとって、
    おおきさも そろえる。おとを さしかえても そのまま うごく。
    ========================================================= */
+/* rate は 音の たかさ。1.0 で そのまま、大きく するほど たかく なる。
+   1.12=2半音 1.19=3半音 1.26=4半音 1.33=5半音 1.50=7半音 2.0=1オクターブ。
+   たかく すると すこし みじかくも なるが、0.3びょうの 鳴き声なので 気にならない。 */
 var VOICE = {
-  ok : { url:'snd/bark.mp3',  buf:null, off:0, dur:0, gain:1 },  /* せいかい */
-  ng : { url:'snd/whine.mp3', buf:null, off:0, dur:0, gain:1 }   /* まちがい */
+  ok : { url:'snd/bark.mp3',  buf:null, off:0, dur:0, gain:1, rate:1.35 },  /* せいかい */
+  ng : { url:'snd/whine.mp3', buf:null, off:0, dur:0, gain:1, rate:1.00 }   /* まちがい */
 };
 var VOICE_PEAK = 0.60;   /* そろえたい おおきさ */
 var VOICE_MAXG = 8;      /* これいじょうは 大きく しない（ノイズ よけ） */
@@ -1485,6 +1488,7 @@ function voice(which, delay){
   try{
     var src = actx.createBufferSource(), g = actx.createGain();
     src.buffer = v.buf;
+    src.playbackRate.value = v.rate || 1;
     g.gain.value = v.gain;
     src.connect(g); g.connect(actx.destination);
     src.start(actx.currentTime + (delay || 0), v.off, v.dur);
