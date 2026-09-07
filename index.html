@@ -206,7 +206,8 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .dog-stage::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
   width:132px;height:13px;border-radius:50%;background:rgba(160,80,140,.2);filter:blur(2px);}
 .dog{position:relative;z-index:1;width:215px;height:auto;aspect-ratio:1/1;display:block;
-  filter:drop-shadow(0 4px 0 rgba(150,70,130,.22));}
+  filter:drop-shadow(0 4px 0 rgba(150,70,130,.22))
+         drop-shadow(0 0 2px rgba(150,70,130,.45));}
 .dog.idle{animation:idle 1.7s ease-in-out infinite;}
 @keyframes idle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-5px) scaleY(1.03)}}
 .dog.happy{animation:happy .42s ease-in-out 3;}
@@ -498,14 +499,13 @@ var WEAK_RATE       = 0.4;    // にがて もんだいが でる かくりつ
 var BREEDS = [
   { id:'beagle',        name:'ビーグル',             ready:true  },
   { id:'shiba',         name:'しばいぬ',             ready:true  },
-  { id:'corgi',         name:'コーギー',             ready:false },
-  { id:'dachshund',     name:'ミニチュアダックス',   ready:false },
+  { id:'dachshund',     name:'ミニチュアダックス',   ready:true  },
   { id:'pomeranian',    name:'ポメラニアン',         ready:true  },
-  { id:'chihuahua',     name:'チワワ',               ready:false },
+  { id:'chihuahua',     name:'チワワ',               ready:true  },
   { id:'frenchbulldog', name:'フレンチブルドッグ',   ready:true  },
-  { id:'bichon',        name:'ビションフリーゼ',     ready:false },
-  { id:'golden',        name:'ゴールデンレトリバー', ready:false },
-  { id:'husky',         name:'ハスキー',             ready:false }
+  { id:'bichon',        name:'ビションフリーゼ',     ready:true  },
+  { id:'golden',        name:'ゴールデンレトリバー', ready:true  },
+  { id:'husky',         name:'ハスキー',             ready:true  }
 ];
 var FIRST_BREED = 'beagle';
 

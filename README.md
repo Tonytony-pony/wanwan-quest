@@ -209,18 +209,17 @@ python tools_make_dog_png.py
   - 犬種の一覧と公開状態は `index.html` の `BREEDS`。画像を用意したら
     その犬種の `ready` を `true` にすると「いぬハウス」で選べるようになります
 
-| 犬種 | フォルダ | 状態 |
-|---|---|---|
-| ビーグル | `beagle` | ✅ |
-| しばいぬ | `shiba` | ✅ |
-| ポメラニアン | `pomeranian` | ✅ |
-| フレンチブルドッグ | `frenchbulldog` | ✅ |
-| コーギー | `corgi` | 未 |
-| ミニチュアダックス | `dachshund` | 未 |
-| チワワ | `chihuahua` | 未 |
-| ビションフリーゼ | `bichon` | 未 |
-| ゴールデンレトリバー | `golden` | 未 |
-| ハスキー | `husky` | 未 |
+| 犬種 | フォルダ |
+|---|---|
+| ビーグル | `beagle` |
+| しばいぬ | `shiba` |
+| ミニチュアダックス | `dachshund` |
+| ポメラニアン | `pomeranian` |
+| チワワ | `chihuahua` |
+| フレンチブルドッグ | `frenchbulldog` |
+| ビションフリーゼ | `bichon` |
+| ゴールデンレトリバー | `golden` |
+| ハスキー | `husky` |
 
   - **Gemini に描かせるときは背景を単色グリーン（#00FF00）にしてください。**
     Gemini は本当の透過を出力できず、`transparent background` と指示すると
