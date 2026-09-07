@@ -1150,16 +1150,18 @@ function itemsOf(lv){
 /* そだてられる いぬ。ready が false の いぬは まだ イラストが ない。
    がぞうは  img/<id>_lv1.png  _lv3.png  _lv5.png  _sad.png  の 4まい。
    あしあと（img/paw.png）は ぜんぶの いぬで きょうよう。 */
+/* small:true の いぬは なきごえを たかく する（VOICE_RATE_SMALL）。
+   小型犬 / 中型・大型犬 の 一般的な わけかたに あわせて いる。 */
 var BREEDS = [
-  { id:'beagle',        name:'ビーグル',             ready:true  },
-  { id:'shiba',         name:'しばいぬ',             ready:true  },
-  { id:'dachshund',     name:'ミニチュアダックス',   ready:true  },
-  { id:'pomeranian',    name:'ポメラニアン',         ready:true  },
-  { id:'chihuahua',     name:'チワワ',               ready:true  },
-  { id:'frenchbulldog', name:'フレンチブルドッグ',   ready:true  },
-  { id:'bichon',        name:'ビションフリーゼ',     ready:true  },
-  { id:'golden',        name:'ゴールデンレトリバー', ready:true  },
-  { id:'husky',         name:'ハスキー',             ready:true  }
+  { id:'beagle',        name:'ビーグル',             ready:true, small:false },
+  { id:'shiba',         name:'しばいぬ',             ready:true, small:false },
+  { id:'dachshund',     name:'ミニチュアダックス',   ready:true, small:true  },
+  { id:'pomeranian',    name:'ポメラニアン',         ready:true, small:true  },
+  { id:'chihuahua',     name:'チワワ',               ready:true, small:true  },
+  { id:'frenchbulldog', name:'フレンチブルドッグ',   ready:true, small:true  },
+  { id:'bichon',        name:'ビションフリーゼ',     ready:true, small:true  },
+  { id:'golden',        name:'ゴールデンレトリバー', ready:true, small:false },
+  { id:'husky',         name:'ハスキー',             ready:true, small:false }
 ];
 var FIRST_BREED = 'beagle';
 
@@ -1423,11 +1425,20 @@ function ensureAudio(){
    おおきさも そろえる。おとを さしかえても そのまま うごく。
    ========================================================= */
 /* rate は 音の たかさ。1.0 で そのまま、大きく するほど たかく なる。
-   1.12=2半音 1.19=3半音 1.26=4半音 1.33=5半音 1.50=7半音 2.0=1オクターブ。
-   たかく すると すこし みじかくも なるが、0.3びょうの 鳴き声なので 気にならない。 */
+   1.12=2半音 1.26=4半音 1.50=7半音 1.70=9半音 2.0=1オクターブ。
+   たかく すると すこし みじかくも なるが、0.3びょうの 鳴き声なので 気にならない。
+   ワンは いま いっしょに いる いぬの 大きさで きめる。 */
+var VOICE_RATE_SMALL = 1.70;   /* 小型犬の ワン */
+var VOICE_RATE_BIG   = 1.00;   /* そのほかの いぬの ワン（そのまま） */
+
+function barkRate(){
+  var b = breedById(save.current);
+  return (b && b.small) ? VOICE_RATE_SMALL : VOICE_RATE_BIG;
+}
+
 var VOICE = {
-  ok : { url:'snd/bark.mp3',  buf:null, off:0, dur:0, gain:1, rate:1.35 },  /* せいかい */
-  ng : { url:'snd/whine.mp3', buf:null, off:0, dur:0, gain:1, rate:1.00 }   /* まちがい */
+  ok : { url:'snd/bark.mp3',  buf:null, off:0, dur:0, gain:1, rate:barkRate },
+  ng : { url:'snd/whine.mp3', buf:null, off:0, dur:0, gain:1, rate:1.00 }
 };
 var VOICE_PEAK = 0.60;   /* そろえたい おおきさ */
 var VOICE_MAXG = 8;      /* これいじょうは 大きく しない（ノイズ よけ） */
@@ -1488,7 +1499,8 @@ function voice(which, delay){
   try{
     var src = actx.createBufferSource(), g = actx.createGain();
     src.buffer = v.buf;
-    src.playbackRate.value = v.rate || 1;
+    src.playbackRate.value =
+      (typeof v.rate === 'function') ? v.rate() : (v.rate || 1);
     g.gain.value = v.gain;
     src.connect(g); g.connect(actx.destination);
     src.start(actx.currentTime + (delay || 0), v.off, v.dur);
