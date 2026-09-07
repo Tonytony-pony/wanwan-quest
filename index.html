@@ -1412,8 +1412,83 @@ function ensureAudio(){
       actx = new AC();
     }
     if(actx.state === 'suspended') actx.resume();
+    loadVoices();
     return actx;
   }catch(e){ return null; }
+}
+
+/* =========================================================
+   4c. 犬の なきごえ（MP3）
+   ファイルの まえうしろの むおんを じどうで きりとって、
+   おおきさも そろえる。おとを さしかえても そのまま うごく。
+   ========================================================= */
+var VOICE = {
+  ok : { url:'snd/bark.mp3',  buf:null, off:0, dur:0, gain:1 },  /* せいかい */
+  ng : { url:'snd/whine.mp3', buf:null, off:0, dur:0, gain:1 }   /* まちがい */
+};
+var VOICE_PEAK = 0.60;   /* そろえたい おおきさ */
+var VOICE_MAXG = 8;      /* これいじょうは 大きく しない（ノイズ よけ） */
+var voiceLoaded = false;
+
+/* おとが 鳴って いる ところと、ちょうどよい おおきさを しらべる。
+   もらった ワンの ファイルは 3.2びょうの うち はじめの 1.45びょうが むおんで、
+   そのまま ならすと こたえた ずっと あとに 鳴って しまう。 */
+function trimVoice(buf){
+  var d = buf.getChannelData(0), sr = buf.sampleRate;
+  var win = Math.floor(sr * 0.02), rms = [], peak = 0, mx = 0, i, k, sum, cnt;
+  for(i = 0; i < d.length; i += win){
+    sum = 0; cnt = 0;
+    for(k = i; k < Math.min(i + win, d.length); k++){
+      sum += d[k] * d[k];
+      if(d[k] > peak) peak = d[k]; else if(-d[k] > peak) peak = -d[k];
+      cnt++;
+    }
+    rms.push(Math.sqrt(sum / cnt));
+  }
+  for(i = 0; i < rms.length; i++){ if(rms[i] > mx) mx = rms[i]; }
+
+  var th = mx * 0.05, first = 0, last = rms.length - 1;
+  for(i = 0; i < rms.length; i++){ if(rms[i] > th){ first = i; break; } }
+  for(i = rms.length - 1; i >= 0; i--){ if(rms[i] > th){ last = i; break; } }
+
+  var off = Math.max(0, first * 0.02 - 0.03);              /* すこし まえから */
+  var dur = Math.min(buf.duration - off,
+                     (last - first + 1) * 0.02 + 0.12);    /* すこし あとまで */
+  return { off:off, dur:dur,
+           gain:Math.min(VOICE_MAXG, peak > 0 ? VOICE_PEAK / peak : 1) };
+}
+
+function loadVoices(){
+  if(voiceLoaded || !actx) return;
+  voiceLoaded = true;
+  var k;
+  for(k in VOICE){
+    if(!VOICE.hasOwnProperty(k)) continue;
+    (function(v){
+      fetch(v.url).then(function(r){ return r.arrayBuffer(); }).then(function(ab){
+        actx.decodeAudioData(ab, function(buf){
+          var t = trimVoice(buf);
+          v.buf = buf; v.off = t.off; v.dur = t.dur; v.gain = t.gain;
+        }, function(){});
+      }).catch(function(){ /* よみこめなくても ゲームは つづく */ });
+    })(VOICE[k]);
+  }
+}
+
+/* なきごえを ならす。delay びょう あとに 鳴る。
+   まだ よみこめて いない ときは なにも しない（ピコピコ音だけ 鳴る）。 */
+function voice(which, delay){
+  if(!save.sound) return;
+  if(!ensureAudio()) return;
+  var v = VOICE[which];
+  if(!v || !v.buf) return;
+  try{
+    var src = actx.createBufferSource(), g = actx.createGain();
+    src.buffer = v.buf;
+    g.gain.value = v.gain;
+    src.connect(g); g.connect(actx.destination);
+    src.start(actx.currentTime + (delay || 0), v.off, v.dur);
+  }catch(e){}
 }
 
 function tone(freq, start, dur, type, vol){
@@ -2313,6 +2388,7 @@ function answer(value, btnEl){
     run.hearts += HEART_UP;
     run.streak++;
     sfxOk();
+    voice('ok', 0.30);          /* ピロリンの あと「ワン！」 */
     $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
     popFx($('quiz-fx'), '♥✧♪✦', 5);
 
@@ -2338,6 +2414,7 @@ function answer(value, btnEl){
     save.totalNg++;
     save.mistakes[q.key] = (save.mistakes[q.key] || 0) + 1;
     sfxNg();
+    voice('ng', 0.42);          /* ブブーの あと「くぅ～ん」 */
 
     /* おさらい用に とっておく（おなじ しきは 1かいだけ） */
     var dup = false;
@@ -2352,6 +2429,7 @@ function answer(value, btnEl){
     /* ごはんの おさら: 1かいだけ ♥が われるのを ふせぐ */
     if(run.guard > 0){
       run.guard--;
+      voice('ng', 0.05);        /* まちがえては いるので しょんぼり */
       renderHearts(null, 0);
       $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
       popFx($('quiz-fx'), '🍖✧', 3);
@@ -2433,6 +2511,7 @@ function answerReview(q, correct){
     run.gained     += HEART_UP;
     pet().affection += HEART_UP;
     sfxOk();
+    voice('ok', 0.30);
     $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
     popFx($('quiz-fx'), '♥✧♪✦', 5);
     renderHearts('add', 0);
@@ -2463,6 +2542,7 @@ function answerReview(q, correct){
     save.totalNg++;
     save.mistakes[q.key] = (save.mistakes[q.key] || 0) + 1;
     sfxNg();
+    voice('ng', 0.42);
     $('quiz-fx').innerHTML = '';
     msg = '<p class="bad">おしい… こたえは <b>' + q.ans + '</b> だよ。</p>' +
           '<p class="tiny">おさらいでは ♥は へらないよ。よく みて おぼえよう！</p>';
@@ -2746,6 +2826,7 @@ function catchTap(b){
     cg.score++;
     b.el.className = 'ball hit';
     sfxOk();
+    voice('ok', 0.10);          /* テンポが はやいので すぐ 鳴らす */
     popFx($('catch-fx'), '♥✧✦♪', 4);
     $('catch-score').textContent = cg.score;
     $('catch-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
@@ -2882,6 +2963,7 @@ document.addEventListener('visibilitychange', function(){
    ========================================================= */
 function gameOver(){
   sfxOver();
+  voice('ng', 0.90);            /* しずんだ おとの あと「くぅ～ん」 */
 
   /* しっぱいしても、きょう あそんだ ことは きろくする。
      まいにち もどって くる りゆうを なくさない ため。 */
