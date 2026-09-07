@@ -100,6 +100,45 @@ body{
 .btn .sub{display:block;font-size:12px;opacity:.95;text-shadow:none;margin-top:2px;}
 .btn .lock{display:block;font-size:12px;text-shadow:none;}
 /* ---------- いぬを えらぶ ---------- */
+/* ---------- うえに くっつく タブ ---------- */
+.tabs{
+  position:sticky; top:0; z-index:5;
+  display:flex; gap:5px; padding:6px 0 8px;
+  background:linear-gradient(180deg,
+    rgba(255,214,236,.97) 0%, rgba(255,214,236,.97) 72%, rgba(255,214,236,0) 100%);
+}
+.tab{
+  flex:1; font-family:inherit; font-size:14px; cursor:pointer; line-height:1.3;
+  padding:8px 2px; border-radius:12px; color:#fff;
+  background:linear-gradient(180deg,#c79bf0 0%,var(--purple) 55%,#8f4fd0 100%);
+  border:3px solid var(--purple-deep);
+  text-shadow:0 2px 0 rgba(70,30,120,.5);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.5), 0 3px 0 var(--purple-deep);
+  transition:transform .06s, box-shadow .06s;
+}
+.tab:active{transform:translateY(3px);box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 0 0;}
+.tab.on{
+  background:linear-gradient(180deg,#ff8dbb 0%,var(--pink) 55%,#ee5590 100%);
+  border-color:var(--pink-deep);
+  text-shadow:0 2px 0 rgba(150,30,80,.5);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 var(--pink-deep);
+}
+
+/* ---------- アイテム いちらん ---------- */
+.itemrow{display:flex;gap:10px;align-items:flex-start;
+  padding:8px 0;border-bottom:2px dotted #f0cfe2;}
+.itemrow:last-child{border-bottom:none;}
+.itemrow > img{width:52px;height:52px;object-fit:contain;flex:none;}
+.itemrow .info{flex:1;min-width:0;}
+.itemrow .ttl{font-size:15px;color:var(--purple-deep);}
+.itemrow .lv{font-size:11px;color:#7a4a00;background:var(--gold);
+  border:2px solid #b98c00;border-radius:999px;padding:0 8px;margin-left:4px;
+  white-space:nowrap;}
+.itemrow .ef{font-size:12.5px;color:var(--ink-soft);line-height:1.6;}
+.itemrow .who2{font-size:11.5px;color:var(--good);}
+.itemrow .who2.no{color:#b39ab0;}
+.itemrow.locked > img{filter:grayscale(1);opacity:.4;}
+
 .dog-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 4px;}
 .dogcard{
   font-family:inherit;cursor:pointer;padding:6px 4px 8px;
@@ -115,7 +154,8 @@ body{
   font-size:36px;filter:grayscale(1);opacity:.5;}
 .dogcard .nm2{font-size:14px;color:var(--purple-deep);line-height:1.2;}
 .dogcard .bn{font-size:11px;color:var(--ink-soft);line-height:1.2;}
-.dogcard .st{font-size:11px;line-height:1.5;padding:0 9px;border-radius:999px;}
+.dogcard .st{font-size:11px;line-height:1.5;padding:0 7px;border-radius:999px;
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .dogcard .st.lv{color:#7a4a00;background:var(--gold);border:2px solid #b98c00;}
 .dogcard .st.new{color:#fff;background:var(--good);}
 .dogcard .st.soon{color:#fff;background:#b39ab0;}
@@ -173,6 +213,8 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   box-shadow:0 2px 0 #9878c4;
 }
 .iconbtn:active{transform:translateY(2px);box-shadow:none;}
+.iconbtn.off{color:#b39ab0;border-color:#c2aec0;background:#f3ecf2;box-shadow:0 2px 0 #c2aec0;}
+.status .iconbtn + .iconbtn{margin-left:4px;}
 
 /* ---------- ゲージ ---------- */
 .gauge-wrap{margin:6px 0 2px;}
@@ -316,16 +358,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 
   <div class="win purple">
     <span class="win-title">あそびかた</span>
-    <p class="rule">
-      おさんぽに でると <span class="hp">♥</span> を 3こ もって いきます。<br>
-      せいかいすると <span class="hp">♥</span> が <b class="up">1こ ふえて</b>、
-      <b>まちがえると <span class="hp">♥</span> が 3こ われます</b>。<br>
-      おさんぽが おわったら、のこった <span class="hp">♥</span> の かずだけ
-      なつき度が ふえて、いぬが 大きく なります。<br>
-      <span class="hp">♥</span> が たりなく なると、いぬは どこかへ いって しまいます。<br>
-      まいにち おさんぽして <span class="hp">♥</span> を 100こ ためると レベルアップ！
-      しんけんに えらんでね！
-    </p>
+    <p class="rule" id="title-rule"></p>
   </div>
 
   <div class="center tiny">© わんわんクエスト</div>
@@ -336,9 +369,16 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <div class="status">
     <div class="who">
       <span class="nm" id="sel-player">――</span>
-      <span class="tiny">の いぬハウス</span>
+      <span class="tiny">の ワンワンハウス</span>
     </div>
-    <button class="iconbtn" id="btn-sound2" title="おと">♪</button>
+    <button class="iconbtn" id="btn-bgm2" title="おんがく">♬</button>
+    <button class="iconbtn" id="btn-sound2" title="こうかおん">♪</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tab-play">あそぶ</button>
+    <button class="tab" id="tab-items">アイテム</button>
+    <button class="tab" id="tab-how">あそびかた</button>
   </div>
 
   <div class="win" id="sel-list-win">
@@ -346,6 +386,21 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <div class="dog-grid" id="dog-grid"></div>
     <p class="tiny center">すきな いぬを えらんでね。<br>
       なんびきでも そだてられて、レベルは いぬごとに たまるよ。</p>
+  </div>
+
+  <div class="win hidden" id="pane-items">
+    <span class="win-title">もらえる アイテム</span>
+    <div id="item-list"></div>
+    <p class="tiny center" style="margin-top:8px">
+      アイテムは いぬ 1ぴきごとに もらえるよ。<br>
+      レベルが とどくと じどうで もらえます。</p>
+  </div>
+
+  <div class="win purple hidden" id="pane-how">
+    <span class="win-title">あそびかた</span>
+    <p class="rule" id="how-text"></p>
+    <div class="spacer"></div>
+    <button class="btn small purple" id="btn-reset">さいしょから やりなおす</button>
   </div>
 
   <div class="win purple hidden" id="sel-name-win">
@@ -360,8 +415,18 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <button class="btn small purple" id="btn-adopt-back">やっぱり ほかの いぬ</button>
   </div>
 
+  <div class="win purple hidden" id="pane-reset">
+    <span class="win-title">ほんとうに いい？</span>
+    <p class="rule center">
+      <b>ぜんぶの いぬ</b>と、なまえ・レベル・なつき度が<br>
+      きえて さいしょから に なります。<br>
+      もとには もどせません。
+    </p>
+    <button class="btn" id="btn-reset-no">やっぱり やめる</button>
+    <button class="btn small purple" id="btn-reset-yes">ぜんぶ けして やりなおす</button>
+  </div>
+
   <div class="spacer"></div>
-  <button class="btn small purple" id="btn-reset">さいしょから やりなおす</button>
 </section>
 
 <!-- ============ 3. おさんぽ（コースえらび） ============ -->
@@ -372,7 +437,8 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <span class="tiny" id="map-dogname">こいぬ</span>
     </div>
     <div class="lv">レベル<b id="map-level">1</b></div>
-    <button class="iconbtn" id="btn-sound" title="おと">♪</button>
+    <button class="iconbtn" id="btn-bgm" title="おんがく">♬</button>
+    <button class="iconbtn" id="btn-sound" title="こうかおん">♪</button>
   </div>
 
   <div class="win">
@@ -649,7 +715,9 @@ function defaultSave(){
     current : '',      /* いま えらんでいる いぬしゅ */
     dogs    : {},      /* いぬしゅ -> { dogName, level, affection } */
     /* ここから したは いぬに よらず きょうよう（こどもの がくしゅう きろく） */
-    cleared : {}, mistakes:{}, totalOk:0, totalNg:0, sound:true
+    cleared : {}, mistakes:{}, totalOk:0, totalNg:0,
+    sound   : true,    /* こうかおん */
+    bgm     : true     /* おんがく   */
   };
 }
 
@@ -696,6 +764,7 @@ function loadSave(){
     if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
     if(typeof d.totalNg === 'number')   s.totalNg = d.totalNg|0;
     if(typeof d.sound === 'boolean')    s.sound = d.sound;
+    if(typeof d.bgm   === 'boolean')    s.bgm   = d.bgm;
     save = s;
   }catch(e){ /* こわれて いたら さいしょから */ }
 }
@@ -707,15 +776,24 @@ function writeSave(){
    4. おと（がいぶファイル なし・WebAudio）
    ========================================================= */
 var actx = null;
-function tone(freq, start, dur, type, vol){
-  if(!save.sound) return;
+
+/* おとの はこを つくる（さいしょの タップの あとでないと ならせない） */
+function ensureAudio(){
   try{
     if(!actx){
       var AC = window.AudioContext || window.webkitAudioContext;
-      if(!AC) return;
+      if(!AC) return null;
       actx = new AC();
     }
     if(actx.state === 'suspended') actx.resume();
+    return actx;
+  }catch(e){ return null; }
+}
+
+function tone(freq, start, dur, type, vol){
+  if(!save.sound) return;
+  try{
+    if(!ensureAudio()) return;
     var t = actx.currentTime + start;
     var o = actx.createOscillator(), g = actx.createGain();
     o.type = type || 'square';
@@ -727,6 +805,73 @@ function tone(freq, start, dur, type, vol){
     o.start(t); o.stop(t + dur + 0.02);
   }catch(e){}
 }
+/* =========================================================
+   4b. BGM  —  ファイルを つかわず、その場で えんそうする
+   ========================================================= */
+var BGM_BEAT = 0.55;      // 1はくの ながさ（びょう）
+var BGM_VOL  = 0.040;     // メロディの おおきさ（ちいさめ）
+
+/* ハ長調の やさしい 8しょうせつ。1はく＝1つ、0 は おやすみ。 */
+var C4=261.63, D4=293.66, E4=329.63, F4=349.23, G4=392.00,
+    A4=440.00, B4=493.88, C5=523.25, E5=659.25;
+var BGM_MELODY = [
+  E4, G4, E4, C4,     /* C  */
+  D4, G4, B4, G4,     /* G  */
+  F4, A4, C5, A4,     /* F  */
+  G4, E4, C4,  0,     /* C  */
+  A4, C5, E5, C5,     /* Am */
+  A4, F4, A4, C5,     /* F  */
+  B4, G4, D4, G4,     /* G  */
+  C5, G4, E4, C4      /* C  */
+];
+var C3=130.81, G2=98.00, F2=87.31, A2=110.00;
+var BGM_BASS = [C3, G2, F2, C3, A2, F2, G2, C3];
+
+var bgm = { timer:null, next:0, step:0 };
+
+function bgmNote(freq, at, dur, type, vol){
+  var o = actx.createOscillator(), g = actx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, at);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(vol, at + 0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(g); g.connect(actx.destination);
+  o.start(at); o.stop(at + dur + 0.05);
+}
+
+function bgmTick(){
+  if(!actx) return;
+  /* すこし さきまで よやくして おくと、おとが とぎれない */
+  while(bgm.next < actx.currentTime + 0.5){
+    var i = bgm.step % BGM_MELODY.length, f = BGM_MELODY[i];
+    if(f) bgmNote(f, bgm.next, BGM_BEAT * 0.85, 'square', BGM_VOL);
+    if(i % 4 === 0){
+      bgmNote(BGM_BASS[(i / 4) | 0], bgm.next, BGM_BEAT * 1.7, 'triangle', BGM_VOL * 1.3);
+    }
+    bgm.next += BGM_BEAT;
+    bgm.step++;
+  }
+}
+
+function bgmStart(){
+  if(!save.bgm || bgm.timer) return;
+  if(!ensureAudio()) return;
+  bgm.next = actx.currentTime + 0.15;
+  bgm.timer = setInterval(bgmTick, 200);
+  bgmTick();
+}
+
+function bgmStop(){
+  if(bgm.timer){ clearInterval(bgm.timer); bgm.timer = null; }
+}
+
+/* タブを ひらいて いない あいだは とめる */
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden) bgmStop();
+  else if(save.bgm) bgmStart();
+});
+
 function sfxTap()  { tone(880, 0, .06, 'square', .07); }
 function sfxOk()   { tone(660,0,.09); tone(880,.08,.09); tone(1174,.16,.18); }
 function sfxNg()   { tone(220,0,.16,'sawtooth',.11); tone(150,.15,.30,'sawtooth',.11); }
@@ -841,7 +986,19 @@ function makeChoices(ans){
 /* =========================================================
    8. タイトルがめん
    ========================================================= */
+/* あそびかたの ぶんしょう。タイトルと タブの りょうほうで つかう。 */
+var RULE_HTML =
+  'おさんぽに でると <span class="hp">♥</span> を ' + HEART_START + 'こ もって いきます。<br>' +
+  'せいかいすると <span class="hp">♥</span> が <b class="up">' + HEART_UP + 'こ ふえて</b>、' +
+  '<b>まちがえると <span class="hp">♥</span> が ' + HEART_DOWN + 'こ われます</b>。<br>' +
+  'おさんぽが おわったら、のこった <span class="hp">♥</span> の かずだけ ' +
+  'なつき度が ふえて、いぬが 大きく なります。<br>' +
+  '<span class="hp">♥</span> が たりなく なると、いぬは どこかへ いって しまいます。<br>' +
+  'まいにち おさんぽして <span class="hp">♥</span> を ' + AFFECTION_MAX + 'こ ためると レベルアップ！<br>' +
+  'レベル 10・15・20・25 で <b class="up">アイテム</b>も もらえるよ。' +
+  'しんけんに えらんでね！';
 function renderTitle(){
+  $('title-rule').innerHTML = RULE_HTML;
   $('title-dog').innerHTML = dogPic('lv1', 'idle', save.current || FIRST_BREED);
   var info = $('save-info'), num = 0, k;
   for(k in save.dogs){ if(save.dogs.hasOwnProperty(k)) num++; }
@@ -859,6 +1016,7 @@ function renderTitle(){
 }
 
 $('btn-start').addEventListener('click', function(){
+  bgmStart();
   var v = $('input-name').value.replace(/\s+/g, '').slice(0, 8);
   if(!v) v = 'ぼうけんしゃ';
   save.name = v;
@@ -872,16 +1030,60 @@ $('btn-start').addEventListener('click', function(){
    ========================================================= */
 var pendingBreed = null;
 
-function gotoSelect(){
+var selTab = 'play';
+
+function gotoSelect(tab){
+  selTab = tab || 'play';
   renderSelect();
   show('select');
 }
 
+/* タブの きりかえ。'play' / 'items' / 'how' / 'name' / 'reset' */
+function showPane(which){
+  var panes = { play:'sel-list-win', items:'pane-items', how:'pane-how',
+                name:'sel-name-win', reset:'pane-reset' }, k;
+  for(k in panes){ $(panes[k]).classList.toggle('hidden', k !== which); }
+  $('tab-play').classList.toggle('on',  which === 'play' || which === 'name');
+  $('tab-items').classList.toggle('on', which === 'items');
+  $('tab-how').classList.toggle('on',   which === 'how' || which === 'reset');
+  window.scrollTo(0, 0);
+}
+
+$('tab-play').addEventListener('click',  function(){ sfxTap(); selTab='play';  renderSelect(); });
+$('tab-items').addEventListener('click', function(){ sfxTap(); selTab='items'; renderSelect(); });
+$('tab-how').addEventListener('click',   function(){ sfxTap(); selTab='how';   renderSelect(); });
+
+/* アイテム いちらん。だれが もっているかも みせる */
+function renderItems(){
+  var box = $('item-list'), html = '', i, k, owners;
+  for(i = 0; i < ITEMS.length; i++){
+    owners = [];
+    for(k in save.dogs){
+      if(save.dogs.hasOwnProperty(k) && save.dogs[k].level >= ITEMS[i].lv){
+        owners.push(save.dogs[k].dogName);
+      }
+    }
+    html += '<div class="itemrow' + (owners.length ? '' : ' locked') + '">' +
+      '<img src="' + ITEMS[i].pic + '" alt="">' +
+      '<div class="info">' +
+        '<div class="ttl">' + ITEMS[i].name +
+          '<span class="lv">レベル ' + ITEMS[i].lv + '</span></div>' +
+        '<div class="ef">' + ITEMS[i].what + '</div>' +
+        (owners.length
+          ? '<div class="who2">もっている いぬ: ' + owners.join('、') + '</div>'
+          : '<div class="who2 no">まだ だれも もっていない</div>') +
+      '</div></div>';
+  }
+  box.innerHTML = html;
+}
+
 function renderSelect(){
   $('sel-player').textContent  = save.name;
-  $('btn-sound2').textContent  = save.sound ? '♪' : '×';
-  $('sel-list-win').classList.remove('hidden');
-  $('sel-name-win').classList.add('hidden');
+  $('btn-sound2').classList.toggle('off', !save.sound);
+  $('btn-bgm2').classList.toggle('off', !save.bgm);
+  $('how-text').innerHTML = RULE_HTML;
+  renderItems();
+  showPane(selTab);
 
   var g = $('dog-grid');
   g.innerHTML = '';
@@ -906,7 +1108,7 @@ function renderSelect(){
       html += '<span class="bn">' + b.name + '</span>';
       html += !b.ready ? '<span class="st soon">じゅんびちゅう</span>'
             : owned    ? '<span class="st lv">レベル ' + owned.level + '</span>'
-                       : '<span class="st new">はじめて</span>';
+                       : '<span class="st new">なまえを つけてね！</span>';
       if(owned){
         var got = itemsOf(owned.level), k, ic = '';
         for(k = 0; k < got.length; k++){
@@ -936,9 +1138,7 @@ function chooseDog(id){
   $('sel-newdog').innerHTML = dogPic('lv1', 'idle', id);
   $('sel-breed').textContent = breedName(id);
   $('input-dogname').value = '';
-  $('sel-list-win').classList.add('hidden');
-  $('sel-name-win').classList.remove('hidden');
-  window.scrollTo(0, 0);
+  showPane('name');
 }
 
 $('btn-adopt').addEventListener('click', function(){
@@ -956,15 +1156,12 @@ $('btn-adopt').addEventListener('click', function(){
 $('btn-adopt-back').addEventListener('click', function(){
   pendingBreed = null;
   sfxTap();
+  selTab = 'play';
   renderSelect();
 });
 
-$('btn-sound2').addEventListener('click', function(){
-  save.sound = !save.sound;
-  writeSave();
-  $('btn-sound2').textContent = save.sound ? '♪' : '×';
-  if(save.sound) sfxTap();
-});
+$('btn-sound2').addEventListener('click', toggleSfx);
+$('btn-bgm2').addEventListener('click', toggleBgm);
 
 /* =========================================================
    9. おさんぽ（コースえらび）
@@ -988,7 +1185,8 @@ function renderMap(){
   $('item-bowl').classList.toggle('hidden',  !hasItem('bowl',  pet().level));
   $('item-ball').classList.toggle('hidden',  !hasItem('ball',  pet().level));
   setGauge($('map-aff-bar'), $('map-aff-num'), pet().affection, AFFECTION_MAX);
-  $('btn-sound').textContent   = save.sound ? '♪' : '×';
+  $('btn-sound').classList.toggle('off', !save.sound);
+  $('btn-bgm').classList.toggle('off', !save.bgm);
 
   /* コースボタン */
   var list = $('course-list');
@@ -1029,22 +1227,34 @@ function renderMap(){
   }
 }
 
-$('btn-sound').addEventListener('click', function(){
+function toggleSfx(){
   save.sound = !save.sound;
   writeSave();
-  $('btn-sound').textContent = save.sound ? '♪' : '×';
+  $('btn-sound').classList.toggle('off', !save.sound);
+  $('btn-sound2').classList.toggle('off', !save.sound);
   if(save.sound) sfxTap();
-});
+}
+function toggleBgm(){
+  save.bgm = !save.bgm;
+  writeSave();
+  $('btn-bgm').classList.toggle('off', !save.bgm);
+  $('btn-bgm2').classList.toggle('off', !save.bgm);
+  if(save.bgm) bgmStart(); else bgmStop();
+}
+$('btn-sound').addEventListener('click', toggleSfx);
+$('btn-bgm').addEventListener('click', toggleBgm);
 
 $('btn-to-select').addEventListener('click', function(){ sfxTap(); gotoSelect(); });
 
-$('btn-reset').addEventListener('click', function(){
-  if(window.confirm('ぜんぶ さいしょから やりなおします。いいですか？')){
-    save = defaultSave();
-    writeSave();
-    renderTitle();
-    show('title');
-  }
+$('btn-reset').addEventListener('click', function(){ sfxTap(); showPane('reset'); });
+$('btn-reset-no').addEventListener('click', function(){ sfxTap(); showPane('how'); });
+$('btn-reset-yes').addEventListener('click', function(){
+  sfxNg();
+  save = defaultSave();
+  writeSave();
+  selTab = 'play';
+  renderTitle();
+  show('title');
 });
 
 /* =========================================================
