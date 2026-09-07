@@ -32,11 +32,19 @@ MARGIN_X = 16
 
 # もとファイル -> しゅつりょくの すえおき, たかさ
 POSES = [
-    ('01.jpg', 'lv1', 360),   # こいぬ    （レベル 1〜2）
-    ('02.jpg', 'lv3', 400),   # わんこ    （レベル 3〜4）
-    ('03.jpg', 'lv5', 440),   # でんせつ  （レベル 5〜）
-    ('04.jpg', 'sad', 400),   # そっぽを むいた すがた
+    ('01', 'lv1', 360),   # こいぬ    （レベル 1〜2）
+    ('02', 'lv3', 400),   # わんこ    （レベル 3〜4）
+    ('03', 'lv5', 440),   # でんせつ  （レベル 5〜）
+    ('04', 'sad', 400),   # そっぽを むいた すがた
 ]
+EXTS = ('.jpg', '.jpeg', '.png', '.webp')   # どの かたちで ほぞんしても OK
+
+def find_src(folder, stem):
+    for e in EXTS:
+        f = os.path.join(folder, stem + e)
+        if os.path.isfile(f):
+            return f
+    return None
 
 # はいけい はんてい: いろみが なくて あかるい ドット
 SAT_MAX   = 26          # R,G,B の さ が これいか なら むちゃくしょく
@@ -162,16 +170,16 @@ if __name__ == '__main__':
         if only and b not in only:
             continue
         print(b)
-        for fn, pose, th in POSES:
-            src = os.path.join(SRC_ROOT, b, fn)
-            if not os.path.isfile(src):
-                print('  %-16s (%s が ないので とばす)' % (b + '_' + pose, fn))
+        for stem, pose, th in POSES:
+            src = find_src(os.path.join(SRC_ROOT, b), stem)
+            if not src:
+                print('  %-16s (%s.jpg が ないので とばす)' % (b + '_' + pose, stem))
                 continue
             process(src, '%s_%s.png' % (b, pose), th, 'bottom')
             done += 1
 
-    paw = os.path.join(SRC_ROOT, 'paw.jpg')
-    if os.path.isfile(paw) and (not only or 'paw' in only):
+    paw = find_src(SRC_ROOT, 'paw')
+    if paw and (not only or 'paw' in only):
         print('あしあと（ぜんぶの いぬで きょうよう）')
         process(paw, 'paw.png', 300, 'center')
         done += 1
