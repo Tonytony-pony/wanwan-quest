@@ -57,6 +57,7 @@ WHITE_MIN = 249         # これいじょう しろい ものは いぬの し�
 ERODE     = 2           # ふちを けずる ドットすう
 MIN_BLOB_RATIO = 0.02   # いちばん おおきい かたまりの 2% いじょう なら のこす
 SEPARATE  = 6           # いちまつの しろマスと いぬの ほそい つながりを きる ドットすう
+CHROMA_TOL = 120        # グリーンバックの ゆるさ（いろの ずれ）
 
 
 def is_bg(px):
@@ -65,6 +66,23 @@ def is_bg(px):
         return False                      # いろが ついている -> いぬ
     m = min(r, g, b)
     return LIGHT_MIN <= m < WHITE_MIN     # はいいろ だけ はいけい。まっしろは のこす
+
+
+def key_color(im):
+    """よすみを みて、たんしょくの はいけい（グリーンバックなど）か しらべる。
+    そうなら その いろを、ちがえば None を かえす。"""
+    w, h = im.size
+    px = im.load()
+    pts = [px[4, 4], px[w - 5, 4], px[4, h - 5], px[w - 5, h - 5]]
+    r = sum(p[0] for p in pts) // 4
+    g = sum(p[1] for p in pts) // 4
+    b = sum(p[2] for p in pts) // 4
+    for q in pts:                        # よすみが そろって いない = べつの はいけい
+        if abs(q[0] - r) > 30 or abs(q[1] - g) > 30 or abs(q[2] - b) > 30:
+            return None
+    if max(r, g, b) - min(r, g, b) < 60:  # いろみが よわい = はいいろ／いちまつ
+        return None
+    return (r, g, b)
 
 
 def detect_grid(im):
@@ -195,13 +213,25 @@ def background_mask(im):
     """がめんの ふちから つながっている はいけいを ぬりつぶす"""
     w, h = im.size
     px = im.load()
-    chk, ncell = checker_mask(im)
+    key = key_color(im)
+
+    if key:                              # グリーンバックなど たんしょくの はいけい
+        kr, kg, kb = key
+        chk, ncell = bytearray(w * h), -1
+        def hit(c):
+            return ((c[0] - kr) ** 2 + (c[1] - kg) ** 2 +
+                    (c[2] - kb) ** 2) < CHROMA_TOL * CHROMA_TOL
+    else:                                # いちまつもよう
+        chk, ncell = checker_mask(im)
+        def hit(c):
+            return is_bg(c)
+
     bg = bytearray(w * h)
     q = deque()
 
     def push(x, y):
         i = y * w + x
-        if not bg[i] and (chk[i] or is_bg(px[x, y])):
+        if not bg[i] and (chk[i] or hit(px[x, y])):
             bg[i] = 1
             q.append((x, y))
 
@@ -216,7 +246,7 @@ def background_mask(im):
         if x < w - 1: push(x + 1, y)
         if y > 0:     push(x, y - 1)
         if y < h - 1: push(x, y + 1)
-    return bg, w, h, ncell
+    return bg, w, h, ncell, key
 
 
 def keep_blobs(fg, w, h):
@@ -266,7 +296,7 @@ def process(src_path, out_name, target_h, align='bottom'):
         return finish(rgba, alpha, out_name, target_h, align, src_path, 'とうめいPNG')
 
     im = im0.convert('RGB')
-    bg, w, h, ncell = background_mask(im)
+    bg, w, h, ncell, key = background_mask(im)
 
     fg_img = Image.frombytes('L', (w, h),
                              bytes(bytearray(0 if v else 255 for v in bg)))
@@ -288,8 +318,26 @@ def process(src_path, out_name, target_h, align='bottom'):
     alpha = alpha.filter(ImageFilter.GaussianBlur(0.8))
 
     rgba = im.convert('RGBA')
-    return finish(rgba, alpha, out_name, target_h, align, src_path,
-                  'しろマス=%d かたまり=%d' % (ncell, ncomp))
+    if key:
+        despill(rgba)                    # ふちに のこる みどりを おとす
+        note = 'たんしょくはいけい かたまり=%d' % ncomp
+    else:
+        note = 'しろマス=%d かたまり=%d' % (ncell, ncomp)
+    return finish(rgba, alpha, out_name, target_h, align, src_path, note)
+
+
+def despill(rgba):
+    """グリーンバックの みどりが ふちに にじむのを おさえる"""
+    px = rgba.load()
+    w, h = rgba.size
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            lim = max(r, b) + 10
+            if g > lim:
+                px[x, y] = (r, lim, b, a)
 
 
 def finish(rgba, alpha, out_name, target_h, align, src_path, note):
