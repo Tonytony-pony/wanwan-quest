@@ -1,175 +1,244 @@
 # -*- coding: utf-8 -*-
-"""シルエットを ぬってから 輪郭を 自動生成する 方式で 24x24 の いぬを かく"""
+"""
+わんわんクエスト  いぬの ドットえ せいせいスクリプト
+---------------------------------------------------
+76 x 76 ドット（= 5776ドット。24x24 の やく 10ばい）。
+
+だ円・かどまるしかく・さんかく を くみあわせて シルエットを つくり、
+そのふちを じどうで なぞって せんを ひく。
+できた もじれつを index.html の `var ART = {...}` に うめこむ。
+
+つかいかた:  python tools_draw_dog.py
+"""
 import io, re, sys
 
-W = 24
+S = 76                      # キャンバスの おおきさ（たて＝よこ）
+OUTLINE = 2                 # せんの ふとさ（ドット）
 
-def band(d):
-    """{y:(x0,x1)} -> [(y,x0,x1)]"""
-    return [(y, a, b) for y, (a, b) in sorted(d.items())]
+# ---------------------------------------------------------------- かたち
+def ell(cx, cy, rx, ry):
+    """だ円の なかの てん"""
+    pts = set()
+    y0, y1 = int(cy - ry) - 1, int(cy + ry) + 1
+    x0, x1 = int(cx - rx) - 1, int(cx + rx) + 1
+    for y in range(max(0, y0), min(S, y1 + 1)):
+        for x in range(max(0, x0), min(S, x1 + 1)):
+            dx = (x - cx) / float(rx)
+            dy = (y - cy) / float(ry)
+            if dx * dx + dy * dy <= 1.0:
+                pts.add((y, x))
+    return pts
 
-def mirror(d):
-    return dict((y, (W - 1 - b, W - 1 - a)) for y, (a, b) in d.items())
+def rrect(x0, y0, x1, y1, r):
+    """かどまるの しかく"""
+    pts = set()
+    for y in range(max(0, y0), min(S, y1 + 1)):
+        for x in range(max(0, x0), min(S, x1 + 1)):
+            qx = min(max(x, x0 + r), x1 - r)
+            qy = min(max(y, y0 + r), y1 - r)
+            if (x - qx) ** 2 + (y - qy) ** 2 <= r * r:
+                pts.add((y, x))
+    return pts
 
+def tri(cx, ytop, ybase, halfw):
+    """さんかく（かんむりの とがり）"""
+    pts = set()
+    h = float(ybase - ytop)
+    for y in range(max(0, ytop), min(S, ybase + 1)):
+        w = int(round(halfw * (y - ytop) / h))
+        for x in range(cx - w, cx + w + 1):
+            if 0 <= x < S:
+                pts.add((y, x))
+    return pts
+
+def trapezoid(ytop, ybot, hw_top, hw_bot, cx=S // 2):
+    """マント（うえが せまく したが ひろい）"""
+    pts = set()
+    h = float(ybot - ytop)
+    for y in range(max(0, ytop), min(S, ybot + 1)):
+        w = int(round(hw_top + (hw_bot - hw_top) * (y - ytop) / h))
+        for x in range(cx - w, cx + w + 1):
+            if 0 <= x < S:
+                pts.add((y, x))
+    return pts
+
+_OFFS = [(dy, dx)
+         for dy in range(-OUTLINE, OUTLINE + 1)
+         for dx in range(-OUTLINE, OUTLINE + 1)
+         if dy * dy + dx * dx <= OUTLINE * OUTLINE]
+
+def rim(mask):
+    """シルエットの ふち（うちがわ OUTLINE ドットぶん）"""
+    edge = set()
+    for (y, x) in mask:
+        for (dy, dx) in _OFFS:
+            if (y + dy, x + dx) not in mask:
+                edge.add((y, x)); break
+    return edge
+
+# ---------------------------------------------------------------- キャンバス
 class Canvas(object):
-    def __init__(self, h):
-        self.h = h
-        self.g = [['.'] * W for _ in range(h)]
+    def __init__(self):
+        self.g = [['.'] * S for _ in range(S)]
 
-    def fill(self, spans, ch):
-        for (y, x0, x1) in spans:
-            for x in range(x0, x1 + 1):
-                self.g[y][x] = ch
-
-    def outline(self, shapes, ch='o'):
-        """shapes: 塗った領域(座標集合)。ふちを ch にする"""
-        mask = set()
-        for spans in shapes:
-            for (y, x0, x1) in spans:
-                for x in range(x0, x1 + 1):
-                    mask.add((y, x))
-        edge = []
-        for (y, x) in mask:
-            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                if (y + dy, x + dx) not in mask:
-                    edge.append((y, x)); break
-        for (y, x) in edge:
-            self.g[y][x] = ch
-        return mask
-
-    def dot(self, y, x, ch):
-        if 0 <= y < self.h and 0 <= x < W:
-            self.g[y][x] = ch
-
-    def box(self, y0, y1, x0, x1, ch, only=None):
-        for y in range(y0, y1 + 1):
-            for x in range(x0, x1 + 1):
+    def paint(self, pts, ch, only=None):
+        for (y, x) in pts:
+            if 0 <= y < S and 0 <= x < S:
                 if only is None or self.g[y][x] in only:
-                    self.dot(y, x, ch)
+                    self.g[y][x] = ch
 
     def rows(self):
         return [''.join(r) for r in self.g]
 
 
-# ================= こいぬ =================
-def build_dog(kind):
-    """kind: 'puppy' | 'adult' | 'sad'"""
-    if kind == 'puppy':
-        top = 3
-        head = {3:(8,15),4:(7,16),5:(6,17),6:(6,17),7:(6,17),8:(6,17),
-                9:(6,17),10:(6,17),11:(6,17),12:(7,16),13:(8,15)}
-        earL = {4:(3,5),5:(2,5),6:(2,5),7:(2,5),8:(2,5),9:(2,5),10:(3,5),11:(3,5)}
-        body = {14:(8,15),15:(6,17),16:(5,18),17:(4,19),18:(4,19),19:(4,19),
-                20:(5,18),21:(6,17)}
-        legL = {21:(5,9),22:(5,9),23:(5,9)}
-        tail = {}
-        h = 24
-    else:   # adult / sad は おなじ たいけい（あたまが うえ、あしが ながい）
-        top = 0
-        head = {0:(8,15),1:(7,16),2:(6,17),3:(6,17),4:(6,17),5:(6,17),
-                6:(6,17),7:(6,17),8:(6,17),9:(7,16),10:(8,15)}
-        earL = {1:(3,5),2:(2,5),3:(2,5),4:(2,5),5:(2,5),6:(2,5),7:(3,5),8:(3,5)}
-        body = {11:(8,15),12:(6,17),13:(4,19),14:(3,20),15:(3,20),16:(3,20),
-                17:(3,20),18:(4,19),19:(5,18)}
-        legL = {20:(5,9),21:(5,9),22:(5,9),23:(5,9)}
-        tail = {9:(19,22),10:(18,22),11:(18,22),12:(17,21)}
-        h = 24
+def face(c, cx, eye_y, nose_y, tongue_y, sc=1.0):
+    """め・はな・した を えがく"""
+    ex = int(round(9 * sc))
+    c.paint(ell(cx - ex, eye_y, 5.0 * sc, 6.0 * sc), 'n')
+    c.paint(ell(cx + ex, eye_y, 5.0 * sc, 6.0 * sc), 'n')
+    c.paint(ell(cx - ex - 2 * sc, eye_y - 3 * sc, 2.0 * sc, 2.0 * sc), 'w')
+    c.paint(ell(cx + ex - 2 * sc, eye_y - 3 * sc, 2.0 * sc, 2.0 * sc), 'w')
+    c.paint(ell(cx, nose_y, 5.0 * sc, 4.0 * sc), 'n')
+    c.paint(ell(cx, tongue_y, 5.0 * sc, 4.0 * sc), 'p')
 
-    earR, legR = mirror(earL), mirror(legL)
-    c = Canvas(h)
-    shapes = [band(head), band(earL), band(earR), band(body), band(legL), band(legR)]
-    if tail:
-        shapes.append(band(tail))
-        c.fill(band(tail), 'e')
-    c.fill(band(body), 'b')
-    c.fill(band(legL), 'b'); c.fill(band(legR), 'b')
-    c.fill(band(earL), 'e'); c.fill(band(earR), 'e')
-    c.fill(band(head), 'b')
-    c.outline(shapes)
 
-    # おなかの しろ
-    if kind == 'puppy':
-        c.box(17, 20, 8, 15, 'w', only='b')
-        c.box(16, 16, 9, 14, 'w', only='b')
-    else:
-        c.box(14, 18, 7, 16, 'w', only='b')
-        c.box(13, 13, 8, 15, 'w', only='b')
+# ---------------------------------------------------------------- こいぬ
+def build_puppy():
+    head = ell(38, 26, 20, 20)
+    earL, earR = ell(13, 29, 10, 16), ell(63, 29, 10, 16)
+    body = ell(38, 55, 22, 15)
+    pawL, pawR = ell(28, 69, 8, 6), ell(48, 69, 8, 6)
+    mask = head | earL | earR | body | pawL | pawR
 
-    if kind != 'sad':
-        # かお
-        ey = top + 4
-        for ex in (8, 14):
-            c.box(ey, ey + 1, ex, ex + 1, 'n')
-            c.dot(ey, ex, 'w')
-        c.box(top + 7, top + 7, 11, 12, 'n')          # はな
-        c.box(top + 8, top + 8, 10, 13, 'p')          # した
-        c.box(top + 9, top + 9, 11, 12, 'p')
+    c = Canvas()
+    c.paint(earL, 'e'); c.paint(earR, 'e')
+    c.paint(ell(11, 31, 5, 11), 'f'); c.paint(ell(65, 31, 5, 11), 'f')
+    c.paint(head, 'b')
+    c.paint(pawL, 'b'); c.paint(pawR, 'b')
+    c.paint(body, 'b')
+    c.paint(ell(38, 63, 19, 9) & body, 'd')
+    c.paint(ell(38, 55, 14, 12) & body, 'w')
+    c.paint(ell(38, 37, 13, 9), 'w')
+    c.paint(rim(mask), 'o')
+    # まえあしは からだの うえから ふちどって わける
+    c.paint(rim(pawL), 'o'); c.paint(rim(pawR), 'o')
+    face(c, 38, 23, 34, 43)
     return c.rows()
 
 
-# ================= でんせつの犬（かんむり + マント） =================
+# ---------------------------------------------------------------- わんこ
+def build_adult(back=False):
+    head = ell(38, 21, 19, 18)
+    earL, earR = ell(14, 24, 9, 15), ell(62, 24, 9, 15)
+    body = ell(38, 51, 21, 15)
+    legL, legR = rrect(22, 56, 33, 74, 5), rrect(43, 56, 54, 74, 5)
+    tail = ell(62, 52, 9, 12) | ell(70, 42, 7, 10)
+    mask = head | earL | earR | body | legL | legR | tail
+
+    c = Canvas()
+    c.paint(tail, 'e')
+    c.paint(earL, 'e'); c.paint(earR, 'e')
+    if not back:
+        c.paint(ell(12, 26, 5, 10), 'f'); c.paint(ell(64, 26, 5, 10), 'f')
+    c.paint(head, 'b')
+    c.paint(legL, 'b'); c.paint(legR, 'b')
+    c.paint(body, 'b')
+    c.paint(ell(38, 59, 18, 9) & body, 'd')
+    c.paint(ell(38, 51, 14, 12) & body, 'w')
+    if not back:
+        c.paint(ell(38, 32, 12, 8), 'w')
+    c.paint(rim(mask), 'o')
+    c.paint(rim(tail), 'o')
+    c.paint(rim(legL), 'o'); c.paint(rim(legR), 'o')
+    if not back:
+        face(c, 38, 18, 28, 38)
+    return c.rows()
+
+
+# ---------------------------------------------------------------- でんせつの犬
 def build_hero():
-    base = build_dog('adult')
-    h = 27
-    c = Canvas(h)
+    head = ell(38, 33, 19, 17)
+    earL, earR = ell(15, 35, 9, 14), ell(61, 35, 9, 14)
+    body = ell(38, 59, 20, 14)
+    legL, legR = rrect(24, 62, 34, 74, 5), rrect(42, 62, 52, 74, 5)
+    dog = head | earL | earR | body | legL | legR
 
-    # マント（いぬの うしろ）
-    capeL = {16:(2,4),17:(1,4),18:(1,4),19:(1,4),20:(0,4),
-             21:(0,4),22:(0,4),23:(0,4),24:(0,3),25:(1,3)}
-    capeR = mirror(capeL)
-    c.fill(band(capeL), 'v'); c.fill(band(capeR), 'v')
-    c.outline([band(capeL), band(capeR)], 'u')
+    cape = trapezoid(46, 74, 12, 33) & rrect(3, 46, 73, 74, 11)
+    crown = rrect(23, 10, 53, 19, 3) | tri(28, 1, 12, 5) | tri(38, 0, 12, 6) | tri(48, 1, 12, 5)
 
-    # いぬを 3ぎょう さげて うわがき
-    for y, row in enumerate(base):
-        for x, ch in enumerate(row):
-            if ch != '.':
-                c.g[y + 3][x] = ch
-
-    # かんむり
-    crown0 = {0: (8, 8)}
-    crown = [(0,8,8), (0,11,12), (0,15,15), (1,7,16), (2,6,17)]
-    c.fill(crown, 'y')
-    c.outline([crown], 'z')
-    c.fill([(1,8,15)], 'y')
-    c.fill([(2,7,16)], 'y')
-    c.dot(0, 8, 'y'); c.dot(0, 11, 'y'); c.dot(0, 12, 'y'); c.dot(0, 15, 'y')
+    c = Canvas()
+    # マント（いちばん うしろ）
+    c.paint(cape, 'v')
+    c.paint(rim(cape), 'u')
+    # いぬ
+    c.paint(earL, 'e'); c.paint(earR, 'e')
+    c.paint(ell(13, 37, 5, 9), 'f'); c.paint(ell(63, 37, 5, 9), 'f')
+    c.paint(head, 'b')
+    c.paint(legL, 'b'); c.paint(legR, 'b')
+    c.paint(body, 'b')
+    c.paint(ell(38, 66, 17, 8) & body, 'd')
+    c.paint(ell(38, 59, 13, 11) & body, 'w')
+    c.paint(ell(38, 43, 12, 8), 'w')
+    c.paint(rim(dog), 'o')
+    c.paint(rim(legL), 'o'); c.paint(rim(legR), 'o')
+    face(c, 38, 30, 40, 49)
+    # かんむり（いちばん まえ）
+    c.paint(crown, 'y')
+    c.paint(rim(crown), 'z')
     return c.rows()
 
 
-# ================= あしあと =================
+# ---------------------------------------------------------------- そっぽを むいた いぬ
+def build_sad():
+    head = ell(38, 26, 20, 20)
+    earL, earR = ell(13, 29, 10, 16), ell(63, 29, 10, 16)
+    body = ell(38, 55, 22, 15)
+    pawL, pawR = ell(28, 69, 8, 6), ell(48, 69, 8, 6)
+    tail = ell(60, 52, 8, 13)
+    mask = head | earL | earR | body | pawL | pawR | tail
+
+    c = Canvas()
+    c.paint(tail, 'e')
+    c.paint(earL, 'e'); c.paint(earR, 'e')
+    c.paint(head, 'b')
+    c.paint(pawL, 'b'); c.paint(pawR, 'b')
+    c.paint(body, 'b')
+    c.paint(ell(38, 63, 19, 9) & body, 'd')
+    c.paint(ell(38, 55, 14, 12) & body, 'w')
+    c.paint(rim(mask), 'o')
+    c.paint(rim(tail), 'o')
+    c.paint(rim(pawL), 'o'); c.paint(rim(pawR), 'o')
+    return c.rows()
+
+
+# ---------------------------------------------------------------- あしあと
 def build_paw():
-    shape = [
-        '..oo..oo..oo.',
-        '..oo..oo..oo.',
-        '..oo..oo..oo.',
-        '.............',
-        '..ooooooooo..',
-        '.ooooooooooo.',
-        '.ooooooooooo.',
-        '.ooooooooooo.',
-        '..ooooooooo..',
-        '...ooooooo...',
-    ]
-    g = [['.'] * W for _ in range(24)]
-    for sx, sy in ((0, 1), (11, 13)):
-        for j, rw in enumerate(shape):
-            for i, ch in enumerate(rw):
-                if ch != '.':
-                    g[sy + j][sx + i] = ch
-    return [''.join(r) for r in g]
+    def one(cx, cy):
+        toes = (ell(cx - 12, cy - 13, 4.5, 5.0) | ell(cx - 4, cy - 18, 5.0, 5.5) |
+                ell(cx + 4, cy - 18, 5.0, 5.5) | ell(cx + 12, cy - 13, 4.5, 5.0))
+        pad = ell(cx, cy + 3, 13, 10)
+        return toes | pad
+
+    a, b = one(23, 25), one(53, 55)
+    c = Canvas()
+    for shape in (a, b):
+        c.paint(shape, 'b')
+        c.paint(rim(shape), 'o')
+    return c.rows()
 
 
+# ---------------------------------------------------------------- しゅつりょく
 art = {
-    'puppy': build_dog('puppy'),
-    'adult': build_dog('adult'),
+    'puppy': build_puppy(),
+    'adult': build_adult(),
     'hero':  build_hero(),
-    'sad':   build_dog('sad'),
+    'sad':   build_sad(),
     'paw':   build_paw(),
 }
 for k, v in art.items():
-    assert all(len(r) == W for r in v), k
-    print('%-6s %2d rows x %d' % (k, len(v), W))
+    assert len(v) == S and all(len(r) == S for r in v), k
+    filled = sum(1 for r in v for ch in r if ch != '.')
+    print('%-6s %d x %d   ぬったドット %d' % (k, S, S, filled))
 
 def js(name, rows, comment):
     body = ',\n'.join("    '%s'" % r for r in rows)
@@ -186,15 +255,7 @@ block = "var ART = {\n" + ',\n'.join([
 p = r'D:\98 Antigravity\400 ゲーム\桜 算数アプリ\index.html'
 s = io.open(p, encoding='utf-8').read()
 s, cnt = re.subn(r'var ART = \{.*?\n\};', lambda m: block, s, count=1, flags=re.S)
-assert cnt == 1, 'ART block not found'
-
-if "u:'#8b4fc0'" not in s:
-    s = s.replace("  v:'#b06fe0'   /* マント    */",
-                  "  v:'#b06fe0',  /* マント    */\n  u:'#7a3fb8'   /* マント ふち */")
+if cnt != 1:
+    print('ART block not found'); sys.exit(1)
 io.open(p, 'w', encoding='utf-8', newline='').write(s)
-print('ok')
-
-for k in ('puppy', 'adult', 'hero'):
-    print('\n--- ' + k)
-    for r in art[k]:
-        print(r)
+print('index.html に うめこみました')
