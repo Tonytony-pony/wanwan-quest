@@ -185,7 +185,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .dog.happy{animation:happy .42s ease-in-out 3;}
 @keyframes happy{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-16px) rotate(-7deg)}75%{transform:translateY(-16px) rotate(7deg)}}
 .dog.sad{animation:sadShake .6s ease-in-out;}
-@keyframes sadShake{0%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}100%{transform:translateX(0)}}
+@keyframes sadShake{0%{transform:translateX(0)}20%{transform:translateX(-4.5px)}40%{transform:translateX(4.5px)}60%{transform:translateX(-3px)}80%{transform:translateX(2px)}100%{transform:translateX(0)}}
 .dog.grow{animation:grow .9s cubic-bezier(.2,1.6,.4,1);}
 @keyframes grow{0%{transform:scale(.5)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
 .fx{position:absolute;inset:0;pointer-events:none;z-index:2;}
@@ -238,7 +238,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .spacer{flex:1;}
 .shake{animation:shakeAll .45s;}
-@keyframes shakeAll{0%,100%{transform:translate(0)}20%{transform:translate(-7px,3px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,2px)}80%{transform:translate(5px,-2px)}}
+@keyframes shakeAll{0%,100%{transform:translate(0)}20%{transform:translate(-3.5px,1.5px)}40%{transform:translate(3.5px,-1.5px)}60%{transform:translate(-2.5px,1px)}80%{transform:translate(2.5px,-1px)}}
 @media (max-height:660px){
   .dog{width:130px;} .dog-stage{min-height:142px;} .logo{font-size:33px;margin-top:6px;}
   .win{padding:12px 14px;}
@@ -437,107 +437,150 @@ var PAL = {
   p:'#ff8fb0',  /* した      */
   w:'#ffffff',  /* おなか    */
   y:'#ffd447',  /* かんむり  */
-  v:'#b06fe0'   /* マント    */
+  z:'#d9a300',  /* かんむり こいめ */
+  v:'#b06fe0',  /* マント    */
+  u:'#7a3fb8'   /* マント ふち */
 };
 var PAL_PAW = { o:'#d98ab7' };
 
 var ART = {
   /* こいぬ（レベル 1〜2） */
   puppy:[
-    '................',
-    '................',
-    '..oo........oo..',
-    '.oeeo......oeeo.',
-    '.oeeooooooooeeo.',
-    '.oeebbbbbbbbeeo.',
-    '.oeebnbbbbnbeeo.',
-    '.oeebbbnnbbbeeo.',
-    '..obbbbppbbbbo..',
-    '...obbbbbbbbo...',
-    '...obbbbbbbbo...',
-    '..obbbbbbbbbbo..',
-    '..obbwwwwwwbbo..',
-    '..obbwwwwwwbbo..',
-    '..oobbbbbbbboo..',
-    '...oo......oo...'
+    '........................',
+    '........................',
+    '........................',
+    '........oooooooo........',
+    '...ooo.obbbbbbbbo.ooo...',
+    '..oeeeobbbbbbbbbboeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '..oeeebbwnbbbbwnbbeeeo..',
+    '..oeeebbnnbbbbnnbbeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '...oeebbbbbnnbbbbbeeo...',
+    '...oooobbbppppbbboooo...',
+    '.......obbbppbbbo.......',
+    '........obbbbbbo........',
+    '........obbbbbbo........',
+    '......oobbbbbbbboo......',
+    '.....obbbwwwwwwbbbo.....',
+    '....obbbwwwwwwwwbbbo....',
+    '....obbbwwwwwwwwbbbo....',
+    '....obbbwwwwwwwwbbbo....',
+    '.....obbwwwwwwwwbbo.....',
+    '.....obbbboooobbbbo.....',
+    '.....obbbo....obbbo.....',
+    '.....ooooo....ooooo.....'
   ],
   /* わんこ（レベル 3〜4） */
   adult:[
-    '..oo........oo..',
-    '.oeeo......oeeo.',
-    '.oeeooooooooeeo.',
-    '.oeebbbbbbbbeeo.',
-    '.oeebnbbbbnbeeo.',
-    '.oeebbbnnbbbeeo.',
-    '..obbbbppbbbbo..',
-    '...obbbbbbbbo...',
-    '..oobbbbbbbboo.o',
-    '.obbbbbbbbbbbboo',
-    '.obbbbwwwwbbbbo.',
-    '.obbbwwwwwwbbbo.',
-    '.obbbwwwwwwbbbo.',
-    '.oobbbbbbbbbboo.',
-    '..obbo....obbo..',
-    '..oooo....oooo..'
+    '........oooooooo........',
+    '...ooo.obbbbbbbbo.ooo...',
+    '..oeeeobbbbbbbbbboeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '..oeeebbwnbbbbwnbbeeeo..',
+    '..oeeebbnnbbbbnnbbeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '...oeebbbbbnnbbbbbeeo...',
+    '...oooobbbppppbbbooeo...',
+    '.......obbbppbbbo..oeoo.',
+    '........obbbbbbo..oeeeo.',
+    '........obbbbbbo..oeeeo.',
+    '......oobbbbbbbbooeeoo..',
+    '....oobbwwwwwwwwbbbo....',
+    '...obbbwwwwwwwwwwbbbo...',
+    '...obbbwwwwwwwwwwbbbo...',
+    '...obbbwwwwwwwwwwbbbo...',
+    '...obbbwwwwwwwwwwbbbo...',
+    '....obbwwwwwwwwwwbbo....',
+    '.....obbbboooobbbbo.....',
+    '.....obbbo....obbbo.....',
+    '.....obbbo....obbbo.....',
+    '.....obbbo....obbbo.....',
+    '.....ooooo....ooooo.....'
   ],
-  /* でんせつの 犬（レベル 5〜） */
+  /* たくましい 犬 / でんせつの 犬（レベル 5〜） */
   hero:[
-    '....y..y..y.....',
-    '....yyyyyyyy....',
-    '...yyyyyyyyyy...',
-    '..oo........oo..',
-    '.oeeo......oeeo.',
-    '.oeeooooooooeeo.',
-    '.oeebbbbbbbbeeo.',
-    '.oeebnbbbbnbeeo.',
-    '.oeebbbnnbbbeeo.',
-    '..obbbbppbbbbo..',
-    '...obbbbbbbbo...',
-    'vvoobbbbbbbboovv',
-    'vvobbbbbbbbbbovv',
-    'vvobbbbwwwwbbovv',
-    '.vobbbwwwwwwbov.',
-    '.oobbbbbbbbbboo.',
-    '..obbo....obbo..',
-    '..oooo....oooo..'
+    '........y..yy..y........',
+    '.......zyyyyyyyyz.......',
+    '......zyyyyyyyyyyz......',
+    '........oooooooo........',
+    '...ooo.obbbbbbbbo.ooo...',
+    '..oeeeobbbbbbbbbboeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '..oeeebbwnbbbbwnbbeeeo..',
+    '..oeeebbnnbbbbnnbbeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '...oeebbbbbnnbbbbbeeo...',
+    '...oooobbbppppbbbooeo...',
+    '.......obbbppbbbo..oeoo.',
+    '........obbbbbbo..oeeeo.',
+    '........obbbbbbo..oeeeo.',
+    '......oobbbbbbbbooeeoo..',
+    '..uuoobbwwwwwwwwbbbouu..',
+    '.uvobbbwwwwwwwwwwbbbovu.',
+    '.uvobbbwwwwwwwwwwbbbovu.',
+    '.uvobbbwwwwwwwwwwbbbovu.',
+    'uvvobbbwwwwwwwwwwbbbovvu',
+    'uvvvobbwwwwwwwwwwbbovvvu',
+    'uvvvuobbbboooobbbbouvvvu',
+    'uvvvuobbbo....obbbouvvvu',
+    'uvvu.obbbo....obbbo.uvvu',
+    '.uuu.obbbo....obbbo.uuu.',
+    '.....ooooo....ooooo.....'
   ],
   /* そっぽを むいた いぬ（うしろすがた） */
   sad:[
-    '................',
-    '..oo........oo..',
-    '.oeeo......oeeo.',
-    '.oeeooooooooeeo.',
-    '.oeebbbbbbbbeeo.',
-    '.oeebbbbbbbbeeo.',
-    '.oeebbbbbbbbeeo.',
-    '..obbbbbbbbbbo..',
-    '...obbbbbbbbo...',
-    '..oobbbbbbbboo..',
-    '.obbbbbbbbbbbbo.',
-    '.obbbbbbbbbbbbo.',
-    '.obbbbbbbbbbbbo.',
-    '.oobbbbbbbbbboo.',
-    '..obbo....obbo..',
-    '..oooo....oooo..'
+    '........oooooooo........',
+    '...ooo.obbbbbbbbo.ooo...',
+    '..oeeeobbbbbbbbbboeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '..oeeebbbbbbbbbbbbeeeo..',
+    '...oeebbbbbbbbbbbbeeo...',
+    '...oooobbbbbbbbbbooeo...',
+    '.......obbbbbbbbo..oeoo.',
+    '........obbbbbbo..oeeeo.',
+    '........obbbbbbo..oeeeo.',
+    '......oobbbbbbbbooeeoo..',
+    '....oobbwwwwwwwwbbbo....',
+    '...obbbwwwwwwwwwwbbbo...',
+    '...obbbwwwwwwwwwwbbbo...',
+    '...obbbwwwwwwwwwwbbbo...',
+    '...obbbwwwwwwwwwwbbbo...',
+    '....obbwwwwwwwwwwbbo....',
+    '.....obbbboooobbbbo.....',
+    '.....obbbo....obbbo.....',
+    '.....obbbo....obbbo.....',
+    '.....obbbo....obbbo.....',
+    '.....ooooo....ooooo.....'
   ],
   /* あしあと（いなく なった とき） */
   paw:[
-    '..oo...oo.......',
-    '..oo...oo.......',
-    'oo.......oo.....',
-    'oo.......oo.....',
-    '.ooooooooo......',
-    '.ooooooooo......',
-    '..ooooooo.......',
-    '................',
-    '................',
-    '.......oo...oo..',
-    '.......oo...oo..',
-    '.....oo.......oo',
-    '.....oo.......oo',
-    '......ooooooooo.',
-    '......ooooooooo.',
-    '.......ooooooo..'
+    '........................',
+    '..oo..oo..oo............',
+    '..oo..oo..oo............',
+    '..oo..oo..oo............',
+    '........................',
+    '..ooooooooo.............',
+    '.ooooooooooo............',
+    '.ooooooooooo............',
+    '.ooooooooooo............',
+    '..ooooooooo.............',
+    '...ooooooo..............',
+    '........................',
+    '........................',
+    '.............oo..oo..oo.',
+    '.............oo..oo..oo.',
+    '.............oo..oo..oo.',
+    '........................',
+    '.............ooooooooo..',
+    '............ooooooooooo.',
+    '............ooooooooooo.',
+    '............ooooooooooo.',
+    '.............ooooooooo..',
+    '..............ooooooo...',
+    '........................'
   ]
 };
 
