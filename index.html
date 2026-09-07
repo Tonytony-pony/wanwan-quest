@@ -87,6 +87,13 @@ body{
   box-shadow:0 2px 0 var(--shadow);
 }
 .win.purple .win-title{background:var(--purple-deep);box-shadow:0 2px 0 #9878c4;}
+/* ミニゲームの まど。おさんぽ コースと ちがう ことが すぐ わかるように きんいろ */
+.win.gold-win{
+  border-color:#c98a00;
+  box-shadow:inset 0 0 0 3px #fff, inset 0 0 0 6px #fff2cf,
+             0 5px 0 #b97a00, 0 9px 18px rgba(150,100,0,.22);
+}
+.win.gold-win .win-title{background:#c98a00;box-shadow:0 2px 0 #b97a00;}
 
 /* ---------- ボタン ---------- */
 .btn{
@@ -195,6 +202,71 @@ body{
   border:3px solid #fff;border-radius:12px;padding:5px;
   box-shadow:0 3px 0 var(--shadow);animation:pop .5s cubic-bezier(.2,1.7,.4,1);}
 .stampget img{height:26px;vertical-align:-7px;margin-right:4px;}
+
+/* ---------- ミニゲーム: ボールキャッチ ---------- */
+#screen-catch{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+.catch-q{text-align:center;font-size:26px;color:var(--purple-deep);
+  background:var(--win-bg);border:3px solid var(--purple-deep);border-radius:14px;
+  padding:6px 8px;margin:2px 0 6px;
+  box-shadow:inset 0 0 0 2px #fff, 0 3px 0 var(--shadow);}
+.catch-area{position:relative;flex:1 1 auto;min-height:150px;overflow:hidden;
+  border-radius:16px;border:3px solid #fff;
+  background:linear-gradient(180deg,#ffeaf6 0%,#f6e2ff 100%);
+  box-shadow:inset 0 3px 10px rgba(150,70,130,.15);}
+/* いぬは したで まちかまえる */
+.catch-dog{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);
+  width:112px;z-index:1;pointer-events:none;}
+.catch-dog img{width:100%;height:auto;display:block;
+  filter:drop-shadow(0 3px 0 rgba(150,70,130,.22));}
+/* ゆかの せん。ここを すぎると のがし */
+.catch-line{position:absolute;left:6px;right:6px;bottom:26px;height:4px;border-radius:2px;
+  background:repeating-linear-gradient(90deg,#ffb3d9 0 10px,transparent 10px 18px);}
+
+.ball{position:absolute;width:62px;height:62px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:inherit;font-size:23px;color:#7a4400;z-index:2;
+  background:radial-gradient(circle at 34% 27%, #fff8cf 0%, #ffd851 52%, #eda600 100%);
+  border:3px solid #c98a00;box-shadow:0 3px 0 rgba(150,90,0,.4);
+  cursor:pointer;touch-action:manipulation;
+  -webkit-user-select:none;user-select:none;}
+.ball.hit{animation:ballHit .35s ease-out forwards;pointer-events:none;}
+@keyframes ballHit{0%{transform:scale(1)}45%{transform:scale(1.45)}
+  100%{transform:scale(.2);opacity:0}}
+.ball.ng{animation:ballNg .3s ease-out forwards;pointer-events:none;
+  background:radial-gradient(circle at 34% 27%,#ffd9de 0%,#ff9aab 55%,#e0566f 100%);
+  border-color:#a81030;color:#7d0c22;}
+@keyframes ballNg{0%{transform:scale(1)}100%{transform:scale(.65) rotate(18deg);opacity:0}}
+
+.catch-fx{position:absolute;inset:0;pointer-events:none;z-index:3;}
+.catch-fx span{position:absolute;font-size:22px;animation:fly 1s ease-out forwards;}
+
+/* おわった ときの まく */
+.catch-over{position:absolute;inset:0;z-index:5;display:flex;
+  align-items:center;justify-content:center;padding:12px;
+  background:rgba(70,25,70,.5);animation:tpopBg .25s ease-out;}
+.catch-over .card{width:100%;max-width:280px;text-align:center;padding:16px 14px 12px;
+  border-radius:20px;background:linear-gradient(180deg,#fffdfe,#ffe7f4);
+  border:5px solid var(--pink-deep);
+  box-shadow:0 8px 0 var(--pink-deep),0 14px 26px rgba(60,20,60,.4);
+  animation:tpopIn .5s cubic-bezier(.18,1.5,.42,1) both;}
+.catch-over .ttl{font-size:17px;color:var(--pink-deep);margin-bottom:6px;}
+.catch-over .big{font-size:15px;color:var(--ink);line-height:1.7;}
+.catch-over .big b{font-size:30px;color:var(--pink);margin:0 3px;}
+.catch-over .newrec{display:inline-block;margin-top:6px;font-size:12.5px;
+  padding:1px 12px;border-radius:999px;background:var(--gold);color:#7a4a00;
+  border:2px solid #b98c00;animation:pop .5s cubic-bezier(.2,1.7,.4,1);}
+.catch-over .btn{margin:10px 0 0;}
+
+/* おさんぽ がめんの いりぐち */
+.mini-btn .sub{display:block;font-size:11.5px;opacity:.95;margin-top:2px;}
+.mini-best{text-align:center;font-size:12px;color:var(--ink-soft);margin:6px 0 0;}
+.mini-best b{color:var(--pink-deep);font-size:15px;}
+
+@media (max-height:600px){
+  .catch-q{font-size:22px;padding:4px 6px;}
+  .catch-dog{width:86px;}
+  .ball{width:54px;height:54px;font-size:20px;}
+}
 
 /* ---------- あそびかた（カテゴリ分け） ---------- */
 .rsec{margin:0 0 12px;}
@@ -748,6 +820,13 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <p class="tiny center" id="map-hint" style="margin:6px 0 0">あつめた ♥ が そのまま なつき度に なるよ。<br>まいにち おさんぽして ♥ を ためよう！</p>
   </div>
 
+  <div class="win gold-win" id="mini-win">
+    <span class="win-title">ミニゲーム</span>
+    <button class="btn gold mini-btn" id="btn-catch">🎾 ボールキャッチ
+      <span class="sub">おちてくる ボールから こたえを タップ！</span></button>
+    <p class="mini-best" id="mini-best"></p>
+  </div>
+
   <div class="win purple">
     <span class="win-title">おさんぽ コース</span>
     <div id="course-list"></div>
@@ -825,6 +904,39 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <button class="btn gold hidden" id="btn-review"></button>
   <button class="btn" id="btn-again">もういちど おせわする</button>
   <button class="btn purple" id="btn-back-map">おさんぽへ もどる</button>
+</section>
+
+<!-- ============ 5b. ミニゲーム: ボールキャッチ ============ -->
+<section id="screen-catch" class="screen hidden">
+  <div class="status">
+    <div class="who" style="flex:1">
+      <span class="nm">🎾 ボールキャッチ</span>
+      <div style="margin:2px 0 0">
+        <div class="gauge-cap"><span>のこり じかん</span><span id="catch-time">30びょう</span></div>
+        <div class="gauge"><i id="catch-time-bar"></i></div>
+      </div>
+    </div>
+    <div class="lv">キャッチ<b id="catch-score">0</b></div>
+  </div>
+
+  <div class="catch-q" id="catch-q">3 ＋ 4 ＝ ？</div>
+
+  <div class="catch-area" id="catch-area">
+    <div class="catch-line"></div>
+    <div class="catch-dog" id="catch-dog"></div>
+    <div class="catch-fx" id="catch-fx"></div>
+  </div>
+
+  <button class="btn small purple" id="btn-catch-quit">やめる</button>
+
+  <div class="catch-over hidden" id="catch-over">
+    <div class="card">
+      <div class="ttl" id="catch-over-ttl">おわり！</div>
+      <div class="big" id="catch-over-body"></div>
+      <button class="btn" id="btn-catch-again">もういちど</button>
+      <button class="btn purple" id="btn-catch-back">おさんぽへ もどる</button>
+    </div>
+  </div>
 </section>
 
 <!-- ============ 6. ゲームオーバー ============ -->
@@ -1001,6 +1113,19 @@ function courseZukanDone(courseId){
   return true;
 }
 function allZukanDone(){ return foundCount() >= TREASURES.length; }
+
+/* ミニゲーム「ボールキャッチ」 */
+var CATCH_SEC      = 60;    // せいげん じかん（びょう）
+var CATCH_LANES    = [0.18, 0.5, 0.82];   // ボールが おちて くる よこの いち
+/* はやさは「1びょうで なんpx」ではなく「うえから したまで なんびょうで おちるか」で
+   きめる。そうしないと がめんの たかさで むずかしさが かわって しまい、
+   たてに ながい タブレットでは おちるのに 10びょう かかって ゲームに ならない。 */
+var CATCH_FALL0    = 4000;  // はじめの おちきる じかん（ミリびょう）
+var CATCH_FALL_MIN = 2000;  // いちばん はやい ときの じかん
+var CATCH_FALL_DEC = 100;   // 1こ キャッチ するごとに みじかく なる ぶん
+var CATCH_STEP     = 6;     // なんこ とったら もんだいを むずかしく するか
+var CATCH_AFF_PER  = 3;     // なんこで なつき度 1
+var CATCH_AFF_MAX  = 6;     // 1かいで もらえる なつき度の さいだい
 
 var HOUSE_HEART = 1;    // いぬ小屋: はじめの ♥ を ふやす かず
 var BALL_STREAK = 3;    // ボール: なんもん つづけて せいかいで ボーナスか
@@ -1189,6 +1314,7 @@ function defaultSave(){
     dogs    : {},      /* いぬしゅ -> { dogName, level, affection } */
     /* ここから したは いぬに よらず きょうよう（こどもの がくしゅう きろく） */
     cleared : {}, mistakes:{}, totalOk:0, totalNg:0,
+    catchBest: 0,      /* ボールキャッチの ハイスコア */
     found   : {},      /* たからもの id -> みつけた かず */
     zbonus  : {},      /* ずかんの ごほうびを もらったか（コースid / 'all'） */
     days    : {},      /* 'YYYY-MM-DD' -> その日 おさんぽした かいすう */
@@ -1242,6 +1368,7 @@ function loadSave(){
     if(d.mistakes  && typeof d.mistakes  === 'object') s.mistakes  = d.mistakes;
     if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
     if(typeof d.totalNg === 'number')   s.totalNg = d.totalNg|0;
+    if(typeof d.catchBest === 'number') s.catchBest = Math.max(0, d.catchBest|0);
     if(d.found && typeof d.found === 'object'){
       for(var fk in d.found){
         if(d.found.hasOwnProperty(fk) && d.found[fk] > 0) s.found[fk] = d.found[fk]|0;
@@ -1393,13 +1520,13 @@ function sfxOver() { tone(392,0,.2,'triangle',.12); tone(311,.2,.2,'triangle',.1
    5. がめん きりかえ
    ========================================================= */
 function $(id){ return document.getElementById(id); }
-var SCREENS = ['title','select','map','quiz','result','gameover'];
+var SCREENS = ['title','select','map','quiz','result','gameover','catch'];
 function show(name){
   for(var i=0;i<SCREENS.length;i++){
     $('screen-' + SCREENS[i]).classList.toggle('hidden', SCREENS[i] !== name);
   }
-  /* もんだい画面だけ たかさを こていして、スクロールを ださない */
-  $('app').classList.toggle('fit', name === 'quiz');
+  /* もんだい画面と ミニゲームは たかさを こていして、スクロールを ださない */
+  $('app').classList.toggle('fit', name === 'quiz' || name === 'catch');
   window.scrollTo(0, 0);
 }
 
@@ -1974,6 +2101,10 @@ function renderMap(){
   }
   $('btn-sound').classList.toggle('off', !save.sound);
   $('btn-bgm').classList.toggle('off', !save.bgm);
+
+  $('mini-best').innerHTML = save.catchBest > 0
+    ? 'さいこう きろく <b>' + save.catchBest + '</b>こ'
+    : '♥は へらないよ。きらくに あそんでね！';
 
   /* コースボタン */
   var list = $('course-list');
@@ -2552,6 +2683,199 @@ function renderResult(fromReview){
 
 $('btn-again').addEventListener('click', function(){ sfxTap(); startRun(run.courseId); });
 $('btn-back-map').addEventListener('click', function(){ sfxTap(); gotoMap(); });
+
+/* =========================================================
+   11b. ミニゲーム「ボールキャッチ」
+   おちて くる 3つの ボールから、こたえを タップする。
+   ♥ は へらない。きぶんてんかん と、あたまの たいそう用。
+   ========================================================= */
+var cg = { on:false, score:0, miss:0, endAt:0, leftPaused:0, raf:0,
+           balls:[], q:null, gained:0 };
+
+/* とった かずで もんだいを むずかしく する。
+   ただし まだ あけて いない コースは ださない。 */
+function catchCourse(score){
+  var un = [], i;
+  for(i = 0; i < COURSES.length; i++){ if(isUnlocked(i)) un.push(COURSES[i]); }
+  return un[Math.min(un.length - 1, Math.floor(score / CATCH_STEP))];
+}
+
+function catchClearBalls(){
+  var i;
+  for(i = 0; i < cg.balls.length; i++){
+    if(cg.balls[i].el.parentNode) cg.balls[i].el.parentNode.removeChild(cg.balls[i].el);
+  }
+  cg.balls = [];
+}
+
+/* あたらしい もんだいと、3つの ボールを だす */
+function catchNextQ(){
+  catchClearBalls();
+  var q = makeQuestion(catchCourse(cg.score));
+  cg.q = q;
+  $('catch-q').innerHTML = q.a + ' ＋ ' + q.b + ' ＝ ？';
+
+  var area = $('catch-area'), w = area.clientWidth;
+  var vals = q.choices.slice(), i, b, el;
+  /* はやさは もんだいごとに きめて ボールに もたせる。
+     いちを「たった じかん」から けいさん するので、
+     えがくのが 間引かれても ゲームの はやさは かわらない。 */
+  var fall = Math.max(CATCH_FALL_MIN, CATCH_FALL0 - cg.score * CATCH_FALL_DEC);
+  var spd  = (area.clientHeight + 70) / fall;   /* px / ミリびょう */
+  var t0 = performance.now();
+  for(i = 0; i < CATCH_LANES.length && i < vals.length; i++){
+    el = document.createElement('button');
+    el.className = 'ball';
+    el.textContent = vals[i];
+    el.style.left = Math.round(w * CATCH_LANES[i] - 31) + 'px';
+    b = { el:el, val:vals[i], y0:-70 - i * 34, y:-70 - i * 34,
+          t0:t0, spd:spd, dead:false };
+    el.style.transform = 'translateY(' + b.y + 'px)';
+    (function(bb){
+      el.addEventListener('click', function(e){ e.stopPropagation(); catchTap(bb); });
+    })(b);
+    cg.balls.push(b);
+    area.appendChild(el);
+  }
+}
+
+function catchTap(b){
+  if(!cg.on || b.dead) return;
+  b.dead = true;
+  if(b.val === cg.q.ans){
+    cg.score++;
+    b.el.className = 'ball hit';
+    sfxOk();
+    popFx($('catch-fx'), '♥✧✦♪', 4);
+    $('catch-score').textContent = cg.score;
+    $('catch-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
+    setTimeout(catchNextQ, 170);
+  }else{
+    b.el.className = 'ball ng';
+    tone(200, 0, .14, 'sawtooth', .09);
+    setTimeout(function(){
+      if(b.el.parentNode) b.el.parentNode.removeChild(b.el);
+    }, 320);
+  }
+}
+
+function catchTick(){
+  if(!cg.on) return;
+  var now = performance.now();
+
+  /* のこり じかんは おわりの じこくとの さ。
+     フレームが 間引かれても ずれない。 */
+  var left = cg.endAt - now;
+  if(left <= 0){ catchEnd(); return; }
+  $('catch-time').textContent = Math.ceil(left / 1000) + 'びょう';
+  $('catch-time-bar').style.width = (left / (CATCH_SEC * 1000) * 100) + '%';
+
+  var floorY = $('catch-area').clientHeight - 34, i, b, alive = 0, missed = false;
+  for(i = 0; i < cg.balls.length; i++){
+    b = cg.balls[i];
+    if(b.dead) continue;
+    b.y = b.y0 + b.spd * (now - b.t0);
+    b.el.style.transform = 'translateY(' + b.y + 'px)';
+    if(b.y > floorY){
+      b.dead = true;
+      if(b.el.parentNode) b.el.parentNode.removeChild(b.el);
+      if(b.val === cg.q.ans) missed = true;   /* こたえを のがした */
+    }else{
+      alive++;
+    }
+  }
+  if(missed){
+    cg.miss++;
+    $('catch-dog').innerHTML = dogPic('sad', '');
+    tone(300, 0, .12, 'triangle', .08);
+  }
+  if(alive === 0){ catchNextQ(); }
+
+  cg.raf = requestAnimationFrame(catchTick);
+}
+
+function catchStart(){
+  cg.on = true; cg.score = 0; cg.miss = 0;
+  cg.endAt = performance.now() + CATCH_SEC * 1000;
+  cg.leftPaused = 0; cg.gained = 0;
+  $('catch-score').textContent = '0';
+  $('catch-time').textContent = CATCH_SEC + 'びょう';
+  $('catch-time-bar').style.width = '100%';
+  $('catch-fx').innerHTML = '';
+  $('catch-over').classList.add('hidden');
+  $('catch-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
+  show('catch');
+  /* えの はばが きまってから ボールを おく */
+  setTimeout(function(){
+    cg.endAt = performance.now() + CATCH_SEC * 1000;   /* ならべ おわってから かぞえる */
+    catchNextQ();
+    cg.raf = requestAnimationFrame(catchTick);
+  }, 60);
+}
+
+function catchStop(){
+  cg.on = false; cg.leftPaused = 0;
+  if(cg.raf) cancelAnimationFrame(cg.raf);
+  cg.raf = 0;
+  catchClearBalls();
+}
+
+function catchEnd(){
+  catchStop();
+  $('catch-time').textContent = '0びょう';
+  $('catch-time-bar').style.width = '0%';
+
+  /* とった かずに おうじて なつき度。まちがえても へらない */
+  cg.gained = Math.min(CATCH_AFF_MAX, Math.floor(cg.score / CATCH_AFF_PER));
+  var lv = 0, best = cg.score > save.catchBest;
+  if(cg.gained > 0){
+    pet().affection += cg.gained;
+    while(pet().affection >= AFFECTION_MAX){
+      pet().affection -= AFFECTION_MAX; pet().level++; lv++;
+    }
+  }
+  if(best) save.catchBest = cg.score;
+  writeSave();
+
+  $('catch-over-ttl').textContent = best ? '★ ハイスコア こうしん！ ★' : 'おわり！';
+  $('catch-over-body').innerHTML =
+    '<b>' + cg.score + '</b>こ キャッチ！' +
+    (best ? '<br><span class="newrec">これまでの さいこう きろく！</span>'
+          : '<br><span class="tiny">さいこう きろくは ' + save.catchBest + 'こ</span>') +
+    (cg.gained > 0
+      ? '<br>なつき度が <b>＋' + cg.gained + '</b>'
+      : '<br><span class="tiny">3こ キャッチすると なつき度が ふえるよ</span>') +
+    (lv > 0 ? '<br>✧ ' + dogN() + 'が おおきく なった！ ✧' : '');
+
+  if(best) sfxLevel(); else sfxTap();
+  $('catch-over').classList.remove('hidden');
+}
+
+$('btn-catch').addEventListener('click', function(){ sfxTap(); catchStart(); });
+$('btn-catch-again').addEventListener('click', function(){ sfxTap(); catchStart(); });
+$('btn-catch-quit').addEventListener('click', function(){ sfxTap(); catchStop(); gotoMap(); });
+$('btn-catch-back').addEventListener('click', function(){ sfxTap(); catchStop(); gotoMap(); });
+
+/* ほかの タブに いったら とめる（もどったら つづきから） */
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden && cg.on){
+    /* とめる。のこり じかんを おぼえて おく */
+    cg.on = false;
+    cg.leftPaused = cg.endAt - performance.now();
+    if(cg.raf) cancelAnimationFrame(cg.raf);
+    cg.raf = 0;
+  }else if(!document.hidden && !cg.on && cg.leftPaused > 0 &&
+           !$('screen-catch').classList.contains('hidden') &&
+           $('catch-over').classList.contains('hidden')){
+    /* つづきから。とまって いた ぶんだけ ボールの じかんも ずらす */
+    var now = performance.now(), gap = now + cg.leftPaused - cg.endAt, i;
+    cg.endAt = now + cg.leftPaused;
+    cg.leftPaused = 0;
+    for(i = 0; i < cg.balls.length; i++) cg.balls[i].t0 += gap;
+    cg.on = true;
+    cg.raf = requestAnimationFrame(catchTick);
+  }
+});
 
 /* =========================================================
    12. ゲームオーバー
