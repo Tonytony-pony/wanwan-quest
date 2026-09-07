@@ -320,6 +320,7 @@ python tools_make_dog_png.py
 | ビションフリーゼ | `bichon` |
 | ゴールデンレトリバー | `golden` |
 | ハスキー | `husky` |
+| ダルメシアン | `dalmatian` |
 
   - **Gemini に描かせるときは背景を単色グリーン（#00FF00）にしてください。**
     Gemini は本当の透過を出力できず、`transparent background` と指示すると
