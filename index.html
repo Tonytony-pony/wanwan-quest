@@ -196,6 +196,24 @@ body{
   box-shadow:0 3px 0 var(--shadow);animation:pop .5s cubic-bezier(.2,1.7,.4,1);}
 .stampget img{height:26px;vertical-align:-7px;margin-right:4px;}
 
+/* ---------- あそびかた（カテゴリ分け） ---------- */
+.rsec{margin:0 0 12px;}
+.rsec:last-child{margin-bottom:0;}
+.rsec .rt{display:inline-block;font-size:12.5px;color:#fff;
+  background:linear-gradient(180deg,#c79bf0,var(--purple));
+  border:2px solid var(--purple-deep);border-radius:999px;padding:1px 13px;
+  margin-bottom:6px;box-shadow:0 2px 0 var(--purple-deep);
+  text-shadow:0 1px 0 rgba(70,30,120,.5);}
+.rsec ul{margin:0;padding:0;list-style:none;}
+.rsec li{position:relative;font-size:13px;line-height:1.7;
+  padding:1px 0 1px 15px;color:var(--ink);}
+.rsec li::before{content:'';position:absolute;left:2px;top:9px;
+  width:6px;height:6px;border-radius:50%;background:var(--pink);}
+.rsec li b{color:var(--purple-deep);}
+.rsec li .bad{color:var(--bad);}
+/* たいせつな ぎょうは めだたせる */
+.rsec li.key{background:#fff3f8;border-radius:8px;padding-left:15px;}
+
 /* ---------- たからもの ずかん ---------- */
 .zsum{text-align:center;margin:2px 0 10px;}
 .zsum .big{font-size:15px;color:var(--purple-deep);}
@@ -232,18 +250,100 @@ body{
 .zcell.r2{border-color:var(--gold);}
 .zcell.r3{border-color:#ff7fc0;box-shadow:0 0 0 2px #ffe0f2 inset;}
 
-/* けっか がめん: ひろって きた もの */
-.tget{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:6px 9px;
-  border-radius:12px;background:linear-gradient(180deg,#fff6fb,#ffe4f2);
-  border:3px solid #fff;box-shadow:0 3px 0 var(--shadow);
-  animation:pop .5s cubic-bezier(.2,1.7,.4,1);}
-.tget .em{font-size:30px;line-height:1;flex:none;}
-.tget .tx{font-size:13px;color:var(--ink);line-height:1.45;text-align:left;}
-.tget .tx b{color:var(--purple-deep);}
-.tget.new{background:linear-gradient(180deg,#fff6de,#ffdf9b);box-shadow:0 3px 0 #b97a00;}
-.tget .tag{display:inline-block;font-size:10.5px;margin-left:4px;padding:0 7px;
-  border-radius:999px;background:var(--gold);color:#7a4a00;border:2px solid #b98c00;}
-.tget .cnt{font-size:11px;color:var(--ink-soft);margin-left:4px;}
+/* けっか がめん: ひろって きた ものの ちいさな きろく
+   （よろこびは まんなかの ポップアップの ほうで だす） */
+.tgot{text-align:center;font-size:12px;color:var(--ink-soft);margin:0 0 6px;}
+.tgot i{font-style:normal;font-size:22px;vertical-align:-4px;margin:0 2px;}
+
+/* ---------- たからもの ゲットの ポップアップ ---------- */
+.tpop{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  padding:20px;background:rgba(70,25,70,.55);animation:tpopBg .25s ease-out;}
+@keyframes tpopBg{from{opacity:0}to{opacity:1}}
+
+.tpop-card{position:relative;width:100%;max-width:300px;text-align:center;
+  padding:18px 16px 14px;border-radius:22px;
+  background:linear-gradient(180deg,#fffdfe 0%,#ffeaf5 70%,#ffd9ec 100%);
+  border:5px solid var(--pink-deep);
+  box-shadow:0 8px 0 var(--pink-deep), 0 14px 26px rgba(60,20,60,.45);
+  animation:tpopIn .55s cubic-bezier(.18,1.5,.42,1) both;}
+@keyframes tpopIn{
+  0%{transform:scale(.25) rotate(-14deg);opacity:0}
+  55%{transform:scale(1.1) rotate(4deg);opacity:1}
+  75%{transform:scale(.96) rotate(-1.5deg)}
+  100%{transform:scale(1) rotate(0)}}
+
+/* うしろで まわる ひかり。めずらしい もの ほど はっきり */
+.tpop-rays{position:absolute;left:50%;top:96px;width:330px;height:330px;
+  transform:translate(-50%,-50%);border-radius:50%;opacity:0;pointer-events:none;
+  background:conic-gradient(from 0deg,
+    rgba(255,220,120,.85) 0deg 12deg, rgba(255,220,120,0) 12deg 30deg,
+    rgba(255,220,120,.85) 30deg 42deg, rgba(255,220,120,0) 42deg 60deg,
+    rgba(255,220,120,.85) 60deg 72deg, rgba(255,220,120,0) 72deg 90deg,
+    rgba(255,220,120,.85) 90deg 102deg, rgba(255,220,120,0) 102deg 120deg,
+    rgba(255,220,120,.85) 120deg 132deg, rgba(255,220,120,0) 132deg 150deg,
+    rgba(255,220,120,.85) 150deg 162deg, rgba(255,220,120,0) 162deg 180deg,
+    rgba(255,220,120,.85) 180deg 192deg, rgba(255,220,120,0) 192deg 210deg,
+    rgba(255,220,120,.85) 210deg 222deg, rgba(255,220,120,0) 222deg 240deg,
+    rgba(255,220,120,.85) 240deg 252deg, rgba(255,220,120,0) 252deg 270deg,
+    rgba(255,220,120,.85) 270deg 282deg, rgba(255,220,120,0) 282deg 300deg,
+    rgba(255,220,120,.85) 300deg 312deg, rgba(255,220,120,0) 312deg 330deg,
+    rgba(255,220,120,.85) 330deg 342deg, rgba(255,220,120,0) 342deg 360deg);
+  -webkit-mask-image:radial-gradient(circle,transparent 26%,#000 42%,#000 72%,transparent 84%);
+  mask-image:radial-gradient(circle,transparent 26%,#000 42%,#000 72%,transparent 84%);
+  animation:tpopSpin 9s linear infinite;}
+@keyframes tpopSpin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+
+.tpop-head{position:relative;z-index:1;font-size:15px;color:var(--pink-deep);
+  margin-bottom:4px;}
+.tpop-em{position:relative;z-index:1;font-size:84px;line-height:1.12;
+  animation:tpopEm .75s cubic-bezier(.18,1.7,.4,1) both, tpopFloat 2.4s ease-in-out 1s infinite;
+  filter:drop-shadow(0 5px 5px rgba(120,50,100,.3));}
+@keyframes tpopEm{0%{transform:scale(0) rotate(-30deg)}
+  55%{transform:scale(1.4) rotate(8deg)}80%{transform:scale(.92) rotate(-3deg)}
+  100%{transform:scale(1) rotate(0)}}
+@keyframes tpopFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+
+.tpop-name{position:relative;z-index:1;font-size:19px;color:var(--purple-deep);
+  line-height:1.35;margin-top:2px;}
+.tpop-rare{position:relative;z-index:1;display:inline-block;margin-top:6px;
+  font-size:12px;padding:1px 12px;border-radius:999px;
+  background:#efe2f5;color:var(--ink-soft);border:2px solid #d8bfe6;}
+.tpop-cnt{position:relative;z-index:1;font-size:12.5px;color:var(--ink-soft);margin-top:6px;}
+.tpop-card .btn{position:relative;z-index:1;margin:12px 0 0;}
+.tpop-fx{position:absolute;inset:0;pointer-events:none;z-index:2;}
+.tpop-fx span{position:absolute;animation:tpopFly 1.15s ease-out forwards;}
+@keyframes tpopFly{0%{opacity:0;transform:translate(0,0) scale(.3)}
+  20%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.25)}}
+
+/* ★ はじめて みつけた ものは きんいろに */
+.tpop-card.first{border-color:#c98a00;
+  background:linear-gradient(180deg,#fffdf4 0%,#fff2cf 70%,#ffe3a0 100%);
+  box-shadow:0 8px 0 #c98a00, 0 14px 26px rgba(60,20,60,.45);}
+.tpop-card.first .tpop-head{color:#9a6600;}
+.tpop-card.first .tpop-name{color:#7a4a00;}
+.tpop-card.first .tpop-rare{background:var(--gold);color:#7a4a00;border-color:#b98c00;}
+
+/* レア度が あがるほど はでに */
+.tpop-card.r1 .tpop-rare{background:#dbeaff;color:#1d4f8f;border-color:#8fbaf0;}
+.tpop-card.r2 .tpop-rays{opacity:.75;}
+.tpop-card.r2 .tpop-rare{background:var(--gold);color:#7a4a00;border-color:#b98c00;}
+.tpop-card.r3 .tpop-rays{opacity:1;animation-duration:4.5s;}
+.tpop-card.r3{border-color:#ff5aa8;
+  box-shadow:0 8px 0 #ff5aa8, 0 0 0 5px rgba(255,255,255,.6), 0 14px 34px rgba(60,20,60,.5);
+  animation:tpopIn .55s cubic-bezier(.18,1.5,.42,1) both,
+            tpopRainbow 2.6s linear .6s infinite;}
+@keyframes tpopRainbow{
+  0%,100%{border-color:#ff5aa8;box-shadow:0 8px 0 #ff5aa8,0 0 0 5px rgba(255,255,255,.6),0 14px 34px rgba(60,20,60,.5)}
+  25%{border-color:#ffb03a;box-shadow:0 8px 0 #ffb03a,0 0 0 5px rgba(255,255,255,.6),0 14px 34px rgba(60,20,60,.5)}
+  50%{border-color:#5ad2a0;box-shadow:0 8px 0 #5ad2a0,0 0 0 5px rgba(255,255,255,.6),0 14px 34px rgba(60,20,60,.5)}
+  75%{border-color:#7aa8ff;box-shadow:0 8px 0 #7aa8ff,0 0 0 5px rgba(255,255,255,.6),0 14px 34px rgba(60,20,60,.5)}}
+.tpop-card.r3 .tpop-name{font-size:21px;}
+
+@media (max-height:600px){
+  .tpop-em{font-size:60px;}
+  .tpop-card{padding:12px 14px 10px;}
+  .tpop-rays{top:74px;}
+}
 
 /* ---------- アイテム いちらん ---------- */
 .itemrow{display:flex;gap:10px;align-items:flex-start;
@@ -518,7 +618,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 
   <div class="win purple">
     <span class="win-title">あそびかた</span>
-    <p class="rule" id="title-rule"></p>
+    <div class="rule" id="title-rule"></div>
   </div>
 
   <div class="center tiny">© わんわんクエスト</div>
@@ -589,7 +689,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 
   <div class="win purple hidden" id="pane-how">
     <span class="win-title">あそびかた</span>
-    <p class="rule" id="how-text"></p>
+    <div class="rule" id="how-text"></div>
     <div class="spacer"></div>
     <button class="btn small purple" id="btn-reset">さいしょから やりなおす</button>
   </div>
@@ -750,6 +850,20 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 </section>
 
 </div><!-- /#app -->
+
+<!-- たからものを ゲットした ときの ポップアップ -->
+<div class="tpop hidden" id="tpop">
+  <div class="tpop-card" id="tpop-card">
+    <div class="tpop-rays"></div>
+    <div class="tpop-head" id="tpop-head">たからもの はっけん！</div>
+    <div class="tpop-em"   id="tpop-em">🌼</div>
+    <div class="tpop-name" id="tpop-name">しろい おはな</div>
+    <div><span class="tpop-rare" id="tpop-rare">ふつう</span></div>
+    <div class="tpop-cnt"  id="tpop-cnt"></div>
+    <button class="btn" id="tpop-ok">やったー！</button>
+  </div>
+  <div class="tpop-fx" id="tpop-fx"></div>
+</div>
 
 <script>
 (function(){
@@ -1260,6 +1374,18 @@ document.addEventListener('visibilitychange', function(){
 function sfxTap()  { tone(880, 0, .06, 'square', .07); }
 function sfxOk()   { tone(660,0,.09); tone(880,.08,.09); tone(1174,.16,.18); }
 function sfxNg()   { tone(220,0,.16,'sawtooth',.11); tone(150,.15,.30,'sawtooth',.11); }
+function sfxGet(r){
+  if(r >= 3){        /* でんせつ */
+    tone(523,0,.1); tone(659,.09,.1); tone(784,.18,.1);
+    tone(1047,.27,.12); tone(1319,.38,.12); tone(1568,.5,.42);
+  }else if(r >= 2){  /* とても めずらしい */
+    tone(659,0,.1); tone(880,.09,.1); tone(1319,.19,.32);
+  }else if(r >= 1){  /* めずらしい */
+    tone(784,0,.09); tone(1175,.08,.22);
+  }else{             /* ふつう */
+    tone(880,0,.07); tone(1175,.06,.15);
+  }
+}
 function sfxLevel(){ tone(523,0,.1); tone(659,.1,.1); tone(784,.2,.1); tone(1046,.3,.32); }
 function sfxOver() { tone(392,0,.2,'triangle',.12); tone(311,.2,.2,'triangle',.12); tone(233,.4,.5,'triangle',.12); }
 
@@ -1374,23 +1500,74 @@ function makeChoices(ans){
    8. タイトルがめん
    ========================================================= */
 /* あそびかたの ぶんしょう。タイトルと タブの りょうほうで つかう。 */
-var RULE_HTML =
-  'おさんぽに でると <span class="hp">♥</span> を ' + HEART_START + 'こ もって いきます。<br>' +
-  'せいかいすると <span class="hp">♥</span> が <b class="up">' + HEART_UP + 'こ ふえて</b>、' +
-  '<b>まちがえると <span class="hp">♥</span> が ' + HEART_DOWN + 'こ われます</b>。<br>' +
-  'おさんぽが おわったら、のこった <span class="hp">♥</span> の かずだけ ' +
-  'なつき度が ふえて、いぬが 大きく なります。<br>' +
-  '<span class="hp">♥</span> が たりなく なると、いぬは どこかへ いって しまいます。<br>' +
-  'まいにち おさんぽして <span class="hp">♥</span> を ' + AFFECTION_MAX + 'こ ためると レベルアップ！<br>' +
-  'レベル 10・15・20・25 で <b class="up">アイテム</b>も もらえるよ。<br>' +
-  'おさんぽを 1かい おえると <b class="up">きょうの スタンプ</b>が もらえます。' +
-  'まちがえても もらえるよ。まいにち つづけると なつき度の ごほうびも！<br>' +
-  'おさんぽから かえると <b class="up">たからもの</b>を 1こ ひろってくるよ。' +
-  'ぜんもん せいかいなら もう 1こ！ コースごとに でる ものが ちがうので、' +
-  'いろんな コースに いってみてね。<br>' +
-  'しんけんに えらんでね！';
+/* あそびかた。ぜんぶ 1つづきの ぶんしょうだと よみにくいので
+   カテゴリごとに わけて ならべる。かずは せっていから つくるので、
+   バランスを かえても ぶんしょうが ずれない。 */
+var H = '<span class="hp">♥</span>';
+var RULE_SECTIONS = [
+  { t:'おさんぽ', li:[
+    H + ' を ' + HEART_START + 'こ もって おさんぽに でかけるよ',
+    'せいかいすると ' + H + ' が <b>' + HEART_UP + 'こ ふえる</b>',
+    { key:true, x:'まちがえると ' + H + ' が <span class="bad">' + HEART_DOWN +
+                   'こ われる</span>。しんけんに えらんでね！' },
+    H + ' が なくなると、いぬは どこかへ いって しまう…',
+    QUESTIONS_PER_RUN + 'もん こたえたら おさんぽ おわり'
+  ]},
+  { t:'なつき度と レベル', li:[
+    'おさんぽが おわると、のこった ' + H + ' の かずだけ <b>なつき度</b>が ふえる',
+    'なつき度が ' + AFFECTION_MAX + ' に なると <b>レベルアップ！</b>',
+    'レベルが あがると いぬが 大きく なるよ'
+  ]},
+  { t:'まいにち スタンプ', li:[
+    'おさんぽを 1かい おえると <b>スタンプ</b>が 1こ もらえる',
+    { key:true, x:'<b>まちがえても もらえる</b>よ。まいにち あそぼう！' },
+    '3日 つづけると なつき度 ＋3、5日で ＋5、7日で ＋10',
+    'そのあとは 7日 ごとに ＋10',
+    '「スタンプ」タブで カレンダーが 見られるよ'
+  ]},
+  { t:'たからもの', li:[
+    'おさんぽから かえると、いぬが <b>たからもの</b>を 1こ ひろってくる',
+    { key:true, x:'<b>ぜんもん せいかい</b>なら もう 1こ！' },
+    'コースごとに でる ものが ちがうよ。いろんな コースに いってみてね',
+    'ぜんぶ そろえると なつき度の ごほうび',
+    '「ずかん」タブで あつめた ものが 見られるよ'
+  ]},
+  { t:'アイテム', li:[
+    'レベル 10・15・20・25 で <b>アイテム</b>が もらえる',
+    'おさんぽが すこし ゆうりに なるよ',
+    '「アイテム」タブで なにが もらえるか 見られるよ'
+  ]}
+];
+
+function ruleHTML(){
+  var h = '', i, k, li, row;
+  for(i = 0; i < RULE_SECTIONS.length; i++){
+    h += '<div class="rsec"><span class="rt">' + RULE_SECTIONS[i].t + '</span><ul>';
+    li = RULE_SECTIONS[i].li;
+    for(k = 0; k < li.length; k++){
+      row = (typeof li[k] === 'string') ? { x:li[k] } : li[k];
+      h += '<li' + (row.key ? ' class="key"' : '') + '>' + row.x + '</li>';
+    }
+    h += '</ul></div>';
+  }
+  return h;
+}
+
+/* タイトルがめんは みじかく。くわしくは タブで よめる */
+function ruleShortHTML(){
+  return '<div class="rsec"><span class="rt">おさんぽ</span><ul>' +
+    '<li>' + H + ' を ' + HEART_START + 'こ もって おさんぽに でかけるよ</li>' +
+    '<li>せいかいすると ' + H + ' が <b>' + HEART_UP + 'こ ふえる</b></li>' +
+    '<li class="key">まちがえると ' + H + ' が <span class="bad">' + HEART_DOWN +
+      'こ われる</span></li>' +
+    '<li>のこった ' + H + ' の かずだけ <b>なつき度</b>が ふえて、いぬが 大きく なる</li>' +
+    '</ul></div>' +
+    '<p class="tiny center" style="margin:8px 0 0">' +
+    'スタンプ・たからもの・アイテムの ことは<br>' +
+    'ワンワンハウスの「あそびかた」で よめるよ。</p>';
+}
 function renderTitle(){
-  $('title-rule').innerHTML = RULE_HTML;
+  $('title-rule').innerHTML = ruleShortHTML();
   $('title-dog').innerHTML = dogPic('lv1', 'idle', save.current || FIRST_BREED);
   var info = $('save-info'), num = 0, k;
   for(k in save.dogs){ if(save.dogs.hasOwnProperty(k)) num++; }
@@ -1536,6 +1713,74 @@ $('cal-next').addEventListener('click', function(){
   renderStamp();
 });
 
+/* ===== たからものを ゲットした ときの ポップアップ =====
+   よこながの おしらせだと ながれて しまうので、
+   まんなかに どーんと だして「やった！」と おもえるように する。 */
+var tpopQueue = [], tpopAfter = null, tpopBusy = false;
+
+/* きらきらを とばす。めずらしい ほど かずを ふやす */
+function tpopSparkle(rare){
+  var box = $('tpop-fx'), sets = ['✧✦', '✧✦★', '✧✦★♪', '✧✦★♪🌟'];
+  var chars = sets[rare] || sets[0];
+  var num = [10, 14, 20, 28][rare] || 10;
+  var w = box.clientWidth, h = box.clientHeight, i, sp, ang, dist;
+  box.innerHTML = '';
+  for(i = 0; i < num; i++){
+    sp = document.createElement('span');
+    sp.textContent = chars.charAt(rnd(0, chars.length - 1));
+    sp.style.fontSize = rnd(14, 30) + 'px';
+    sp.style.left = (w / 2) + 'px';
+    sp.style.top  = (h / 2 - 30) + 'px';
+    ang  = Math.random() * Math.PI * 2;
+    dist = rnd(80, Math.max(110, Math.min(w, h) / 2 + 60));
+    sp.style.setProperty('--dx', Math.round(Math.cos(ang) * dist) + 'px');
+    sp.style.setProperty('--dy', Math.round(Math.sin(ang) * dist) + 'px');
+    sp.style.animationDelay = (i * 0.025) + 's';
+    box.appendChild(sp);
+  }
+  setTimeout(function(){ box.innerHTML = ''; }, 1500);
+}
+
+/* list は finishRun の run.gets。おわったら after() を よぶ */
+function showTreasurePops(list, after){
+  tpopQueue = (list || []).slice();
+  tpopAfter = after || null;
+  nextTreasurePop();
+}
+
+function nextTreasurePop(){
+  if(!tpopQueue.length){
+    $('tpop').classList.add('hidden');
+    tpopBusy = false;
+    if(tpopAfter){ var f = tpopAfter; tpopAfter = null; f(); }
+    return;
+  }
+  var g = tpopQueue.shift(), t = g.t, card = $('tpop-card');
+
+  card.className = 'tpop-card r' + t.r + (g.first ? ' first' : '');
+  $('tpop-head').textContent = g.first ? '★ はじめて みつけた！ ★' : 'たからもの はっけん！';
+  $('tpop-em').textContent   = t.em;
+  $('tpop-name').textContent = t.name;
+  $('tpop-rare').textContent = RARITY[t.r].star
+    ? RARITY[t.r].star + ' ' + RARITY[t.r].name : RARITY[t.r].name;
+  $('tpop-cnt').textContent  = g.first ? 'ずかんに とうろく したよ！'
+                                       : 'これで ' + g.n + 'こめ';
+  $('tpop-ok').textContent   = tpopQueue.length ? 'つぎの おたから ▶' : 'やったー！';
+
+  $('tpop').classList.remove('hidden');
+  tpopBusy = true;
+  /* アニメを さいせいし なおす */
+  card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+  sfxGet(t.r);
+  tpopSparkle(t.r);
+}
+
+$('tpop-ok').addEventListener('click', function(e){
+  e.stopPropagation(); sfxTap(); nextTreasurePop();
+});
+/* そとを タップしても つぎへ すすむ */
+$('tpop').addEventListener('click', function(){ if(tpopBusy) nextTreasurePop(); });
+
 /* その コースの たからものだけ とりだす */
 function treasuresByCourse(courseId){
   var out = [], i;
@@ -1611,7 +1856,7 @@ function renderSelect(){
   $('sel-player').textContent  = save.name;
   $('btn-sound2').classList.toggle('off', !save.sound);
   $('btn-bgm2').classList.toggle('off', !save.bgm);
-  $('how-text').innerHTML = RULE_HTML;
+  $('how-text').innerHTML = ruleHTML();
   calYM = null;            /* ひらく たびに こんげつに もどす */
   renderStamp();
   renderZukan();
@@ -2215,18 +2460,13 @@ function finishRun(){
 function renderResult(fromReview){
   $('result-banner').innerHTML = run.banner;
 
-  /* いぬが ひろって きた たからもの */
-  var th = '', gi, g;
+  /* いぬが ひろって きた たからもの。ここは ちいさな きろくだけ。
+     よろこびは まんなかの ポップアップで だす。 */
+  var th = '', gi;
   for(gi = 0; gi < (run.gets ? run.gets.length : 0); gi++){
-    g = run.gets[gi];
-    th += '<div class="tget' + (g.first ? ' new' : '') + '">' +
-          '<span class="em">' + g.t.em + '</span>' +
-          '<span class="tx"><b>' + g.t.name + '</b>を ひろってきた！' +
-          (g.first ? '<span class="tag">はじめて！</span>'
-                   : '<span class="cnt">' + g.n + 'こめ</span>') +
-          '</span></div>';
+    th += '<i>' + run.gets[gi].t.em + '</i>';
   }
-  $('result-treasure').innerHTML = th;
+  $('result-treasure').innerHTML = th ? '<div class="tgot">ひろってきた ' + th + '</div>' : '';
 
   var art = artForLevel(pet().level);
   $('result-dog').innerHTML = dogPic(art, run.levelUps > 0 ? 'grow' : (run.ng === 0 ? 'happy' : 'idle'));
@@ -2302,6 +2542,12 @@ function renderResult(fromReview){
   }
 
   show('result');
+
+  /* たからものを ゲットした ら、まんなかに ポップアップ。
+     おさらいの あとは もう だしている ので ださない。 */
+  if(!fromReview && run.gets && run.gets.length){
+    setTimeout(function(){ showTreasurePops(run.gets); }, 320);
+  }
 }
 
 $('btn-again').addEventListener('click', function(){ sfxTap(); startRun(run.courseId); });
