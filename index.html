@@ -497,9 +497,9 @@ var WEAK_RATE       = 0.4;    // にがて もんだいが でる かくりつ
    あしあと（img/paw.png）は ぜんぶの いぬで きょうよう。 */
 var BREEDS = [
   { id:'beagle',        name:'ビーグル',             ready:true  },
-  { id:'shiba',         name:'しばいぬ',             ready:false },
+  { id:'shiba',         name:'しばいぬ',             ready:true  },
   { id:'corgi',         name:'コーギー',             ready:false },
-  { id:'pomeranian',    name:'ポメラニアン',         ready:false },
+  { id:'pomeranian',    name:'ポメラニアン',         ready:true  },
   { id:'chihuahua',     name:'チワワ',               ready:false },
   { id:'frenchbulldog', name:'フレンチブルドッグ',   ready:true  },
   { id:'bichon',        name:'ビションフリーゼ',     ready:false },
@@ -836,7 +836,11 @@ function renderSelect(){
 
   var g = $('dog-grid');
   g.innerHTML = '';
-  for(var i = 0; i < BREEDS.length; i++){
+  /* あそべる いぬを さきに、じゅんびちゅうを うしろに ならべる */
+  var list = BREEDS.slice().sort(function(a, b){
+    return (b.ready ? 1 : 0) - (a.ready ? 1 : 0);
+  });
+  for(var i = 0; i < list.length; i++){
     (function(b){
       var owned = save.dogs[b.id];
       var card  = document.createElement('button');
@@ -860,7 +864,7 @@ function renderSelect(){
         card.addEventListener('click', function(){ sfxTap(); chooseDog(b.id); });
       }
       g.appendChild(card);
-    })(BREEDS[i]);
+    })(list[i]);
   }
 }
 
