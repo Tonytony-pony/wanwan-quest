@@ -184,8 +184,6 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .dog{position:relative;z-index:1;width:215px;height:auto;display:block;
   filter:drop-shadow(0 4px 0 rgba(150,70,130,.22));}
 svg.dog{image-rendering:pixelated;image-rendering:crisp-edges;}
-/* そっぽを むいた いぬの イラストが そろうまでの かりの みため */
-.dog.is-sad{filter:grayscale(.6) brightness(.92) drop-shadow(0 4px 0 rgba(150,70,130,.2));}
 .dog.idle{animation:idle 1.7s ease-in-out infinite;}
 @keyframes idle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-5px) scaleY(1.03)}}
 .dog.happy{animation:happy .42s ease-in-out 3;}
@@ -874,21 +872,14 @@ function pixels(rows, pal){
 
 /* Geminiで つくった イラスト。ここに ない ものは ドットえを つかう */
 var DOG_IMG = {
-  puppy : 'img/dog_lv1.png',
-  adult : 'img/dog_lv3.png',
-  hero  : 'img/dog_lv5.png'
+  puppy : 'img/dog_lv1.png',   /* レベル 1〜2 */
+  adult : 'img/dog_lv3.png',   /* レベル 3〜4 */
+  hero  : 'img/dog_lv5.png',   /* レベル 5〜  */
+  sad   : 'img/dog_sad.png',   /* そっぽを むいた いぬ */
+  paw   : 'img/paw.png'        /* あしあと */
 };
 
 function dogSVG(kind, anim){
-  /* そっぽを むいた いぬの イラストは まだ ないので、
-     いまの レベルの イラストを いろあせさせて つかう */
-  if(kind === 'sad'){
-    var lv = artForLevel(save.level);
-    if(DOG_IMG[lv]){
-      return '<img class="dog is-sad ' + (anim || '') + '" src="' + DOG_IMG[lv] +
-             '" alt="" draggable="false">';
-    }
-  }
   if(DOG_IMG[kind]){
     return '<img class="dog ' + (anim || '') + '" src="' + DOG_IMG[kind] +
            '" alt="" draggable="false">';
