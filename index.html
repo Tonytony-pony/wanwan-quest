@@ -219,6 +219,23 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .fx{position:absolute;inset:0;pointer-events:none;z-index:2;}
 .fx span{position:absolute;font-size:22px;animation:fly 1s ease-out forwards;}
 @keyframes fly{0%{opacity:0;transform:translateY(20px) scale(.4)}25%{opacity:1}100%{opacity:0;transform:translateY(-62px) scale(1.25)}}
+/* ---------- ごほうび アイテム ---------- */
+.item{position:absolute;display:block;pointer-events:none;
+  filter:drop-shadow(0 2px 0 rgba(150,70,130,.18));}
+.item.house{left:16px; bottom:0;   width:130px; z-index:0;}
+.item.ball {right:78px; bottom:2px; width:44px;  z-index:2;}
+.item.bowl {right:8px;  bottom:2px; width:62px;  z-index:2;}
+.inline-item{height:20px;vertical-align:-5px;margin-right:3px;}
+.medal-badge{width:18px;height:27px;vertical-align:-6px;margin-left:3px;
+  filter:drop-shadow(0 1px 0 rgba(150,70,130,.25));}
+.dogcard .items{display:flex;gap:3px;height:16px;align-items:center;justify-content:center;}
+.dogcard .items img{width:auto;height:16px;display:block;}
+.itemget{
+  text-align:center;font-size:15px;color:#7a4a00;margin:2px 0 8px;
+  background:linear-gradient(90deg,#ffe488,#ffc23f);
+  border:3px solid #fff;border-radius:12px;padding:5px;
+  box-shadow:0 3px 0 #b97a00;animation:pop .5s cubic-bezier(.2,1.7,.4,1);}
+.itemget img{height:26px;vertical-align:-7px;margin-right:4px;}
 .dogname{display:inline-block;font-size:13px;color:var(--purple-deep);
   background:rgba(255,255,255,.85);border-radius:999px;padding:1px 12px;}
 
@@ -361,7 +378,10 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <div class="win">
     <span class="win-title" id="map-win-title">いぬの ようす</span>
     <div class="dog-stage" style="min-height:200px">
+      <img class="item house hidden" id="item-house" src="img/house.png" alt="" draggable="false">
       <div id="map-dog"></div>
+      <img class="item ball hidden"  id="item-ball"  src="img/ball.png"  alt="" draggable="false">
+      <img class="item bowl hidden"  id="item-bowl"  src="img/bowl.png"  alt="" draggable="false">
     </div>
     <div class="gauge-wrap">
       <div class="gauge-cap"><span>なつき度</span><span id="map-aff-num">♥ 0 / 100</span></div>
@@ -488,6 +508,34 @@ var HEART_START     = 3;      // おさんぽ はじめに もっていく ♥ �
 var HEART_UP        = 1;      // せいかい 1かいで ふえる ♥
 var HEART_DOWN      = 3;      // まちがい 1かいで われる ♥
 var WEAK_RATE       = 0.4;    // にがて もんだいが でる かくりつ
+
+/* レベルが とどくと もらえる ごほうび。
+   もっているか どうかは レベルから きまるので、セーブには のこさない。 */
+var ITEMS = [
+  { id:'house', lv:10, name:'いぬ小屋',       pic:'img/house.png',
+    what:'おさんぽの ♥が 1こ ふえる' },
+  { id:'bowl',  lv:15, name:'ごはんの おさら', pic:'img/bowl.png',
+    what:'1かいだけ ♥が われなくなる' },
+  { id:'ball',  lv:20, name:'ボール',         pic:'img/ball.png',
+    what:'3もん つづけて せいかいで ♥ ＋1' },
+  { id:'medal', lv:25, name:'きんの メダル',   pic:'img/medal.png',
+    what:'おさんぽの おわりに なつき度 ＋5' }
+];
+var HOUSE_HEART = 1;    // いぬ小屋: はじめの ♥ を ふやす かず
+var BALL_STREAK = 3;    // ボール: なんもん つづけて せいかいで ボーナスか
+var MEDAL_BONUS = 5;    // メダル: おわりに もらえる なつき度
+
+function hasItem(id, lv){
+  for(var i = 0; i < ITEMS.length; i++){
+    if(ITEMS[i].id === id) return lv >= ITEMS[i].lv;
+  }
+  return false;
+}
+function itemsOf(lv){
+  var out = [], i;
+  for(i = 0; i < ITEMS.length; i++){ if(lv >= ITEMS[i].lv) out.push(ITEMS[i]); }
+  return out;
+}
 
 /* =========================================================
    1. いぬの イラスト
@@ -859,6 +907,13 @@ function renderSelect(){
       html += !b.ready ? '<span class="st soon">じゅんびちゅう</span>'
             : owned    ? '<span class="st lv">レベル ' + owned.level + '</span>'
                        : '<span class="st new">はじめて</span>';
+      if(owned){
+        var got = itemsOf(owned.level), k, ic = '';
+        for(k = 0; k < got.length; k++){
+          ic += '<img src="' + got[k].pic + '" alt="' + got[k].name + '">';
+        }
+        html += '<span class="items">' + ic + '</span>';
+      }
       card.innerHTML = html;
 
       if(b.ready){
@@ -924,9 +979,14 @@ function gotoMap(){
 function renderMap(){
   $('map-win-title').textContent = dogN() + ' の ようす';
   $('map-name').textContent    = save.name + ' と ' + dogN();
-  $('map-dogname').textContent = nameForLevel(pet().level);
+  $('map-dogname').innerHTML   = nameForLevel(pet().level) +
+    (hasItem('medal', pet().level)
+      ? ' <img class="medal-badge" src="img/medal.png" alt="きんの メダル">' : '');
   $('map-level').textContent   = pet().level;
   $('map-dog').innerHTML       = dogPic(artForLevel(pet().level), 'idle');
+  $('item-house').classList.toggle('hidden', !hasItem('house', pet().level));
+  $('item-bowl').classList.toggle('hidden',  !hasItem('bowl',  pet().level));
+  $('item-ball').classList.toggle('hidden',  !hasItem('ball',  pet().level));
   setGauge($('map-aff-bar'), $('map-aff-num'), pet().affection, AFFECTION_MAX);
   $('btn-sound').textContent   = save.sound ? '♪' : '×';
 
@@ -998,7 +1058,10 @@ function startRun(courseId){
     index    : 0,
     ok       : 0,
     ng       : 0,
-    hearts   : HEART_START,
+    hearts   : HEART_START + (hasItem('house', pet().level) ? HOUSE_HEART : 0),
+    guard    : hasItem('bowl', pet().level) ? 1 : 0,  /* ごはんの おまもり */
+    streak   : 0,                                     /* れんぞく せいかい */
+    bonus    : 0,                                     /* ボールで もらった ♥ */
     levelUps : 0,
     dead     : false,
     answered : false,
@@ -1119,13 +1182,27 @@ function answer(value, btnEl){
     run.ok++;
     save.totalOk++;
     run.hearts += HEART_UP;
+    run.streak++;
     sfxOk();
     $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
     popFx($('quiz-fx'), '♥✧♪✦', 5);
-    renderHearts('add', 0);
 
-    msg = '<p class="good">だいせいかい！ ' + dogN() + 'が よろこんでいる！</p>' +
-          '<p class="tiny">♥ が ' + HEART_UP + 'こ ふえて、ぜんぶで <b>♥ ' + run.hearts + 'こ</b>！</p>';
+    msg = '<p class="good">だいせいかい！ ' + dogN() + 'が よろこんでいる！</p>';
+
+    /* ボール: れんぞく せいかいの ボーナス */
+    var ballHit = hasItem('ball', pet().level) && run.streak % BALL_STREAK === 0;
+    if(ballHit){
+      run.hearts += 1;
+      run.bonus++;
+      popFx($('quiz-fx'), '✧★', 4);
+      msg += '<p class="tiny"><img class="inline-item" src="img/ball.png" alt="">' +
+             BALL_STREAK + 'もん つづけて せいかい！ ♥ ボーナス ＋1<br>' +
+             '♥ が ぜんぶで <b>♥ ' + run.hearts + 'こ</b>！</p>';
+    }else{
+      msg += '<p class="tiny">♥ が ' + HEART_UP + 'こ ふえて、ぜんぶで <b>♥ ' +
+             run.hearts + 'こ</b>！</p>';
+    }
+    renderHearts('add', 0);
   }else{
     /* ------- ふせいかい ------- */
     run.ng++;
@@ -1140,7 +1217,29 @@ function answer(value, btnEl){
     }
     if(!dup) run.missed.push({ a:q.a, b:q.b, ans:q.ans, key:q.key });
 
+    run.streak = 0;
     $('quiz-fx').innerHTML = '';       /* せいかいの ♥ を けす */
+
+    /* ごはんの おさら: 1かいだけ ♥が われるのを ふせぐ */
+    if(run.guard > 0){
+      run.guard--;
+      renderHearts(null, 0);
+      $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
+      popFx($('quiz-fx'), '🍖✧', 3);
+      msg = '<p class="bad">ざんねん… こたえは <b>' + q.ans + '</b> だよ。</p>' +
+            '<p class="tiny"><img class="inline-item" src="img/bowl.png" alt="">' +
+            'でも ごはんを たべたから、♥は われなかった！<br>' +
+            'つぎは ふせげないよ。きを つけてね。</p>';
+      writeSave();
+      $('quiz-wintitle').textContent = 'セーフ！';
+      $('quiz-msg').innerHTML = msg;
+      run.index++;
+      var nb0 = $('btn-next');
+      nb0.textContent = (run.index >= QUESTIONS_PER_RUN) ? 'けっかを みる ▶' : 'つぎへ ▶';
+      nb0.classList.remove('hidden');
+      return;
+    }
+
     $('quiz-dog').innerHTML = dogPic('sad', 'sad');
     document.getElementById('app').classList.add('shake');
     setTimeout(function(){ document.getElementById('app').classList.remove('shake'); }, 460);
@@ -1200,6 +1299,7 @@ function answerReview(q, correct){
     run.reviewOk++;
     save.totalOk++;
     run.hearts     += HEART_UP;
+    run.gained     += HEART_UP;
     pet().affection += HEART_UP;
     sfxOk();
     $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
@@ -1283,9 +1383,11 @@ function finishRun(){
   var firstClear = !save.cleared[course.id];
   save.cleared[course.id] = true;
 
-  /* のこった ♥ が そのまま なつき度に なる */
+  /* のこった ♥ が そのまま なつき度に なる（メダルが あれば おまけ） */
+  run.medalBonus = hasItem('medal', pet().level) ? MEDAL_BONUS : 0;
+  run.gained  = run.hearts + run.medalBonus;
   run.affFrom = pet().affection;
-  pet().affection += run.hearts;
+  pet().affection += run.gained;
   run.levelUps = 0;
   while(pet().affection >= AFFECTION_MAX){
     pet().affection -= AFFECTION_MAX;
@@ -1297,6 +1399,15 @@ function finishRun(){
   run.banner = '';
   if(run.levelUps > 0){
     run.banner += '<div class="banner">✧ ' + dogN() + 'が おおきく なった！ ✧</div>';
+    /* あがった レベルで あたらしく もらえた アイテム */
+    var before = pet().level - run.levelUps, k;
+    for(k = 0; k < ITEMS.length; k++){
+      if(ITEMS[k].lv > before && ITEMS[k].lv <= pet().level){
+        run.banner += '<div class="itemget"><img src="' + ITEMS[k].pic + '" alt="">' +
+                      ITEMS[k].name + 'を もらった！<br>' +
+                      '<span class="tiny">' + ITEMS[k].what + '</span></div>';
+      }
+    }
   }
   if(firstClear && idx + 1 < COURSES.length){
     run.banner += '<div class="banner">🔓 ' + COURSES[idx+1].name + ' が あいた！</div>';
@@ -1322,7 +1433,11 @@ function renderResult(fromReview){
 
   $('result-hearts').innerHTML = heartsHTML(run.hearts);
   $('result-conv').innerHTML =
-    'あつめた ♥ ' + run.hearts + 'こ ＝ <b>なつき度 ＋' + run.hearts + '</b>';
+    'あつめた ♥ ' + run.hearts + 'こ' +
+    (run.medalBonus
+      ? ' ＋ <img class="inline-item" src="img/medal.png" alt="">' + run.medalBonus
+      : '') +
+    ' ＝ <b>なつき度 ＋' + (run.gained || run.hearts) + '</b>';
 
   var m;
   if(fromReview){
@@ -1341,6 +1456,10 @@ function renderResult(fromReview){
       m += '<p>つぎは まちがえないように がんばろう！</p>';
     }else{
       m += '<p class="bad">' + dogN() + 'の ごきげんが ちょっと わるいみたい…</p>';
+    }
+    if(run.bonus > 0){
+      m += '<p class="tiny"><img class="inline-item" src="img/ball.png" alt="">' +
+           'ボールの ボーナスで ♥ が ' + run.bonus + 'こ ふえたよ！</p>';
     }
   }
   $('result-msg').innerHTML = m;

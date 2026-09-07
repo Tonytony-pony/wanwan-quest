@@ -19,6 +19,7 @@ Geminiの しゅつりょくを JPGで ほぞんすると、とうめいぶぶ�
   python tools_make_dog_png.py              ぜんぶ
   python tools_make_dog_png.py shiba        しばいぬ だけ
   python tools_make_dog_png.py paw          あしあと だけ
+  python tools_make_dog_png.py items        アイテム だけ
 """
 import os, sys
 from collections import deque
@@ -38,6 +39,15 @@ POSES = [
     ('04', 'sad', 400),   # そっぽを むいた すがた
 ]
 EXTS = ('.jpg', '.jpeg', '.png', '.webp')   # どの かたちで ほぞんしても OK
+
+# アイテム（いぬ小屋・ごはん・ボール・メダル）。おおきさは たかさで そろえる。
+ITEM_DIR = 'items'
+ITEMS = [
+    ('house', 320),   # いぬ小屋
+    ('bowl',  150),   # ごはんの おさら
+    ('ball',  150),   # ボール
+    ('medal', 220),   # きんの メダル
+]
 
 def find_src(folder, stem):
     for e in EXTS:
@@ -285,7 +295,7 @@ def keep_blobs(fg, w, h):
     return keep, total, len(comps)
 
 
-def process(src_path, out_name, target_h, align='bottom'):
+def process(src_path, out_name, target_h, align='bottom', pad=True):
     im0 = Image.open(src_path)
 
     # とうめいの ある PNG なら、はいけいを けす しょりは いらない。
@@ -293,7 +303,7 @@ def process(src_path, out_name, target_h, align='bottom'):
     if im0.mode in ('RGBA', 'LA') or 'transparency' in im0.info:
         rgba  = im0.convert('RGBA')
         alpha = rgba.getchannel('A')
-        return finish(rgba, alpha, out_name, target_h, align, src_path, 'とうめいPNG')
+        return finish(rgba, alpha, out_name, target_h, align, src_path, 'とうめいPNG', pad)
 
     im = im0.convert('RGB')
     bg, w, h, ncell, key = background_mask(im)
@@ -323,7 +333,7 @@ def process(src_path, out_name, target_h, align='bottom'):
         note = 'たんしょくはいけい かたまり=%d' % ncomp
     else:
         note = 'しろマス=%d かたまり=%d' % (ncell, ncomp)
-    return finish(rgba, alpha, out_name, target_h, align, src_path, note)
+    return finish(rgba, alpha, out_name, target_h, align, src_path, note, pad)
 
 
 def despill(rgba):
@@ -340,7 +350,7 @@ def despill(rgba):
                 px[x, y] = (r, lim, b, a)
 
 
-def finish(rgba, alpha, out_name, target_h, align, src_path, note):
+def finish(rgba, alpha, out_name, target_h, align, src_path, note, pad=True):
     """きりぬき -> おおきさそろえ -> 512x512 に はいち -> ほぞん"""
     rgba = rgba.copy()
     rgba.putalpha(alpha)
@@ -349,14 +359,17 @@ def finish(rgba, alpha, out_name, target_h, align, src_path, note):
 
     cw, ch = rgba.size
     scale = target_h / float(ch)
-    if cw * scale > CANVAS - MARGIN_X * 2:
+    if pad and cw * scale > CANVAS - MARGIN_X * 2:
         scale = (CANVAS - MARGIN_X * 2) / float(cw)
     nw, nh = max(1, int(round(cw * scale))), max(1, int(round(ch * scale)))
     rgba = rgba.resize((nw, nh), Image.LANCZOS)
 
-    out = Image.new('RGBA', (CANVAS, CANVAS), (0, 0, 0, 0))
-    top = (BOTTOM - nh) if align == 'bottom' else ((CANVAS - nh) // 2)
-    out.paste(rgba, ((CANVAS - nw) // 2, top), rgba)
+    if pad:
+        out = Image.new('RGBA', (CANVAS, CANVAS), (0, 0, 0, 0))
+        top = (BOTTOM - nh) if align == 'bottom' else ((CANVAS - nh) // 2)
+        out.paste(rgba, ((CANVAS - nw) // 2, top), rgba)
+    else:
+        out = rgba                       # アイテムは よはくを つけずに そのまま
 
     if not os.path.isdir(OUT_DIR):
         os.makedirs(OUT_DIR)
@@ -370,7 +383,7 @@ def breeds():
     if not os.path.isdir(SRC_ROOT):
         return []
     return sorted(d for d in os.listdir(SRC_ROOT)
-                  if os.path.isdir(os.path.join(SRC_ROOT, d)))
+                  if os.path.isdir(os.path.join(SRC_ROOT, d)) and d != ITEM_DIR)
 
 
 if __name__ == '__main__':
@@ -388,6 +401,19 @@ if __name__ == '__main__':
                 continue
             process(src, '%s_%s.png' % (b, pose), th, 'bottom')
             done += 1
+
+    # アイテムは まんなかぞろえ。キャンバスに たいして ちいさめに おく。
+    if not only or ITEM_DIR in only:
+        idir = os.path.join(SRC_ROOT, ITEM_DIR)
+        if os.path.isdir(idir):
+            print('アイテム')
+            for stem, th in ITEMS:
+                src = find_src(idir, stem)
+                if not src:
+                    print('  %-16s (%s.jpg が ないので とばす)' % (stem, stem))
+                    continue
+                process(src, '%s.png' % stem, th, 'center', pad=False)
+                done += 1
 
     paw = find_src(SRC_ROOT, 'paw')
     if paw and (not only or 'paw' in only):
