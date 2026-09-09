@@ -196,6 +196,13 @@ body{
 .cell .rb{position:absolute;right:1px;bottom:0;font-size:13px;line-height:1;
   filter:drop-shadow(0 1px 0 rgba(150,70,130,.25));}
 
+/* なまえは あとから かえられない、の おしらせ */
+.namenote{margin:8px 0 2px;text-align:center;font-size:12.5px;line-height:1.65;
+  color:#9a6600;background:linear-gradient(180deg,#fffaea,#ffeec2);
+  border:2px solid #e8a900;border-radius:12px;padding:8px 10px;}
+.namenote .mk{font-size:15px;margin-right:3px;}
+.namenote b{color:#c25a00;}
+
 /* おやすみけんで まもった日 */
 .cell.rested{background:#eef2ff;border-color:#9fb4e8;}
 .cell.rested .zz{font-size:19px;line-height:1;opacity:.85;}
@@ -878,6 +885,8 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <div class="center" style="margin-bottom:8px"><span class="dogname" id="sel-breed"></span></div>
     <div class="field-label">▼ この いぬの なまえ</div>
     <input type="text" id="input-dogname" maxlength="8" placeholder="ポチ" autocomplete="off" spellcheck="false">
+    <p class="namenote"><span class="mk">✎</span>つけた なまえは
+      <b>あとから かえられません</b>。<br>よく かんがえて つけてね！</p>
     <button class="btn" id="btn-adopt">この いぬと おさんぽ！</button>
     <button class="btn small purple" id="btn-adopt-back">やっぱり ほかの いぬ</button>
   </div>
