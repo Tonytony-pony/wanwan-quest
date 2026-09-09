@@ -184,6 +184,56 @@ body{
 .cell.today{border-color:var(--gold);border-width:3px;}
 .cell.future{opacity:.5;}
 
+/* カレンダーの「ごほうびの日」 */
+.cell.target{border-color:#e8a900;border-width:3px;cursor:pointer;
+  background:linear-gradient(180deg,#fffaea,#ffeec2);
+  animation:tgtGlow 1.8s ease-in-out infinite;}
+@keyframes tgtGlow{0%,100%{box-shadow:0 0 0 0 rgba(232,169,0,.55)}
+  50%{box-shadow:0 0 0 5px rgba(232,169,0,0)}}
+.cell .tgt{font-size:20px;line-height:1;filter:drop-shadow(0 1px 0 rgba(150,90,0,.3));}
+.cell.target .d{color:#9a6600;}
+/* もらった レアアイテムの あと */
+.cell .rb{position:absolute;right:1px;bottom:0;font-size:13px;line-height:1;
+  filter:drop-shadow(0 1px 0 rgba(150,70,130,.25));}
+
+/* つぎの ごほうびの あんない（カレンダーの した） */
+.nextrare{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;
+  align-items:center;width:100%;margin-top:9px;
+  text-align:left;font-family:inherit;color:inherit;cursor:pointer;
+  padding:10px 12px;border-radius:14px;
+  background:linear-gradient(180deg,#fffaea,#ffeec2);
+  border:3px solid #e8a900;box-shadow:0 4px 0 #b07f00;
+  transition:transform .08s,box-shadow .08s;}
+.nextrare:active{transform:translateY(4px);box-shadow:0 0 0 #b07f00;}
+.nextrare:focus-visible{outline:3px solid var(--purple);outline-offset:3px;}
+.nextrare .bx{grid-row:1 / span 2;font-size:32px;line-height:1;}
+.nextrare .tx{min-width:0;font-size:12.5px;line-height:1.6;color:#7a4a00;}
+.nextrare .tx b{font-size:15px;color:#9a6600;}
+.nextrare .go{justify-self:start;font-size:11px;color:#fff;background:#e8a900;
+  border:2px solid #b07f00;border-radius:999px;padding:2px 12px;white-space:nowrap;}
+.nextrare.done .bx{grid-row:1;}
+.nextrare.done{background:linear-gradient(180deg,#f2ffe9,#d7f5c2);
+  border-color:#5aa02a;box-shadow:0 4px 0 #3f7a18;cursor:default;}
+.nextrare.done .tx{color:#2f6b12;}
+.nextrare.done .tx b{color:#2f6b12;}
+
+/* レアアイテムの いちらん */
+.rare-list{margin-top:10px;border-top:2px dotted #f0cfe2;padding-top:8px;
+  display:flex;flex-direction:column;gap:5px;}
+.rare-row{display:flex;align-items:center;gap:8px;font-size:12.5px;
+  padding:5px 8px;border-radius:10px;border:2px solid var(--line);
+  background:var(--win-bg);}
+.rare-row .em{font-size:21px;line-height:1;flex:none;width:26px;text-align:center;}
+.rare-row .nm{flex:1;min-width:0;color:var(--ink);}
+.rare-row .dd{font-size:11px;color:var(--ink-soft);white-space:nowrap;}
+.rare-row.got{border-color:var(--gold);background:linear-gradient(180deg,#fffdf4,#fff3d4);}
+.rare-row.got .nm{color:#7a4a00;}
+.rare-row.got .dd{color:#9a6600;}
+.rare-row.lock .em{opacity:.5;}
+.rare-row.lock .nm{color:#b9a3b4;}
+.rare-row.next{border-color:#e8a900;cursor:pointer;}
+.rare-row.next .nm{color:#9a6600;}
+
 .bonus-list{margin-top:8px;border-top:2px dotted #f0cfe2;padding-top:7px;}
 .bonus-list .row{display:flex;justify-content:space-between;align-items:center;
   font-size:12.5px;padding:2px 4px;color:var(--ink-soft);}
@@ -734,8 +784,9 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <button class="calbtn" id="cal-next">▶</button>
     </div>
     <div class="cal" id="cal-grid"></div>
-    <p class="tiny center" id="stamp-sum" style="margin:8px 0 0"></p>
-    <div class="bonus-list" id="stamp-bonus"></div>
+    <button class="nextrare" id="next-rare"></button>
+    <p class="tiny center" id="stamp-sum" style="margin:9px 0 0"></p>
+    <div class="rare-list" id="rare-list"></div>
   </div>
 
   <div class="win hidden" id="pane-zukan">
@@ -1009,13 +1060,18 @@ var ITEMS = [
 ];
 /* まいにち スタンプ。おさんぽを 1かい おえると その日の スタンプが もらえる。
    けっかが わるくても もらえる（まいにち あそぶ りゆうを つくるため）。 */
-var STREAK_BONUS = [
-  { d:3, aff:3  },
-  { d:5, aff:5  },
-  { d:7, aff:10 }
+/* れんぞくで おさんぽを つづけると もらえる レアアイテム。
+   おさんぽで ひろう「たからもの」とは まったく べつの もの。
+   1日に 1つまで、ひとつずつ しか もらえない。 */
+var RARES = [
+  { id:'star',   d:3,  em:'⭐',  name:'きんの ほし' },
+  { id:'gift',   d:5,  em:'🎁',  name:'ひみつの プレゼント' },
+  { id:'badge',  d:7,  em:'🎖️', name:'がんばり きしょう' },
+  { id:'crown',  d:10, em:'👑',  name:'ちいさな おうかん' },
+  { id:'bear',   d:14, em:'🧸',  name:'なかよしの くまさん' },
+  { id:'shoot',  d:21, em:'🌠',  name:'ねがいの ながれぼし' },
+  { id:'trophy', d:30, em:'🏆',  name:'きんの トロフィー' }
 ];
-var STREAK_LOOP     = 7;    // 7日を こえたら なん日ごとに ボーナスか
-var STREAK_LOOP_AFF = 10;   // そのときの なつき度
 var WDAY = ['にち','げつ','か','すい','もく','きん','ど'];
 
 /* たからもの。おさんぽの おわりに いぬが ひろって くる。
@@ -1233,6 +1289,17 @@ function dayDiff(a, b){
   return Math.round((db - da) / 86400000);
 }
 
+/* key の n日 あとの 日づけ */
+function addDays(key, n){
+  var pp = key.split('-');
+  return dkey(new Date(+pp[0], +pp[1] - 1, +pp[2] + n));
+}
+/* 'YYYY-MM-DD' -> '9月14日' */
+function dayLabel(key){
+  var pp = key.split('-');
+  return (+pp[1]) + '月' + (+pp[2]) + '日';
+}
+
 /* いま なん日 つづいて いるか。とぎれて いたら 0 */
 function liveStreak(){
   if(!save.lastDay) return 0;
@@ -1244,20 +1311,43 @@ function liveStreak(){
 function streakAtRisk(){
   return !!save.lastDay && dayDiff(save.lastDay, dkey()) === 1 && save.streak > 0;
 }
-/* なん日 れんぞくで ボーナスが もらえるか */
-function streakBonus(nDays){
-  for(var i = 0; i < STREAK_BONUS.length; i++){
-    if(STREAK_BONUS[i].d === nDays) return STREAK_BONUS[i].aff;
+/* まだ もらって いない つぎの レアアイテム。ぜんぶ そろって いたら null */
+function nextRare(live){
+  var i;
+  for(i = 0; i < RARES.length; i++){
+    if(!save.rares[RARES[i].id] && RARES[i].d > live) return RARES[i];
   }
-  if(nDays > STREAK_LOOP && nDays % STREAK_LOOP === 0) return STREAK_LOOP_AFF;
-  return 0;
+  for(i = 0; i < RARES.length; i++){
+    if(!save.rares[RARES[i].id]) return RARES[i];
+  }
+  return null;
 }
-/* つぎの ボーナスは なん日めで いくつか */
-function nextMilestone(nDays){
-  for(var i = 0; i < STREAK_BONUS.length; i++){
-    if(STREAK_BONUS[i].d > nDays) return STREAK_BONUS[i];
+
+/* つぎの レアアイテムを もらえる 日。
+   まいにち つづければ この日は 1日ずつ ちかづき、
+   1日でも やすむと れんぞくが 0に もどるので うしろに ずれる。 */
+function rareTarget(){
+  var live = liveStreak(), r = nextRare(live);
+  if(!r) return null;
+  var base, remain;
+  if(live === 0){
+    /* とぎれて いる。きょう おさんぽ すれば 1日め */
+    base = dkey(); remain = r.d - 1;
+  }else{
+    /* さいごに あそんだ日から かぞえる */
+    base = save.lastDay; remain = r.d - live;
   }
-  return { d:(Math.floor(nDays / STREAK_LOOP) + 1) * STREAK_LOOP, aff:STREAK_LOOP_AFF };
+  if(remain < 0) remain = 0;
+  var day = addDays(base, remain);
+  return { item:r, day:day, left:Math.max(0, dayDiff(dkey(), day)) };
+}
+
+/* その日に もらった レアアイテム（カレンダー用） */
+function rareGotOn(key){
+  for(var i = 0; i < RARES.length; i++){
+    if(save.rares[RARES[i].id] === key) return RARES[i];
+  }
+  return null;
 }
 
 /* きょうの スタンプを おす。おさんぽが おわった ときに 1かいだけ よぶ。
@@ -1266,14 +1356,23 @@ function stampToday(){
   var today = dkey();
   var first = !save.days[today];
   save.days[today] = (save.days[today] | 0) + 1;
-  if(!first) return { first:false, streak:save.streak, bonus:0 };
+  if(!first) return { first:false, streak:save.streak, rare:null };
 
   if(save.lastDay && dayDiff(save.lastDay, today) === 1) save.streak++;
   else                                                   save.streak = 1;
   save.lastDay = today;
   if(save.streak > save.best) save.best = save.streak;
 
-  return { first:true, streak:save.streak, bonus:streakBonus(save.streak) };
+  /* れんぞく日数が とどいたら レアアイテム。1日に 1つまで */
+  var got = null, i;
+  for(i = 0; i < RARES.length; i++){
+    if(!save.rares[RARES[i].id] && save.streak >= RARES[i].d){
+      save.rares[RARES[i].id] = today;
+      got = RARES[i];
+      break;
+    }
+  }
+  return { first:true, streak:save.streak, rare:got };
 }
 
 var COURSES = [
@@ -1318,6 +1417,7 @@ function defaultSave(){
     /* ここから したは いぬに よらず きょうよう（こどもの がくしゅう きろく） */
     cleared : {}, mistakes:{}, totalOk:0, totalNg:0,
     catchBest: 0,      /* ボールキャッチの ハイスコア */
+    rares   : {},      /* レアアイテム id -> もらった日 'YYYY-MM-DD' */
     found   : {},      /* たからもの id -> みつけた かず */
     zbonus  : {},      /* ずかんの ごほうびを もらったか（コースid / 'all'） */
     days    : {},      /* 'YYYY-MM-DD' -> その日 おさんぽした かいすう */
@@ -1372,6 +1472,11 @@ function loadSave(){
     if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
     if(typeof d.totalNg === 'number')   s.totalNg = d.totalNg|0;
     if(typeof d.catchBest === 'number') s.catchBest = Math.max(0, d.catchBest|0);
+    if(d.rares && typeof d.rares === 'object'){
+      for(var rk in d.rares){
+        if(d.rares.hasOwnProperty(rk) && typeof d.rares[rk] === 'string') s.rares[rk] = d.rares[rk];
+      }
+    }
     if(d.found && typeof d.found === 'object'){
       for(var fk in d.found){
         if(d.found.hasOwnProperty(fk) && d.found[fk] > 0) s.found[fk] = d.found[fk]|0;
@@ -1740,9 +1845,11 @@ var RULE_SECTIONS = [
   { t:'まいにち スタンプ', li:[
     'おさんぽを 1かい おえると <b>スタンプ</b>が 1こ もらえる',
     { key:true, x:'<b>まちがえても もらえる</b>よ。まいにち あそぼう！' },
-    '3日 つづけると なつき度 ＋3、5日で ＋5、7日で ＋10',
-    'そのあとは 7日 ごとに ＋10',
-    '「スタンプ」タブで カレンダーが 見られるよ'
+    { key:true, x:'つづけると <b>レアアイテム</b>が もらえる（3・5・7・10・14・21・30日）' },
+    'カレンダーの <b>🎁</b> が もらえる日。タップすると 中身が のぞけるよ',
+    'まいにち つづければ 🎁 の日は 1日ずつ ちかづく',
+    '1日でも おやすみすると、🎁 の日は うしろに ずれちゃう',
+    'レアアイテムは おさんぽで ひろう たからものとは べつの ものだよ'
   ]},
   { t:'たからもの', li:[
     'おさんぽから かえると、いぬが <b>たからもの</b>を 1こ ひろってくる',
@@ -1858,6 +1965,7 @@ function renderStamp(){
 
   /* いちばん うえの はこ */
   $('streak-box').classList.toggle('warn', risk);
+  var nx;   /* いまは つかわないが、ふるい へんすうめいを のこす */
   if(live === 0){
     $('streak-big').innerHTML = 'きょう おさんぽすると<br>スタンプが 1こ もらえるよ！';
     $('streak-sub').innerHTML = save.best > 0
@@ -1866,9 +1974,12 @@ function renderStamp(){
     $('streak-big').innerHTML = '<b>' + live + '</b>日 つづいて いるよ';
     $('streak-sub').innerHTML = 'きょう おさんぽ しないと とぎれちゃう！';
   }else{
-    nx = nextMilestone(live);
+    var tg = rareTarget();
     $('streak-big').innerHTML = '<b>' + live + '</b>日 つづけて おさんぽちゅう！';
-    $('streak-sub').innerHTML = 'あと ' + (nx.d - live) + '日で なつき度 ＋' + nx.aff + '！';
+    $('streak-sub').innerHTML = tg
+      ? (tg.left === 0 ? 'きょう おさんぽすれば ごほうびが もらえる！'
+                       : 'あと ' + tg.left + '日で ごほうびが もらえるよ')
+      : 'ごほうびは ぜんぶ そろったよ！';
   }
 
   /* カレンダー */
@@ -1884,18 +1995,44 @@ function renderStamp(){
     html += '<div class="wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '') + '">' +
             WDAY[i] + '</div>';
   }
+  var tgt = rareTarget();          /* つぎの ごほうびの日 */
   for(i = 0; i < first; i++) html += '<div class="cell pad"></div>';
   for(k = 1; k <= dim; k++){
     key = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + k).slice(-2);
     on  = !!save.days[key];
     if(on) cnt++;
+    var gotR   = rareGotOn(key);
+    var isTgt  = !!(tgt && tgt.day === key);
     cls = 'cell' + (on ? ' on' : '') +
           (key === today ? ' today' : '') +
-          (key >  today ? ' future' : '');
-    html += '<div class="' + cls + '"><span class="d">' + k + '</span>' +
-            (on ? '<img src="img/stamp.png" alt="スタンプ">' : '') + '</div>';
+          (key >  today && !isTgt ? ' future' : '') +
+          (isTgt ? ' target' : '');
+    html += '<div class="' + cls + '"' + (isTgt ? ' data-rare="1"' : '') + '>' +
+            '<span class="d">' + k + '</span>' +
+            (on ? '<img src="img/stamp.png" alt="スタンプ">' : '') +
+            (isTgt && !on ? '<span class="tgt">🎁</span>' : '') +
+            (gotR ? '<span class="rb">' + gotR.em + '</span>' : '') +
+            '</div>';
   }
   $('cal-grid').innerHTML = html;
+
+  /* カレンダーの したの あんない */
+  var nrEl = $('next-rare');
+  if(tgt){
+    nrEl.className = 'nextrare';
+    nrEl.innerHTML = '<span class="bx">🎁</span>' +
+      '<span class="tx">' +
+      (tgt.left === 0
+        ? '<b>きょう</b> おさんぽすれば もらえる！'
+        : 'つぎの ごほうびは <b>' + dayLabel(tgt.day) + '</b><br>あと ' + tgt.left + '日')  +
+      '</span>' +
+      '<span class="go">なにが もらえる？ ▶</span>';
+  }else{
+    nrEl.className = 'nextrare done';
+    nrEl.innerHTML = '<span class="bx">🏆</span><span class="tx">' +
+      '<b>ごほうびは ぜんぶ そろったよ！</b><br>まいにち つづけて えらかったね</span>' +
+      '<span></span>';
+  }
 
   /* まとめ */
   var total = 0, kk;
@@ -1904,22 +2041,63 @@ function renderStamp(){
     'この つき <b>' + cnt + '</b>日 ／ ぜんぶで <b>' + total + '</b>日 おさんぽしたよ' +
     (save.best > 0 ? '<br>さいこう きろく <b>' + save.best + '</b>日 れんぞく' : '');
 
-  /* ごほうびの ひょう */
-  var bl = '', j, done, soon;
-  for(j = 0; j < STREAK_BONUS.length; j++){
-    done = live >= STREAK_BONUS[j].d;
-    soon = !done && nextMilestone(live).d === STREAK_BONUS[j].d;
-    bl += '<div class="row' + (done ? ' done' : '') + (soon ? ' now' : '') + '">' +
-          '<span>' + (done ? '✔ ' : '') + STREAK_BONUS[j].d + '日 れんぞく</span>' +
-          '<b>なつき度 ＋' + STREAK_BONUS[j].aff + '</b></div>';
+  /* レアアイテムの いちらん。もらった ものだけ 中身が 見える。
+     つぎの 1つは タップで のぞける。 */
+  var bl = '', j, r, got, isNext = tgt ? tgt.item.id : null;
+  for(j = 0; j < RARES.length; j++){
+    r = RARES[j]; got = save.rares[r.id];
+    if(got){
+      bl += '<div class="rare-row got"><span class="em">' + r.em + '</span>' +
+            '<span class="nm">' + r.name + '</span>' +
+            '<span class="dd">' + dayLabel(got) + '</span></div>';
+    }else if(r.id === isNext){
+      bl += '<div class="rare-row next" data-rare="1"><span class="em">🎁</span>' +
+            '<span class="nm">つぎの ごほうび（タップ）</span>' +
+            '<span class="dd">' + r.d + '日 れんぞく</span></div>';
+    }else{
+      bl += '<div class="rare-row lock"><span class="em">🎁</span>' +
+            '<span class="nm">？？？</span>' +
+            '<span class="dd">' + r.d + '日 れんぞく</span></div>';
+    }
   }
-  /* 7日を こえたら、この ぎょうが つぎの もくひょうに なる */
-  var loopNow = nextMilestone(live).d > STREAK_BONUS[STREAK_BONUS.length - 1].d;
-  bl += '<div class="row' + (loopNow ? ' now' : '') + '">' +
-        '<span>そのあとは ' + STREAK_LOOP + '日 ごとに</span>' +
-        '<b>なつき度 ＋' + STREAK_LOOP_AFF + '</b></div>';
-  $('stamp-bonus').innerHTML = bl;
+  $('rare-list').innerHTML = bl;
 }
+
+/* ごほうびの 中身を のぞく。まだ もらって いない ものを 見せる */
+function showRarePeek(){
+  var tg = rareTarget();
+  if(!tg) return;
+  var card = $('tpop-card');
+  card.className = 'tpop-card r2';
+  $('tpop-head').textContent  = 'つぎの ごほうび';
+  $('tpop-em').textContent    = tg.item.em;
+  $('tpop-name').textContent  = tg.item.name;
+  $('tpop-rare').textContent  = tg.item.d + '日 れんぞくで もらえる';
+  $('tpop-cnt').innerHTML =
+    (tg.left === 0 ? '<b>きょう</b> おさんぽすれば もらえる！'
+                   : 'もらえるのは <b>' + dayLabel(tg.day) + '</b>（あと ' + tg.left + '日）') +
+    '<br><span class="tiny">1日でも おやすみすると、この日は うしろに ずれるよ</span>';
+  $('tpop-ok').textContent = 'とじる';
+  tpopQueue = []; tpopAfter = null;
+  $('tpop').classList.remove('hidden');
+  tpopBusy = true;
+  sfxTap();
+}
+
+/* カレンダーの ごほうびの日 と、いちらんの「つぎの ごほうび」 */
+$('cal-grid').addEventListener('click', function(e){
+  var el = e.target;
+  while(el && el !== this && !el.getAttribute('data-rare')) el = el.parentNode;
+  if(el && el !== this) showRarePeek();
+});
+$('rare-list').addEventListener('click', function(e){
+  var el = e.target;
+  while(el && el !== this && !el.getAttribute('data-rare')) el = el.parentNode;
+  if(el && el !== this) showRarePeek();
+});
+$('next-rare').addEventListener('click', function(){
+  if(!this.classList.contains('done')) showRarePeek();
+});
 
 $('cal-prev').addEventListener('click', function(){
   sfxTap();
@@ -1977,14 +2155,19 @@ function nextTreasurePop(){
   var g = tpopQueue.shift(), t = g.t, card = $('tpop-card');
 
   card.className = 'tpop-card r' + t.r + (g.first ? ' first' : '');
-  $('tpop-head').textContent = g.first ? '★ はじめて みつけた！ ★' : 'たからもの はっけん！';
+  $('tpop-head').textContent = g.rare ? '✧ まいにち つづけた ごほうび ✧'
+                             : g.first ? '★ はじめて みつけた！ ★'
+                                       : 'たからもの はっけん！';
   $('tpop-em').textContent   = t.em;
   $('tpop-name').textContent = t.name;
   $('tpop-rare').textContent = RARITY[t.r].star
     ? RARITY[t.r].star + ' ' + RARITY[t.r].name : RARITY[t.r].name;
-  $('tpop-cnt').textContent  = g.first ? 'ずかんに とうろく したよ！'
-                                       : 'これで ' + g.n + 'こめ';
+  $('tpop-cnt').innerHTML    = g.rare
+    ? '<b>' + g.rare.d + '日 れんぞく</b> たっせい！'
+    : (g.first ? 'ずかんに とうろく したよ！' : 'これで ' + g.n + 'こめ');
   $('tpop-ok').textContent   = tpopQueue.length ? 'つぎの おたから ▶' : 'やったー！';
+  $('tpop-rare').textContent = g.rare ? '☆☆ れんぞく ごほうび ☆☆'
+                                      : $('tpop-rare').textContent;
 
   $('tpop').classList.remove('hidden');
   tpopBusy = true;
@@ -2620,6 +2803,12 @@ function finishRun(){
   run.gets = [ pickUp(drawTreasure(run.courseId)) ];
   if(run.ng === 0) run.gets.push(pickUp(drawTreasure(run.courseId)));
 
+  /* れんぞくの ごほうびが とどいたら、さいごに どーんと 出す */
+  if(run.stamp.rare){
+    run.gets.push({ t:{ em:run.stamp.rare.em, name:run.stamp.rare.name, r:3 },
+                    first:true, n:1, rare:run.stamp.rare });
+  }
+
   /* ずかんが そろった ごほうび。1かいだけ もらえる */
   run.zBonus = 0; run.zBanner = '';
   for(var zi = 0; zi < COURSES.length; zi++){
@@ -2640,7 +2829,7 @@ function finishRun(){
 
   /* のこった ♥ が そのまま なつき度に なる（メダルと スタンプの おまけつき） */
   run.medalBonus = hasItem('medal', pet().level) ? MEDAL_BONUS : 0;
-  run.gained  = run.hearts + run.medalBonus + run.stamp.bonus + run.zBonus;
+  run.gained  = run.hearts + run.medalBonus + run.zBonus;
   run.affFrom = pet().affection;
   pet().affection += run.gained;
   run.levelUps = 0;
@@ -2670,9 +2859,10 @@ function finishRun(){
                   'きょうの スタンプ ゲット！<br><span class="tiny">' +
                   run.stamp.streak + '日 つづけて おさんぽちゅう</span></div>';
   }
-  if(run.stamp.bonus){
+  if(run.stamp.rare){
     run.banner += '<div class="banner">✧ ' + run.stamp.streak +
-                  '日 れんぞく ボーナス！<br>なつき度 ＋' + run.stamp.bonus + ' ✧</div>';
+                  '日 れんぞく たっせい！<br>' + run.stamp.rare.em + ' ' +
+                  run.stamp.rare.name + ' を もらった！ ✧</div>';
   }
   if(firstClear && idx + 1 < COURSES.length){
     run.banner += '<div class="banner">🔓 ' + COURSES[idx+1].name + ' が あいた！</div>';
@@ -2709,9 +2899,6 @@ function renderResult(fromReview){
     'あつめた ♥ ' + run.hearts + 'こ' +
     (run.medalBonus
       ? ' ＋ <img class="inline-item" src="img/medal.png" alt="">' + run.medalBonus
-      : '') +
-    (run.stamp && run.stamp.bonus
-      ? ' ＋ <img class="inline-item" src="img/stamp.png" alt="">' + run.stamp.bonus
       : '') +
     (run.zBonus ? ' ＋ 📖' + run.zBonus : '') +
     ' ＝ <b>なつき度 ＋' + (run.gained || run.hearts) + '</b>';
@@ -2984,22 +3171,25 @@ function gameOver(){
 
   /* しっぱいしても、きょう あそんだ ことは きろくする。
      まいにち もどって くる りゆうを なくさない ため。 */
-  var st = stampToday(), h = '', lu = 0;
+  var st = stampToday(), h = '';
   if(st.first){
     h = '<div class="stampget"><img src="img/stamp.png" alt="">' +
         'でも きょうの スタンプは ゲット！<br><span class="tiny">' +
         st.streak + '日 つづけて おさんぽちゅう</span></div>';
-    if(st.bonus){
-      pet().affection += st.bonus;
-      while(pet().affection >= AFFECTION_MAX){
-        pet().affection -= AFFECTION_MAX; pet().level++; lu++;
-      }
-      h += '<div class="banner">✧ ' + st.streak +
-           '日 れんぞく ボーナス！<br>なつき度 ＋' + st.bonus + ' ✧</div>';
-      if(lu) h += '<div class="banner">✧ ' + dogN() + 'が おおきく なった！ ✧</div>';
+    if(st.rare){
+      h += '<div class="banner">✧ ' + st.streak + '日 れんぞく たっせい！<br>' +
+           st.rare.em + ' ' + st.rare.name + ' を もらった！ ✧</div>';
     }
   }
   $('over-stamp').innerHTML = h;
+
+  /* しっぱいしても れんぞくの ごほうびは もらえる */
+  if(st.rare){
+    setTimeout(function(){
+      showTreasurePops([{ t:{ em:st.rare.em, name:st.rare.name, r:3 },
+                          first:true, n:1, rare:st.rare }]);
+    }, 500);
+  }
 
   $('over-name').textContent = dogN();
   $('over-dog').innerHTML = dogPic('paw', '');
