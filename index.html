@@ -196,6 +196,37 @@ body{
 .cell .rb{position:absolute;right:1px;bottom:0;font-size:13px;line-height:1;
   filter:drop-shadow(0 1px 0 rgba(150,70,130,.25));}
 
+/* おやすみけんで まもった日 */
+.cell.rested{background:#eef2ff;border-color:#9fb4e8;}
+.cell.rested .zz{font-size:19px;line-height:1;opacity:.85;}
+.cell.rested .d{color:#5b73a8;}
+
+/* こんげつの ごほうび */
+.monthly{display:grid;grid-template-columns:auto 1fr;gap:3px 11px;align-items:center;
+  margin-top:10px;padding:11px 12px;border-radius:15px;
+  background:linear-gradient(180deg,#f2fbff,#dcefff);
+  border:3px solid #6aa6d8;box-shadow:0 4px 0 #4a7fae;}
+.monthly .em{grid-row:1 / span 3;font-size:34px;line-height:1;}
+.monthly .ttl{font-size:13px;color:#1f4f78;}
+.monthly .ttl b{font-size:15px;}
+.monthly .bar{height:11px;border-radius:999px;background:#fff;
+  border:2px solid #4a7fae;overflow:hidden;}
+.monthly .bar i{display:block;height:100%;border-radius:999px;
+  background:linear-gradient(90deg,#8fd0ff,#4a9fe0);transition:width .5s;}
+.monthly .note{font-size:11.5px;color:#2b5f8c;line-height:1.5;}
+.monthly.got{background:linear-gradient(180deg,#f2ffe9,#d7f5c2);
+  border-color:#5aa02a;box-shadow:0 4px 0 #3f7a18;}
+.monthly.got .ttl,.monthly.got .note{color:#2f6b12;}
+
+/* おやすみけん */
+.rest{margin-top:9px;text-align:center;font-size:13px;color:#2b4a8f;
+  background:#eef2ff;border:2px solid #9fb4e8;border-radius:13px;padding:7px 10px;
+  line-height:1.55;}
+.rest b{font-size:17px;}
+.rest .sub{display:block;font-size:11px;color:#5b73a8;margin-top:1px;}
+.rest.none{background:#f4f4f8;border-color:#cdd3e2;color:#7d88a6;}
+.rest.none b{color:#7d88a6;}
+
 /* つぎの ごほうびの あんない（カレンダーの した） */
 .nextrare{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;
   align-items:center;width:100%;margin-top:9px;
@@ -216,6 +247,24 @@ body{
   border-color:#5aa02a;box-shadow:0 4px 0 #3f7a18;cursor:default;}
 .nextrare.done .tx{color:#2f6b12;}
 .nextrare.done .tx b{color:#2f6b12;}
+
+/* きせつの ごほうび だな */
+.shead2{margin-top:12px;padding-top:8px;border-top:2px dotted #f0cfe2;
+  font-size:12.5px;color:var(--purple-deep);}
+.mgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px;}
+.mcell{position:relative;aspect-ratio:1/1;border-radius:10px;
+  background:#f7f2fb;border:2px solid #e6d8f0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.mcell .mm{position:absolute;top:1px;left:4px;font-size:9.5px;color:#a98ac0;}
+.mcell .me{font-size:21px;line-height:1.1;}
+.mcell .mn{font-size:8.5px;line-height:1.15;color:var(--ink);margin-top:1px;
+  text-align:center;word-break:break-word;padding:0 2px;}
+.mcell.no .me{opacity:.28;filter:grayscale(1);}
+.mcell.no .mn{color:#bda9c9;}
+.mcell.now{border-color:#6aa6d8;background:#eaf6ff;}
+.mcell.now .mm{color:#2b5f8c;}
+.mcell.on{border-color:#5aa02a;background:linear-gradient(180deg,#f6fff0,#dff7cb);}
+.mcell.on .mn{color:#2f6b12;}
 
 /* レアアイテムの いちらん */
 .rare-list{margin-top:10px;border-top:2px dotted #f0cfe2;padding-top:8px;
@@ -784,9 +833,13 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <button class="calbtn" id="cal-next">▶</button>
     </div>
     <div class="cal" id="cal-grid"></div>
+    <div class="rest" id="rest-box"></div>
+    <div class="monthly" id="monthly-box"></div>
     <button class="nextrare" id="next-rare"></button>
     <p class="tiny center" id="stamp-sum" style="margin:9px 0 0"></p>
     <div class="rare-list" id="rare-list"></div>
+    <div class="shead2" id="month-head"></div>
+    <div class="mgrid" id="month-grid"></div>
   </div>
 
   <div class="win hidden" id="pane-zukan">
@@ -1300,17 +1353,66 @@ function dayLabel(key){
   return (+pp[1]) + '月' + (+pp[2]) + '日';
 }
 
+/* れんぞくの いまの じょうたい。
+   'none'   = まだ 一度も あそんで いない
+   'done'   = きょう あそんだ
+   'risk'   = きのう あそんだ。きょう やらないと きれる
+   'rescue' = 1日 やすんだが、おやすみけんで まだ まもれる
+   'lost'   = とぎれた */
+function streakState(){
+  if(!save.lastDay || save.streak <= 0) return 'none';
+  var d = dayDiff(save.lastDay, dkey());
+  if(d <= 0) return 'done';
+  if(d === 1) return 'risk';
+  if(d === 2 && save.rest > 0) return 'rescue';
+  return 'lost';
+}
 /* いま なん日 つづいて いるか。とぎれて いたら 0 */
 function liveStreak(){
-  if(!save.lastDay) return 0;
-  var d = dayDiff(save.lastDay, dkey());
-  if(d === 0 || d === 1) return save.streak;
-  return 0;
+  var st = streakState();
+  return (st === 'done' || st === 'risk' || st === 'rescue') ? save.streak : 0;
 }
 /* きょう おさんぽ しないと とぎれる じょうたいか */
 function streakAtRisk(){
-  return !!save.lastDay && dayDiff(save.lastDay, dkey()) === 1 && save.streak > 0;
+  var st = streakState();
+  return st === 'risk' || st === 'rescue';
 }
+/* その月に なん日 あそんだか */
+function monthDays(ym){
+  var c = 0, k;
+  for(k in save.days){ if(save.days.hasOwnProperty(k) && k.slice(0, 7) === ym) c++; }
+  return c;
+}
+function monthItem(m){
+  for(var i = 0; i < MONTHLY.length; i++){ if(MONTHLY[i].m === m) return MONTHLY[i]; }
+  return MONTHLY[0];
+}
+function daysInMonth(y, m){ return new Date(y, m, 0).getDate(); }   /* m は 1〜12 */
+
+/* こんげつの ごほうびの ようす。
+   このまま まいにち あそんだら いつ もらえるかも かえす。 */
+function monthlyTarget(){
+  var today = dkey(), ym = today.slice(0, 7);
+  var y = +today.slice(0, 4), mo = +today.slice(5, 7);
+  var item = monthItem(mo), done = monthDays(ym);
+
+  if(save.months[ym]) return { item:item, done:done, need:MONTHLY_NEED, got:true };
+
+  var remain = MONTHLY_NEED - done;
+  if(remain <= 0) return { item:item, done:done, need:MONTHLY_NEED, got:true };
+
+  var playedToday = !!save.days[today];
+  var dnum = +today.slice(8, 10);
+  var canPlay = daysInMonth(y, mo) - dnum + (playedToday ? 0 : 1);
+  if(remain > canPlay){
+    return { item:item, done:done, need:MONTHLY_NEED, got:false,
+             impossible:true, canPlay:canPlay };
+  }
+  var day = addDays(today, playedToday ? remain : remain - 1);
+  return { item:item, done:done, need:MONTHLY_NEED, got:false,
+           day:day, left:Math.max(0, dayDiff(today, day)) };
+}
+
 /* まだ もらって いない つぎの レアアイテム。ぜんぶ そろって いたら null */
 function nextRare(live){
   var i;
@@ -1329,17 +1431,12 @@ function nextRare(live){
 function rareTarget(){
   var live = liveStreak(), r = nextRare(live);
   if(!r) return null;
-  var base, remain;
-  if(live === 0){
-    /* とぎれて いる。きょう おさんぽ すれば 1日め */
-    base = dkey(); remain = r.d - 1;
-  }else{
-    /* さいごに あそんだ日から かぞえる */
-    base = save.lastDay; remain = r.d - live;
-  }
+  /* きょう あそんだ あとなら のこりは r.d - live 日。
+     まだ なら きょう あそぶと 1日 すすむので 1つ すくない。 */
+  var remain = (streakState() === 'done') ? (r.d - live) : (r.d - live - 1);
   if(remain < 0) remain = 0;
-  var day = addDays(base, remain);
-  return { item:r, day:day, left:Math.max(0, dayDiff(dkey(), day)) };
+  var day = addDays(dkey(), remain);
+  return { item:r, day:day, left:remain };
 }
 
 /* その日に もらった レアアイテム（カレンダー用） */
@@ -1356,10 +1453,25 @@ function stampToday(){
   var today = dkey();
   var first = !save.days[today];
   save.days[today] = (save.days[today] | 0) + 1;
-  if(!first) return { first:false, streak:save.streak, rare:null };
+  if(!first){
+    return { first:false, streak:save.streak, rare:null,
+             monthly:null, usedRest:null, gotRest:false };
+  }
 
-  if(save.lastDay && dayDiff(save.lastDay, today) === 1) save.streak++;
-  else                                                   save.streak = 1;
+  /* れんぞくを のばすか、きりなおすか。
+     ちょうど 1日 やすんだ ときだけ おやすみけんで つなげる。 */
+  var gap = save.lastDay ? dayDiff(save.lastDay, today) : 999;
+  var usedRest = null;
+  if(gap === 1){
+    save.streak++;
+  }else if(gap === 2 && save.rest > 0){
+    save.rest--;
+    usedRest = addDays(save.lastDay, 1);   /* やすんだ日 */
+    save.rested[usedRest] = true;
+    save.streak++;
+  }else{
+    save.streak = 1;
+  }
   save.lastDay = today;
   if(save.streak > save.best) save.best = save.streak;
 
@@ -1372,7 +1484,22 @@ function stampToday(){
       break;
     }
   }
-  return { first:true, streak:save.streak, rare:got };
+
+  /* 7日 れんぞくする ごとに おやすみけんを 1まい */
+  var gotRest = false;
+  if(save.streak % REST_EVERY === 0 && save.rest < REST_MAX){
+    save.rest++; gotRest = true;
+  }
+
+  /* その月に MONTHLY_NEED 日 あそんだら きせつの ごほうび */
+  var ym = today.slice(0, 7), gotMonthly = null;
+  if(!save.months[ym] && monthDays(ym) >= MONTHLY_NEED){
+    save.months[ym] = true;
+    gotMonthly = monthItem(+today.slice(5, 7));
+  }
+
+  return { first:true, streak:save.streak, rare:got,
+           monthly:gotMonthly, usedRest:usedRest, gotRest:gotRest };
 }
 
 var COURSES = [
@@ -1418,6 +1545,9 @@ function defaultSave(){
     cleared : {}, mistakes:{}, totalOk:0, totalNg:0,
     catchBest: 0,      /* ボールキャッチの ハイスコア */
     rares   : {},      /* レアアイテム id -> もらった日 'YYYY-MM-DD' */
+    months  : {},      /* 'YYYY-MM' -> true  月の ごほうびを もらった */
+    rest    : 0,       /* もっている おやすみけん */
+    rested  : {},      /* 'YYYY-MM-DD' -> true  けんで まもった日 */
     found   : {},      /* たからもの id -> みつけた かず */
     zbonus  : {},      /* ずかんの ごほうびを もらったか（コースid / 'all'） */
     days    : {},      /* 'YYYY-MM-DD' -> その日 おさんぽした かいすう */
@@ -1477,6 +1607,17 @@ function loadSave(){
         if(d.rares.hasOwnProperty(rk) && typeof d.rares[rk] === 'string') s.rares[rk] = d.rares[rk];
       }
     }
+    if(d.months && typeof d.months === 'object'){
+      for(var mk in d.months){
+        if(d.months.hasOwnProperty(mk) && d.months[mk] && /^\d{4}-\d{2}$/.test(mk)) s.months[mk] = true;
+      }
+    }
+    if(typeof d.rest === 'number') s.rest = Math.max(0, Math.min(REST_MAX, d.rest|0));
+    if(d.rested && typeof d.rested === 'object'){
+      for(var sk in d.rested){
+        if(d.rested.hasOwnProperty(sk) && d.rested[sk] && /^\d{4}-\d{2}-\d{2}$/.test(sk)) s.rested[sk] = true;
+      }
+    }
     if(d.found && typeof d.found === 'object'){
       for(var fk in d.found){
         if(d.found.hasOwnProperty(fk) && d.found[fk] > 0) s.found[fk] = d.found[fk]|0;
@@ -1534,6 +1675,29 @@ function ensureAudio(){
    1.12=2半音 1.26=4半音 1.50=7半音 1.70=9半音 2.0=1オクターブ。
    たかく すると すこし みじかくも なるが、0.3びょうの 鳴き声なので 気にならない。
    ワンは いま いっしょに いる いぬの 大きさで きめる。 */
+/* 月ごとの ごほうび。れんぞくで なく「その月に なん日 あそんだか」なので、
+   1日 やすんでも とりかえせる。30日を こえた あとの まいにちの もくひょう。 */
+var MONTHLY_NEED = 20;         /* その月に なん日 あそべば もらえるか */
+var MONTHLY = [
+  { m:1,  em:'⛄',  name:'ゆきだるま' },
+  { m:2,  em:'🍫',  name:'チョコレート' },
+  { m:3,  em:'🌸',  name:'さくら' },
+  { m:4,  em:'🌷',  name:'チューリップ' },
+  { m:5,  em:'🎏',  name:'こいのぼり' },
+  { m:6,  em:'☂️', name:'あまがさ' },
+  { m:7,  em:'🎐',  name:'ふうりん' },
+  { m:8,  em:'🍉',  name:'すいか' },
+  { m:9,  em:'🌕',  name:'おつきみ' },
+  { m:10, em:'🎃',  name:'かぼちゃ' },
+  { m:11, em:'🍂',  name:'おちば' },
+  { m:12, em:'🎄',  name:'クリスマスツリー' }
+];
+
+/* おやすみけん。1日 やすんでも れんぞくが きれなく なる。
+   7日 れんぞくする ごとに 1まい もらえて、3まいまで もてる。 */
+var REST_EVERY = 7;
+var REST_MAX   = 3;
+
 var VOICE_RATE_SMALL = 1.70;   /* 小型犬の ワン */
 var VOICE_RATE_BIG   = 1.00;   /* そのほかの いぬの ワン（そのまま） */
 
@@ -1849,7 +2013,11 @@ var RULE_SECTIONS = [
     'カレンダーの <b>🎁</b> が もらえる日。タップすると 中身が のぞけるよ',
     'まいにち つづければ 🎁 の日は 1日ずつ ちかづく',
     '1日でも おやすみすると、🎁 の日は うしろに ずれちゃう',
-    'レアアイテムは おさんぽで ひろう たからものとは べつの ものだよ'
+    'レアアイテムは おさんぽで ひろう たからものとは べつの ものだよ',
+    { key:true, x:'7日 れんぞくで <b>🎫 おやすみけん</b>。' +
+                  '1日 やすんでも れんぞくが きれなく なるよ（3まいまで）' },
+    'その月に 20日 あそぶと、その つきだけの <b>きせつの ごほうび</b>が もらえる',
+    'きせつの ごほうびは れんぞくで なくても いいよ'
   ]},
   { t:'たからもの', li:[
     'おさんぽから かえると、いぬが <b>たからもの</b>を 1こ ひろってくる',
@@ -1972,7 +2140,9 @@ function renderStamp(){
       ? 'これまでの さいこう きろくは ' + save.best + '日' : '';
   }else if(risk){
     $('streak-big').innerHTML = '<b>' + live + '</b>日 つづいて いるよ';
-    $('streak-sub').innerHTML = 'きょう おさんぽ しないと とぎれちゃう！';
+    $('streak-sub').innerHTML = (streakState() === 'rescue')
+      ? 'きょう おさんぽすれば 🎫 おやすみけんで つながるよ！'
+      : 'きょう おさんぽ しないと とぎれちゃう！';
   }else{
     var tg = rareTarget();
     $('streak-big').innerHTML = '<b>' + live + '</b>日 つづけて おさんぽちゅう！';
@@ -1995,7 +2165,8 @@ function renderStamp(){
     html += '<div class="wd' + (i === 0 ? ' sun' : i === 6 ? ' sat' : '') + '">' +
             WDAY[i] + '</div>';
   }
-  var tgt = rareTarget();          /* つぎの ごほうびの日 */
+  var tgt = rareTarget();          /* つぎの レアアイテムの日 */
+  var mt  = monthlyTarget();       /* こんげつの ごほうび */
   for(i = 0; i < first; i++) html += '<div class="cell pad"></div>';
   for(k = 1; k <= dim; k++){
     key = y + '-' + ('0' + (m + 1)).slice(-2) + '-' + ('0' + k).slice(-2);
@@ -2003,21 +2174,59 @@ function renderStamp(){
     if(on) cnt++;
     var gotR   = rareGotOn(key);
     var isTgt  = !!(tgt && tgt.day === key);
+    var isMTgt = !!(mt && !mt.got && mt.day === key);
+    var isRest = !!save.rested[key];
     cls = 'cell' + (on ? ' on' : '') +
+          (isRest && !on ? ' rested' : '') +
           (key === today ? ' today' : '') +
-          (key >  today && !isTgt ? ' future' : '') +
+          (key >  today && !isTgt && !isMTgt ? ' future' : '') +
           (isTgt ? ' target' : '');
     html += '<div class="' + cls + '"' + (isTgt ? ' data-rare="1"' : '') + '>' +
             '<span class="d">' + k + '</span>' +
             (on ? '<img src="img/stamp.png" alt="スタンプ">' : '') +
+            (!on && isRest ? '<span class="zz">😴</span>' : '') +
             (isTgt && !on ? '<span class="tgt">🎁</span>' : '') +
+            (isMTgt && !on && !isTgt ? '<span class="tgt">' + mt.item.em + '</span>' : '') +
             (gotR ? '<span class="rb">' + gotR.em + '</span>' : '') +
             '</div>';
   }
   $('cal-grid').innerHTML = html;
 
+  /* おやすみけん */
+  var rb = $('rest-box');
+  rb.className = save.rest > 0 ? 'rest' : 'rest none';
+  rb.innerHTML = save.rest > 0
+    ? '🎫 おやすみけん <b>' + save.rest + '</b>まい' +
+      '<span class="sub">1日 やすんでも れんぞくが きれないよ</span>'
+    : '🎫 おやすみけん <b>0</b>まい' +
+      '<span class="sub">' + REST_EVERY + '日 れんぞくすると 1まい もらえるよ</span>';
+
+  /* こんげつの ごほうび */
+  var mb = $('monthly-box'), mnum = +today.slice(5, 7);
+  if(mt.got){
+    mb.className = 'monthly got';
+    mb.innerHTML = '<span class="em">' + mt.item.em + '</span>' +
+      '<span class="ttl"><b>' + mnum + '月の ごほうび</b>　' + mt.item.name + '</span>' +
+      '<span class="note">✔ もらったよ！ また らいげつ おたのしみに</span>' +
+      '<span></span>';
+  }else{
+    mb.className = 'monthly';
+    var pct = Math.min(100, mt.done / mt.need * 100);
+    mb.innerHTML = '<span class="em">' + mt.item.em + '</span>' +
+      '<span class="ttl"><b>' + mnum + '月の ごほうび</b>　' + mt.item.name + '</span>' +
+      '<span class="bar"><i style="width:' + pct + '%"></i></span>' +
+      '<span class="note">' + mt.done + ' / ' + mt.need + '日 あそんだよ<br>' +
+      (mt.impossible
+        ? 'こんげつは のこり ' + mt.canPlay + '日。らいげつ ちょうせん しよう！'
+        : (mt.left === 0
+            ? '<b>きょう</b> おさんぽすれば もらえる！'
+            : 'このまま つづけると <b>' + dayLabel(mt.day) + '</b>に もらえるよ')) +
+      '</span>';
+  }
+
   /* カレンダーの したの あんない */
   var nrEl = $('next-rare');
+  nrEl.classList.toggle('hidden', !tgt);
   if(tgt){
     nrEl.className = 'nextrare';
     nrEl.innerHTML = '<span class="bx">🎁</span>' +
@@ -2027,11 +2236,6 @@ function renderStamp(){
         : 'つぎの ごほうびは <b>' + dayLabel(tgt.day) + '</b><br>あと ' + tgt.left + '日')  +
       '</span>' +
       '<span class="go">なにが もらえる？ ▶</span>';
-  }else{
-    nrEl.className = 'nextrare done';
-    nrEl.innerHTML = '<span class="bx">🏆</span><span class="tx">' +
-      '<b>ごほうびは ぜんぶ そろったよ！</b><br>まいにち つづけて えらかったね</span>' +
-      '<span></span>';
   }
 
   /* まとめ */
@@ -2061,6 +2265,20 @@ function renderStamp(){
     }
   }
   $('rare-list').innerHTML = bl;
+
+  /* きせつの ごほうび だな（みている 年の 12か月） */
+  var yy = calYM.y, mh = '', q, ymk, cls2;
+  $('month-head').innerHTML = 'きせつの ごほうび（' + yy + 'ねん）　' +
+    '<span class="tiny">その月に ' + MONTHLY_NEED + '日 あそぶと もらえるよ</span>';
+  for(q = 0; q < MONTHLY.length; q++){
+    ymk  = yy + '-' + ('0' + MONTHLY[q].m).slice(-2);
+    cls2 = 'mcell' + (save.months[ymk] ? ' on' : ' no') +
+           (ymk === dkey().slice(0, 7) ? ' now' : '');
+    mh += '<div class="' + cls2 + '"><span class="mm">' + MONTHLY[q].m + '月</span>' +
+          '<span class="me">' + MONTHLY[q].em + '</span>' +
+          '<span class="mn">' + MONTHLY[q].name + '</span></div>';
+  }
+  $('month-grid').innerHTML = mh;
 }
 
 /* ごほうびの 中身を のぞく。まだ もらって いない ものを 見せる */
@@ -2155,19 +2373,22 @@ function nextTreasurePop(){
   var g = tpopQueue.shift(), t = g.t, card = $('tpop-card');
 
   card.className = 'tpop-card r' + t.r + (g.first ? ' first' : '');
-  $('tpop-head').textContent = g.rare ? '✧ まいにち つづけた ごほうび ✧'
+  $('tpop-head').textContent = g.month ? '✧ こんげつの ごほうび ✧'
+                             : g.rare  ? '✧ まいにち つづけた ごほうび ✧'
                              : g.first ? '★ はじめて みつけた！ ★'
                                        : 'たからもの はっけん！';
   $('tpop-em').textContent   = t.em;
   $('tpop-name').textContent = t.name;
   $('tpop-rare').textContent = RARITY[t.r].star
     ? RARITY[t.r].star + ' ' + RARITY[t.r].name : RARITY[t.r].name;
-  $('tpop-cnt').innerHTML    = g.rare
-    ? '<b>' + g.rare.d + '日 れんぞく</b> たっせい！'
-    : (g.first ? 'ずかんに とうろく したよ！' : 'これで ' + g.n + 'こめ');
+  $('tpop-cnt').innerHTML    = g.month
+    ? '<b>' + g.month.m + '月に ' + MONTHLY_NEED + '日</b> あそんだね！'
+    : g.rare
+      ? '<b>' + g.rare.d + '日 れんぞく</b> たっせい！'
+      : (g.first ? 'ずかんに とうろく したよ！' : 'これで ' + g.n + 'こめ');
   $('tpop-ok').textContent   = tpopQueue.length ? 'つぎの おたから ▶' : 'やったー！';
-  $('tpop-rare').textContent = g.rare ? '☆☆ れんぞく ごほうび ☆☆'
-                                      : $('tpop-rare').textContent;
+  if(g.month) $('tpop-rare').textContent = '☆☆ きせつの ごほうび ☆☆';
+  else if(g.rare) $('tpop-rare').textContent = '☆☆ れんぞく ごほうび ☆☆';
 
   $('tpop').classList.remove('hidden');
   tpopBusy = true;
@@ -2808,6 +3029,10 @@ function finishRun(){
     run.gets.push({ t:{ em:run.stamp.rare.em, name:run.stamp.rare.name, r:3 },
                     first:true, n:1, rare:run.stamp.rare });
   }
+  if(run.stamp.monthly){
+    run.gets.push({ t:{ em:run.stamp.monthly.em, name:run.stamp.monthly.name, r:3 },
+                    first:true, n:1, month:run.stamp.monthly });
+  }
 
   /* ずかんが そろった ごほうび。1かいだけ もらえる */
   run.zBonus = 0; run.zBanner = '';
@@ -2859,10 +3084,22 @@ function finishRun(){
                   'きょうの スタンプ ゲット！<br><span class="tiny">' +
                   run.stamp.streak + '日 つづけて おさんぽちゅう</span></div>';
   }
+  if(run.stamp.usedRest){
+    run.banner += '<div class="banner">🎫 おやすみけんを つかって<br>' +
+                  'れんぞくを つなげたよ！ ✧</div>';
+  }
   if(run.stamp.rare){
     run.banner += '<div class="banner">✧ ' + run.stamp.streak +
                   '日 れんぞく たっせい！<br>' + run.stamp.rare.em + ' ' +
                   run.stamp.rare.name + ' を もらった！ ✧</div>';
+  }
+  if(run.stamp.gotRest){
+    run.banner += '<div class="banner">🎫 おやすみけんを 1まい もらった！<br>' +
+                  '<span class="tiny">1日 やすんでも れんぞくが きれないよ</span></div>';
+  }
+  if(run.stamp.monthly){
+    run.banner += '<div class="banner">✧ ' + (+dkey().slice(5,7)) + '月の ごほうび！<br>' +
+                  run.stamp.monthly.em + ' ' + run.stamp.monthly.name + ' を もらった！ ✧</div>';
   }
   if(firstClear && idx + 1 < COURSES.length){
     run.banner += '<div class="banner">🔓 ' + COURSES[idx+1].name + ' が あいた！</div>';
@@ -3176,19 +3413,35 @@ function gameOver(){
     h = '<div class="stampget"><img src="img/stamp.png" alt="">' +
         'でも きょうの スタンプは ゲット！<br><span class="tiny">' +
         st.streak + '日 つづけて おさんぽちゅう</span></div>';
+    if(st.usedRest){
+      h += '<div class="banner">🎫 おやすみけんで れんぞくを つなげたよ！</div>';
+    }
     if(st.rare){
       h += '<div class="banner">✧ ' + st.streak + '日 れんぞく たっせい！<br>' +
            st.rare.em + ' ' + st.rare.name + ' を もらった！ ✧</div>';
+    }
+    if(st.gotRest){
+      h += '<div class="banner">🎫 おやすみけんを 1まい もらった！</div>';
+    }
+    if(st.monthly){
+      h += '<div class="banner">✧ ' + (+dkey().slice(5,7)) + '月の ごほうび！<br>' +
+           st.monthly.em + ' ' + st.monthly.name + ' を もらった！ ✧</div>';
     }
   }
   $('over-stamp').innerHTML = h;
 
   /* しっぱいしても れんぞくの ごほうびは もらえる */
+  var overPops = [];
   if(st.rare){
-    setTimeout(function(){
-      showTreasurePops([{ t:{ em:st.rare.em, name:st.rare.name, r:3 },
-                          first:true, n:1, rare:st.rare }]);
-    }, 500);
+    overPops.push({ t:{ em:st.rare.em, name:st.rare.name, r:3 },
+                    first:true, n:1, rare:st.rare });
+  }
+  if(st.monthly){
+    overPops.push({ t:{ em:st.monthly.em, name:st.monthly.name, r:3 },
+                    first:true, n:1, month:st.monthly });
+  }
+  if(overPops.length){
+    setTimeout(function(){ showTreasurePops(overPops); }, 500);
   }
 
   $('over-name').textContent = dogN();
