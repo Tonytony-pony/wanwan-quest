@@ -479,6 +479,49 @@ body{
 .tgot{text-align:center;font-size:12px;color:var(--ink-soft);margin:0 0 6px;}
 .tgot i{font-style:normal;font-size:22px;vertical-align:-4px;margin:0 2px;}
 
+/* ---------- レベルアップの ポップアップ ---------- */
+.lvpop{position:fixed;inset:0;z-index:65;display:flex;align-items:center;
+  justify-content:center;padding:18px;overflow:auto;
+  background:rgba(70,25,70,.58);animation:tpopBg .25s ease-out;}
+.lvpop-card{position:relative;width:100%;max-width:310px;text-align:center;
+  padding:16px 16px 13px;border-radius:22px;
+  background:linear-gradient(180deg,#fffdf4 0%,#fff3d2 65%,#ffe3a4 100%);
+  border:5px solid #c98a00;
+  box-shadow:0 8px 0 #c98a00, 0 14px 28px rgba(60,20,60,.45);
+  animation:tpopIn .55s cubic-bezier(.18,1.5,.42,1) both;}
+.lvpop-card .rays{position:absolute;left:50%;top:52%;width:360px;height:360px;
+  transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;opacity:.85;
+  background:conic-gradient(from 0deg,
+    rgba(255,214,110,.9) 0deg 11deg, rgba(255,214,110,0) 11deg 30deg,
+    rgba(255,214,110,.9) 30deg 41deg, rgba(255,214,110,0) 41deg 60deg,
+    rgba(255,214,110,.9) 60deg 71deg, rgba(255,214,110,0) 71deg 90deg,
+    rgba(255,214,110,.9) 90deg 101deg, rgba(255,214,110,0) 101deg 120deg,
+    rgba(255,214,110,.9) 120deg 131deg, rgba(255,214,110,0) 131deg 150deg,
+    rgba(255,214,110,.9) 150deg 161deg, rgba(255,214,110,0) 161deg 180deg,
+    rgba(255,214,110,.9) 180deg 191deg, rgba(255,214,110,0) 191deg 210deg,
+    rgba(255,214,110,.9) 210deg 221deg, rgba(255,214,110,0) 221deg 240deg,
+    rgba(255,214,110,.9) 240deg 251deg, rgba(255,214,110,0) 251deg 270deg,
+    rgba(255,214,110,.9) 270deg 281deg, rgba(255,214,110,0) 281deg 300deg,
+    rgba(255,214,110,.9) 300deg 311deg, rgba(255,214,110,0) 311deg 330deg,
+    rgba(255,214,110,.9) 330deg 341deg, rgba(255,214,110,0) 341deg 360deg);
+  -webkit-mask-image:radial-gradient(circle,transparent 22%,#000 38%,#000 74%,transparent 86%);
+  mask-image:radial-gradient(circle,transparent 22%,#000 38%,#000 74%,transparent 86%);
+  animation:tpopSpin 7s linear infinite;}
+.lvpop-card .hd{position:relative;z-index:1;font-size:17px;color:#9a6600;}
+.lvpop-card .dogbox{position:relative;z-index:1;min-height:150px;
+  display:flex;align-items:flex-end;justify-content:center;margin:2px 0 4px;}
+/* ポップアップの なかは おおきさを そろえる（だんかいの さは 文字で つたえる） */
+.lvpop-card .dogbox .dog{--dw:190px;max-height:none;}
+.lvpop-card .lvnum{position:relative;z-index:1;font-size:19px;color:#7a4a00;}
+.lvpop-card .lvnum b{font-size:34px;color:#e07a00;margin:0 4px;
+  text-shadow:0 2px 0 rgba(154,102,0,.3);}
+.lvpop-card .stage{position:relative;z-index:1;font-size:15px;color:var(--purple-deep);
+  margin-top:5px;background:#fff;border:2px solid #e2cdf0;border-radius:999px;
+  display:inline-block;padding:2px 14px;}
+.lvpop-card .stage .ar{color:var(--pink);margin:0 6px;}
+.lvpop-card .note{position:relative;z-index:1;font-size:12.5px;color:#9a6600;margin-top:6px;}
+.lvpop-card .btn{position:relative;z-index:1;margin:11px 0 0;}
+
 /* ---------- たからもの ゲットの ポップアップ ---------- */
 .tpop{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
   padding:20px;background:rgba(70,25,70,.55);animation:tpopBg .25s ease-out;}
@@ -1158,6 +1201,20 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <button class="btn" id="btn-rename-ok">この なまえに する</button>
     <button class="btn small purple" id="btn-rename-cancel">やめる</button>
   </div>
+</div>
+
+<!-- レベルアップの ポップアップ -->
+<div class="lvpop hidden" id="lvpop">
+  <div class="lvpop-card">
+    <div class="rays"></div>
+    <div class="hd">✧ レベルアップ！ ✧</div>
+    <div class="dogbox" id="lvpop-dog"></div>
+    <div class="lvnum">レベル <b id="lvpop-num">2</b> に なった！</div>
+    <div id="lvpop-stage-wrap"><span class="stage" id="lvpop-stage"></span></div>
+    <div class="note" id="lvpop-note"></div>
+    <button class="btn gold" id="lvpop-ok">やったー！</button>
+  </div>
+  <div class="tpop-fx" id="lvpop-fx"></div>
 </div>
 
 <!-- たからものを ゲットした ときの ポップアップ -->
@@ -2487,8 +2544,8 @@ $('cal-next').addEventListener('click', function(){
 var tpopQueue = [], tpopAfter = null, tpopBusy = false;
 
 /* きらきらを とばす。めずらしい ほど かずを ふやす */
-function tpopSparkle(rare){
-  var box = $('tpop-fx'), sets = ['✧✦', '✧✦★', '✧✦★♪', '✧✦★♪🌟'];
+function tpopSparkle(rare, boxId){
+  var box = $(boxId || 'tpop-fx'), sets = ['✧✦', '✧✦★', '✧✦★♪', '✧✦★♪🌟'];
   var chars = sets[rare] || sets[0];
   var num = [10, 14, 20, 28][rare] || 10;
   var w = box.clientWidth, h = box.clientHeight, i, sp, ang, dist;
@@ -2556,6 +2613,45 @@ $('tpop-ok').addEventListener('click', function(e){
 });
 /* そとを タップしても つぎへ すすむ */
 $('tpop').addEventListener('click', function(){ if(tpopBusy) nextTreasurePop(); });
+
+/* ===== レベルアップの ポップアップ =====
+   うえの バナーだけでは 子どもが 気づかないので、
+   たからものの ポップアップの あとに まんなかで しらせる。 */
+var lvpopAfter = null;
+
+function showLevelPop(fromLv, toLv, after){
+  lvpopAfter = after || null;
+  var oldArt = artForLevel(fromLv), newArt = artForLevel(toLv);
+  var grew   = (oldArt !== newArt);          /* 見た目が かわる だんかいか */
+
+  $('lvpop-dog').innerHTML = dogPic(newArt, 'grow');
+  $('lvpop-num').textContent = toLv;
+
+  if(grew){
+    $('lvpop-stage-wrap').classList.remove('hidden');
+    $('lvpop-stage').innerHTML = nameForLevel(fromLv) +
+      '<span class="ar">▶</span>' + nameForLevel(toLv);
+    $('lvpop-note').textContent = dogN() + 'が おおきく なったよ！';
+  }else{
+    $('lvpop-stage-wrap').classList.add('hidden');
+    $('lvpop-note').textContent = dogN() + 'と もっと なかよしに なったね！';
+  }
+
+  $('lvpop').classList.remove('hidden');
+  sfxLevel();
+  tpopSparkle(3, 'lvpop-fx');
+}
+
+function closeLevelPop(){
+  $('lvpop').classList.add('hidden');
+  var f = lvpopAfter; lvpopAfter = null;
+  if(f) f();
+}
+
+$('lvpop-ok').addEventListener('click', function(e){
+  e.stopPropagation(); sfxTap(); closeLevelPop();
+});
+$('lvpop').addEventListener('click', function(){ closeLevelPop(); });
 
 /* その コースの たからものだけ とりだす */
 function treasuresByCourse(courseId){
@@ -3329,10 +3425,14 @@ function renderResult(fromReview){
   }
   $('result-treasure').innerHTML = th ? '<div class="tgot">ひろってきた ' + th + '</div>' : '';
 
-  var art = artForLevel(pet().level);
-  $('result-dog').innerHTML = dogPic(art, run.levelUps > 0 ? 'grow' : (run.ng === 0 ? 'happy' : 'idle'));
-  $('result-dogname').textContent = dogLabel();
-  if(!fromReview && (run.levelUps > 0 || run.ng === 0)){
+  /* レベルアップした ときは、まだ まえの すがたの まま みせる。
+     たからものの ポップアップが おわってから おおきく する。 */
+  var grewNow = (!fromReview && run.levelUps > 0);
+  var showLv  = grewNow ? (pet().level - run.levelUps) : pet().level;
+  var art = artForLevel(showLv);
+  $('result-dog').innerHTML = dogPic(art, grewNow ? 'idle' : (run.ng === 0 ? 'happy' : 'idle'));
+  $('result-dogname').textContent = dogN() + '（' + nameForLevel(showLv) + '）';
+  if(!fromReview && run.ng === 0 && !grewNow){
     popFx($('result-fx'), '♥✧✦♪', 7);
     sfxLevel();
   }
@@ -3403,10 +3503,24 @@ function renderResult(fromReview){
 
   show('result');
 
-  /* たからものを ゲットした ら、まんなかに ポップアップ。
+  /* たからもの → レベルアップ の じゅんに まんなかで しらせる。
      おさらいの あとは もう だしている ので ださない。 */
-  if(!fromReview && run.gets && run.gets.length){
-    setTimeout(function(){ showTreasurePops(run.gets); }, 320);
+  if(!fromReview){
+    var lvFrom = pet().level - run.levelUps, lvTo = pet().level;
+    var showGrow = function(){
+      if(!grewNow) return;
+      showLevelPop(lvFrom, lvTo, function(){
+        /* とじたら けっか画面の 犬も おおきく する */
+        $('result-dog').innerHTML = dogPic(artForLevel(lvTo), 'grow');
+        $('result-dogname').textContent = dogLabel();
+        popFx($('result-fx'), '♥✧✦♪', 7);
+      });
+    };
+    if(run.gets && run.gets.length){
+      setTimeout(function(){ showTreasurePops(run.gets, showGrow); }, 320);
+    }else if(grewNow){
+      setTimeout(showGrow, 420);
+    }
   }
 }
 
@@ -3653,6 +3767,7 @@ function gameOver(){
     overPops.push({ t:{ em:st.monthly.em, name:st.monthly.name, r:3 },
                     first:true, n:1, month:st.monthly });
   }
+  /* ゲームオーバーでは なつき度が ふえないので レベルアップは おきない */
   if(overPops.length){
     setTimeout(function(){ showTreasurePops(overPops); }, 500);
   }
