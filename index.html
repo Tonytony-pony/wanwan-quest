@@ -692,10 +692,22 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   display:flex;align-items:flex-end;justify-content:center;}
 .dog-stage::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
   width:132px;height:13px;border-radius:50%;background:rgba(160,80,140,.2);filter:blur(2px);}
-.dog{position:relative;z-index:1;width:215px;height:auto;aspect-ratio:1/1;display:block;
-  max-width:100%;
+.dog{position:relative;z-index:1;width:var(--dw, 215px);height:auto;aspect-ratio:1/1;
+  display:block;max-width:100%;
   filter:drop-shadow(0 4px 0 rgba(150,70,130,.22))
          drop-shadow(0 0 2px rgba(150,70,130,.45));}
+
+/* ---------- レベルで 大きさを かえる ----------
+   えの なかの 犬の たかさは lv1=360 / lv3=400 / lv5=440（512の キャンバス上）、
+   そっぽ(sad)は 400。がめん上の たかさが 140→176→219px に なるように
+   はばを ぎゃくさんして ある。1だんかい ごとに やく 25% 大きく なる。
+   はばだけを かえるので、ほかの ばしょの うわがきとは けんかしない。 */
+.dog.d-lv1{--dw:200px;}   /* 140px に みえる */
+.dog.d-lv3{--dw:225px;}   /* 176px */
+.dog.d-lv5{--dw:255px;}   /* 219px */
+.dog.d-sad-lv1{--dw:180px;}
+.dog.d-sad-lv3{--dw:225px;}
+.dog.d-sad-lv5{--dw:280px;}
 .dog.idle{animation:idle 1.7s ease-in-out infinite;}
 @keyframes idle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-5px) scaleY(1.03)}}
 .dog.happy{animation:happy .42s ease-in-out 3;}
@@ -758,6 +770,9 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 }
 #quiz-dog{display:flex;align-items:flex-end;justify-content:center;min-height:0;flex:1;}
 #quiz-dog .dog{height:100%;width:auto;max-height:215px;}
+#quiz-dog .d-lv1,#quiz-dog .d-sad-lv1{max-height:200px;}
+#quiz-dog .d-lv3,#quiz-dog .d-sad-lv3{max-height:225px;}
+#quiz-dog .d-lv5,#quiz-dog .d-sad-lv5{max-height:255px;}
 
 /* こたえた あとは せんたくしは もう おせないので ちいさくして、
    「おさんぽへ もどる」は かくす（「つぎへ」だけに する）。
@@ -803,8 +818,14 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .shake{animation:shakeAll .45s;}
 @keyframes shakeAll{0%,100%{transform:translate(0)}20%{transform:translate(-3.5px,1.5px)}40%{transform:translate(3.5px,-1.5px)}60%{transform:translate(-2.5px,1px)}80%{transform:translate(2.5px,-1px)}}
 @media (max-height:660px){
-  .dog{width:165px;} .dog-stage{min-height:155px;} .logo{font-size:33px;margin-top:6px;}
+  .dog{--dw:165px;} .dog-stage{min-height:155px;} .logo{font-size:33px;margin-top:6px;}
   .win{padding:12px 14px;}
+  /* だんかいの さも のこしたまま、ぜんぶ 0.77ばいに する */
+  .dog.d-lv1{--dw:154px;} .dog.d-lv3{--dw:173px;} .dog.d-lv5{--dw:196px;}
+  .dog.d-sad-lv1{--dw:138px;} .dog.d-sad-lv3{--dw:173px;} .dog.d-sad-lv5{--dw:215px;}
+  #quiz-dog .d-lv1,#quiz-dog .d-sad-lv1{max-height:154px;}
+  #quiz-dog .d-lv3,#quiz-dog .d-sad-lv3{max-height:173px;}
+  #quiz-dog .d-lv5,#quiz-dog .d-sad-lv5{max-height:196px;}
 }
 /* iPhone SE(だい1せだい) くらいの とても ちいさい がめん。
    もんだい画面だけ さらに つめて、スクロールを ださない。 */
@@ -1373,8 +1394,17 @@ function preloadDog(breedId){
   }
 }
 
+/* え の しゅるいから 大きさの クラスを きめる。
+   そっぽ(sad)の えだけは えの なかの 犬が 大きいので、
+   いまの だんかいに あわせて べつの はばに する。 */
+function dogSizeClass(kind){
+  if(kind === 'paw') return '';
+  if(kind === 'sad') return 'd-sad-' + artForLevel(pet().level);
+  return 'd-' + kind;
+}
+
 function dogPic(kind, anim, breedId){
-  return '<img class="dog ' + (anim || '') + '" src="' +
+  return '<img class="dog ' + dogSizeClass(kind) + ' ' + (anim || '') + '" src="' +
          picSrc(breedId || save.current, kind) + '" alt="" draggable="false">';
 }
 
