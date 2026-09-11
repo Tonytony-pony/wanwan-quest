@@ -196,12 +196,45 @@ body{
 .cell .rb{position:absolute;right:1px;bottom:0;font-size:13px;line-height:1;
   filter:drop-shadow(0 1px 0 rgba(150,70,130,.25));}
 
-/* なまえは あとから かえられない、の おしらせ */
+/* なまえは あとから かえられる、の おしらせ */
 .namenote{margin:8px 0 2px;text-align:center;font-size:12.5px;line-height:1.65;
-  color:#9a6600;background:linear-gradient(180deg,#fffaea,#ffeec2);
-  border:2px solid #e8a900;border-radius:12px;padding:8px 10px;}
+  color:var(--purple-deep);background:#f6eeff;
+  border:2px solid #d3bced;border-radius:12px;padding:7px 10px;}
 .namenote .mk{font-size:15px;margin-right:3px;}
-.namenote b{color:#c25a00;}
+.namenote b{color:var(--pink-deep);}
+
+/* いぬの まどの みぎうえ「なまえを かえる」ボタン */
+.renamebtn{
+  position:absolute;top:-15px;right:12px;z-index:2;
+  font-family:inherit;font-size:14px;line-height:1;cursor:pointer;
+  color:#fff;background:linear-gradient(180deg,#c79bf0,var(--purple));
+  border:3px solid #fff;border-radius:999px;padding:5px 11px;
+  box-shadow:0 3px 0 var(--purple-deep);
+  transition:transform .08s,box-shadow .08s;
+}
+.renamebtn:active{transform:translateY(3px);box-shadow:0 0 0 var(--purple-deep);}
+.renamebtn:focus-visible{outline:3px solid var(--purple-deep);outline-offset:3px;}
+@media (max-width:369px){
+  .renamebtn{padding:5px 10px;}
+  .renamebtn .lbl{display:none;}
+}
+
+/* なまえを かえる がめん */
+.rename{position:fixed;inset:0;z-index:70;display:flex;
+  align-items:center;justify-content:center;padding:18px;overflow:auto;
+  background:rgba(70,25,70,.55);animation:tpopBg .25s ease-out;}
+.rename-card{width:100%;max-width:300px;text-align:center;
+  padding:16px 15px 13px;border-radius:20px;
+  background:linear-gradient(180deg,#fffdfe,#f3e9ff);
+  border:5px solid var(--purple-deep);
+  box-shadow:0 8px 0 var(--purple-deep),0 14px 26px rgba(60,20,60,.45);
+  animation:tpopIn .5s cubic-bezier(.18,1.5,.42,1) both;}
+.rename-card .rn-ttl{font-family:inherit;font-size:17px;color:var(--purple-deep);
+  margin-bottom:4px;}
+.rename-card .dog{width:120px;margin:0 auto;}
+.rename-card .field-label{margin-top:4px;}
+.rename-card input{margin-bottom:4px;}
+.rename-card .btn{margin:8px 0 0;}
 
 /* おやすみけんで まもった日 */
 .cell.rested{background:#eef2ff;border-color:#9fb4e8;}
@@ -885,8 +918,8 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <div class="center" style="margin-bottom:8px"><span class="dogname" id="sel-breed"></span></div>
     <div class="field-label">▼ この いぬの なまえ</div>
     <input type="text" id="input-dogname" maxlength="8" placeholder="ポチ" autocomplete="off" spellcheck="false">
-    <p class="namenote"><span class="mk">✎</span>つけた なまえは<br>
-      <b>あとから かえられません</b>。<br>よく かんがえて つけてね！</p>
+    <p class="namenote"><span class="mk">✎</span>なまえは あとから<br>
+      <b>いつでも かえられる</b>よ。</p>
     <button class="btn" id="btn-adopt">この いぬと おさんぽ！</button>
     <button class="btn small purple" id="btn-adopt-back">やっぱり ほかの いぬ</button>
   </div>
@@ -919,6 +952,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 
   <div class="win">
     <span class="win-title" id="map-win-title">いぬの ようす</span>
+    <button class="renamebtn" id="btn-rename" title="なまえを かえる">✎<span class="lbl"> なまえ</span></button>
     <div class="dog-stage" style="min-height:200px">
       <img class="item house hidden" id="item-house" src="img/house.png" alt="" draggable="false">
       <div id="map-dog"></div>
@@ -1075,6 +1109,19 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 </section>
 
 </div><!-- /#app -->
+
+<!-- なまえを かえる -->
+<div class="rename hidden" id="rename-pop">
+  <div class="rename-card">
+    <div class="rn-ttl">なまえを かえる</div>
+    <div id="rename-dog"></div>
+    <div class="field-label">▼ あたらしい なまえ</div>
+    <input type="text" id="input-rename" maxlength="8" placeholder="ポチ"
+           autocomplete="off" spellcheck="false">
+    <button class="btn" id="btn-rename-ok">この なまえに する</button>
+    <button class="btn small purple" id="btn-rename-cancel">やめる</button>
+  </div>
+</div>
 
 <!-- たからものを ゲットした ときの ポップアップ -->
 <div class="tpop hidden" id="tpop">
@@ -2561,6 +2608,33 @@ $('btn-adopt').addEventListener('click', function(){
   writeSave();
   sfxTap();
   gotoMap();
+});
+
+/* ---- なまえを かえる ---- */
+function openRename(){
+  if(!save.dogs[save.current]) return;
+  $('input-rename').value = dogN();
+  $('rename-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
+  $('rename-pop').classList.remove('hidden');
+  setTimeout(function(){ try{ $('input-rename').focus(); }catch(e){} }, 80);
+}
+function closeRename(){ $('rename-pop').classList.add('hidden'); }
+
+$('btn-rename').addEventListener('click', function(){ sfxTap(); openRename(); });
+$('btn-rename-cancel').addEventListener('click', function(){ sfxTap(); closeRename(); });
+$('btn-rename-ok').addEventListener('click', function(){
+  if(!save.dogs[save.current]){ closeRename(); return; }
+  var d = $('input-rename').value.replace(/\s+/g, '').slice(0, 8);
+  if(!d) d = dogN();                    /* からっぽなら そのまま */
+  save.dogs[save.current].dogName = d;
+  writeSave();
+  sfxLevel();
+  closeRename();
+  renderMap();
+});
+/* エンターでも きまる */
+$('input-rename').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); $('btn-rename-ok').click(); }
 });
 
 $('btn-adopt-back').addEventListener('click', function(){
