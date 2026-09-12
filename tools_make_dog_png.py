@@ -295,6 +295,56 @@ def keep_blobs(fg, w, h):
     return keep, total, len(comps)
 
 
+def drop_holes(keep, w, h, rgb, key, tol):
+    """犬に かこまれて のこった はいけいの「あな」を けす。
+
+    はいけいの けしこみは ふちから ひろげる ので、
+    耳と くびの あいだの ような とじた すきまには とどかない。
+    ここでは まえけいの なかを しらべて、
+    「はいけいの いろに ちかい かたまり」を まとめて すてる。
+    """
+    seen = bytearray(w * h)
+    removed = 0
+    holes = 0
+    kr, kg, kb = key
+    for sy in range(h):
+        for sx in range(w):
+            i0 = sy * w + sx
+            if not keep[i0] or seen[i0]:
+                continue
+            r, g, b = rgb[i0 * 3], rgb[i0 * 3 + 1], rgb[i0 * 3 + 2]
+            if abs(r - kr) + abs(g - kg) + abs(b - kb) > tol:
+                seen[i0] = 1
+                continue
+            comp, q = [], deque([(sx, sy)])
+            seen[i0] = 1
+            edge = False
+            while q:
+                x, y = q.popleft()
+                comp.append(y * w + x)
+                if x == 0 or y == 0 or x == w - 1 or y == h - 1:
+                    edge = True
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if not (0 <= nx < w and 0 <= ny < h):
+                        continue
+                    j = ny * w + nx
+                    if seen[j] or not keep[j]:
+                        continue
+                    r2, g2, b2 = rgb[j * 3], rgb[j * 3 + 1], rgb[j * 3 + 2]
+                    if abs(r2 - kr) + abs(g2 - kg) + abs(b2 - kb) <= tol:
+                        seen[j] = 1
+                        q.append((nx, ny))
+            # がぞうの ふちに ついて いる なら はいけい本体。すでに けして ある はず
+            if edge or len(comp) < 8:
+                continue
+            for i in comp:
+                keep[i] = 0
+            removed += len(comp)
+            holes += 1
+    return removed, holes
+
+
 def process(src_path, out_name, target_h, align='bottom', pad=True):
     im0 = Image.open(src_path)
 
@@ -317,6 +367,19 @@ def process(src_path, out_name, target_h, align='bottom', pad=True):
     for _ in range(SEPARATE):
         thin = thin.filter(ImageFilter.MinFilter(3))
     keep, n, ncomp = keep_blobs(thin.tobytes(), w, h)
+
+    # 犬に かこまれて のこった はいけいの あなを けす。
+    # ふちからの けしこみが とどかない ところ（耳と くびの あいだ など）。
+    #
+    # ※ みどりバックの ときだけ やる。
+    #   いちまつ（しろ）の ときに おなじ ことを すると、
+    #   クリームいろの むねや あしまで「あな」と まちがえて けずって しまう。
+    #   （ビーグルで じっさいに こわれた）
+    #   ふるい いちまつの えは 手で なおす。
+    if key:
+        nhole, nh = drop_holes(keep, w, h, im.tobytes(), key, CHROMA_TOL)
+        if nh:
+            print('    あなを %d こ けしました（%d px）' % (nh, nhole))
 
     alpha = Image.frombytes('L', (w, h), bytes(keep))
     for _ in range(SEPARATE):
