@@ -348,6 +348,74 @@ def drop_holes(keep, w, h, rgb, key, tol):
     return removed, holes
 
 
+CHK_FLAT_SAT  = 12       # これいか なら「いろみの ない」ドット
+CHK_FLAT_MIN  = 235      # これいじょう あかるければ いちまつの しろ かも
+CHK_AIR_MIN   = 0.15     # まわりが とうめいな わりあい
+CHK_SIZE      = 1.7      # ますめ なんこぶんまでを ゴミと みなすか
+
+
+def drop_checker_blobs(keep, w, h, rgb, P):
+    """いぬに くっついて のこった いちまつの ますめを すてる。
+
+    ちいさくて、たいらな しろで、まわりが とうめいな かたまり だけを ねらう。
+    目の ひかりの ような ほんとうの しろは いぬに かこまれて いる（まわりが
+    とうめいでは ない）ので のこる。
+    """
+    lim = int((P * CHK_SIZE) ** 2)
+    seen = bytearray(w * h)
+    removed = blobs = 0
+
+    def flat(i):
+        if not keep[i]:
+            return False
+        r, g, b = rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]
+        return (max(r, g, b) - min(r, g, b) <= CHK_FLAT_SAT and
+                min(r, g, b) >= CHK_FLAT_MIN)
+
+    for sy in range(h):
+        for sx in range(w):
+            i0 = sy * w + sx
+            if seen[i0] or not flat(i0):
+                continue
+            comp, q = [], deque([(sx, sy)])
+            seen[i0] = 1
+            while q:
+                x, y = q.popleft()
+                comp.append((x, y))
+                if len(comp) > lim:
+                    break
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if not (0 <= nx < w and 0 <= ny < h):
+                        continue
+                    j = ny * w + nx
+                    if not seen[j] and flat(j):
+                        seen[j] = 1
+                        q.append((nx, ny))
+            while q:                              # おおきすぎ。しるしだけ つけて とばす
+                x, y = q.popleft()
+                seen[y * w + x] = 1
+            if len(comp) > lim:
+                continue
+
+            cs = set(comp)
+            air = edge = 0
+            for (x, y) in comp:
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nx, ny = x + dx, y + dy
+                    if (nx, ny) in cs:
+                        continue
+                    edge += 1
+                    if not (0 <= nx < w and 0 <= ny < h) or not keep[ny * w + nx]:
+                        air += 1
+            if edge and air / float(edge) >= CHK_AIR_MIN:
+                for (x, y) in comp:
+                    keep[y * w + x] = 0
+                removed += len(comp)
+                blobs += 1
+    return removed, blobs
+
+
 def process(src_path, out_name, target_h, align='bottom', pad=True):
     im0 = Image.open(src_path)
 
@@ -383,6 +451,14 @@ def process(src_path, out_name, target_h, align='bottom', pad=True):
         nhole, nh = drop_holes(keep, w, h, im.tobytes(), key, CHROMA_TOL)
         if nh:
             print('    あなを %d こ けしました（%d px）' % (nh, nhole))
+
+    else:
+        # いちまつの え だけ。いぬに くっついて のこった ますめを すてる。
+        grid = detect_grid(im)
+        if grid:
+            ndrop, nb = drop_checker_blobs(keep, w, h, im.tobytes(), grid[0])
+            if nb:
+                print('    いちまつの のこりを %d こ けしました（%d px）' % (nb, ndrop))
 
     alpha = Image.frombytes('L', (w, h), bytes(keep))
     for _ in range(SEPARATE):
