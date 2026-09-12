@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#f8c3dd">
+<meta name="robots" content="noindex">
+<title>そざい おきば｜わんわんクエスト</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pink:#ff6fa5; --pink-deep:#c0417a; --pink-pale:#ffe3f0;
+  --purple:#a76fe0; --purple-deep:#7a3fb8;
+  --ink:#4a2340; --ink-soft:#8a5f7d; --line:#f0cfe2;
+  --win:#fffafd; --shadow:#d38ab4; --gold:#ffcf3f; --gold-deep:#b07f00;
+  --good:#2f8f4e;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{
+  margin:0;padding:18px 12px 60px;
+  background:linear-gradient(170deg,#ffe7f3 0%,#f4e4ff 100%);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","Yu Gothic",system-ui,sans-serif;
+  line-height:1.7;
+}
+.wrap{max-width:760px;margin:0 auto;}
+
+h1{
+  font-family:"DotGothic16",monospace;
+  font-size:clamp(20px,5.4vw,28px);
+  text-align:center;margin:0 0 4px;color:var(--pink-deep);
+  text-shadow:2px 2px 0 #fff;
+}
+.lead{text-align:center;font-size:13px;color:var(--ink-soft);margin:0 0 16px;}
+
+.how{
+  background:var(--win);border:3px solid var(--purple);border-radius:14px;
+  padding:12px 14px;margin-bottom:18px;font-size:13.5px;line-height:1.8;
+  box-shadow:0 4px 0 #9878c4;
+}
+.how b{color:var(--purple-deep);}
+.how ol{margin:6px 0 0;padding-left:1.3em;}
+.how li{margin:3px 0;}
+
+.card{
+  background:var(--win);border:3px solid var(--pink-deep);border-radius:16px;
+  padding:12px 12px 14px;margin-bottom:16px;
+  box-shadow:0 4px 0 var(--shadow);
+}
+.card.done{border-color:var(--good);box-shadow:0 4px 0 #1f6b35;}
+.chead{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.chead .nm{font-family:"DotGothic16",monospace;font-size:17px;color:var(--pink-deep);}
+.card.done .chead .nm{color:var(--good);}
+.chead .tag{
+  font-size:11px;padding:1px 10px;border-radius:999px;white-space:nowrap;
+  background:var(--gold);color:#6b4c00;border:2px solid var(--gold-deep);
+}
+.chead .tag.ok{background:#d9f5e2;color:#1f6b35;border-color:var(--good);}
+
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.slot{
+  display:flex;flex-direction:column;gap:6px;
+  background:linear-gradient(180deg,#ffeaf6,#f6e6ff);
+  border:2px solid var(--line);border-radius:12px;padding:8px;
+}
+.slot .lbl{font-size:11.5px;color:var(--ink-soft);text-align:center;}
+.slot .lbl b{color:var(--pink-deep);font-size:13px;}
+.thumb{
+  background:
+    linear-gradient(45deg,#eadff0 25%,transparent 25%,transparent 75%,#eadff0 75%),
+    linear-gradient(45deg,#eadff0 25%,#fff 25%,#fff 75%,#eadff0 75%);
+  background-size:14px 14px;background-position:0 0,7px 7px;
+  border-radius:9px;display:block;width:100%;height:auto;aspect-ratio:1/1;
+  object-fit:contain;border:1px solid var(--line);
+}
+.save{
+  display:block;text-align:center;text-decoration:none;
+  font-family:"DotGothic16",monospace;font-size:13px;color:#fff;
+  background:linear-gradient(180deg,#ff8dbb 0%,var(--pink) 55%,#ee5590 100%);
+  border:3px solid var(--pink-deep);border-radius:11px;padding:7px 4px;
+  box-shadow:0 3px 0 var(--pink-deep);
+  text-shadow:0 1px 0 rgba(150,30,80,.5);
+}
+.save:active{transform:translateY(3px);box-shadow:0 0 0 var(--pink-deep);}
+.note{
+  font-size:12px;color:var(--ink-soft);text-align:center;
+  border-top:2px dotted var(--line);margin-top:10px;padding-top:8px;
+}
+.note a{color:var(--purple-deep);}
+.foot{text-align:center;font-size:11.5px;color:var(--ink-soft);margin-top:24px;}
+@media (max-width:400px){
+  .pair{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>そざい おきば</h1>
+  <p class="lead">レベル15の「おやこ」イラストを Gemini で作るための材料です。<br>
+    スマホから保存できます。</p>
+
+  <div class="how">
+    <b>つかいかた</b>
+    <ol>
+      <li>作りたい犬種の <b>Image 1（おや）</b> と <b>Image 2（こいぬ）</b> を保存</li>
+      <li>Gemini に <b>Image 1 → Image 2 の順</b>で添付</li>
+      <li>プロンプトを貼って生成</li>
+      <li>できた画像を送ってもらえれば <code>05.png</code> として保存します</li>
+    </ol>
+    ボタンで保存できないときは、画像を<b>長押し</b>して「画像を保存」を選んでください。
+  </div>
+
+  <div id="list"></div>
+
+  <p class="foot">このページはゲームには出てきません。<br>
+    わんわんクエスト・そざい おきば</p>
+
+</div>
+
+<script>
+/* できあがった犬種は done:true にする（おやこイラストを作りおえたもの） */
+var BREEDS = [
+  { id:'bichon',        name:'ビションフリーゼ',     done:true  },
+  { id:'beagle',        name:'ビーグル',             done:false },
+  { id:'shiba',         name:'しばいぬ',             done:false },
+  { id:'dachshund',     name:'ミニチュアダックス',   done:false },
+  { id:'pomeranian',    name:'ポメラニアン',         done:false },
+  { id:'chihuahua',     name:'チワワ',               done:false },
+  { id:'frenchbulldog', name:'フレンチブルドッグ',   done:false },
+  { id:'golden',        name:'ゴールデンレトリバー', done:false },
+  { id:'husky',         name:'ハスキー',             done:false },
+  { id:'dalmatian',     name:'ダルメシアン',         done:false }
+];
+
+function slot(id, kind, no, label){
+  var f = 'img/' + id + '_' + kind + '.png';
+  return '<div class="slot">' +
+      '<span class="lbl"><b>Image ' + no + '</b>　' + label + '</span>' +
+      '<img class="thumb" src="' + f + '" alt="" loading="lazy">' +
+      '<a class="save" href="' + f + '" download="' + id + '_' + kind + '.png">' +
+        '⬇ ほぞん</a>' +
+    '</div>';
+}
+
+var html = '';
+for(var i = 0; i < BREEDS.length; i++){
+  var b = BREEDS[i];
+  html += '<div class="card' + (b.done ? ' done' : '') + '">' +
+    '<div class="chead"><span class="nm">' + b.name + '</span>' +
+      '<span class="tag' + (b.done ? ' ok' : '') + '">' +
+        (b.done ? '✔ おやこ できた' : 'これから') + '</span></div>' +
+    '<div class="pair">' +
+      slot(b.id, 'lv5', 1, 'おや（王かん＋マント）') +
+      slot(b.id, 'lv1', 2, 'こいぬ') +
+    '</div>' +
+    (b.done
+      ? '<p class="note">できあがり → ' +
+        '<a href="img/' + b.id + '_lv15.png" target="_blank">' + b.id + '_lv15.png</a></p>'
+      : '') +
+  '</div>';
+}
+document.getElementById('list').innerHTML = html;
+</script>
+</body>
+</html>

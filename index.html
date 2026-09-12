@@ -512,6 +512,7 @@ body{
   display:flex;align-items:flex-end;justify-content:center;margin:2px 0 4px;}
 /* ポップアップの なかは おおきさを そろえる（だんかいの さは 文字で つたえる） */
 .lvpop-card .dogbox .dog{--dw:190px;max-height:none;}
+.lvpop-card .dogbox .d-lv15{--dw:215px;}
 .lvpop-card .lvnum{position:relative;z-index:1;font-size:19px;color:#7a4a00;}
 .lvpop-card .lvnum b{font-size:34px;color:#e07a00;margin:0 4px;
   text-shadow:0 2px 0 rgba(154,102,0,.3);}
@@ -751,6 +752,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .dog.d-sad-lv1{--dw:180px;}
 .dog.d-sad-lv3{--dw:225px;}
 .dog.d-sad-lv5{--dw:280px;}
+.dog.d-lv15{--dw:280px;}       /* おやこ。おやいぬは 241px に みえる */
 .dog.idle{animation:idle 1.7s ease-in-out infinite;}
 @keyframes idle{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-5px) scaleY(1.03)}}
 .dog.happy{animation:happy .42s ease-in-out 3;}
@@ -816,6 +818,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 #quiz-dog .d-lv1,#quiz-dog .d-sad-lv1{max-height:200px;}
 #quiz-dog .d-lv3,#quiz-dog .d-sad-lv3{max-height:225px;}
 #quiz-dog .d-lv5,#quiz-dog .d-sad-lv5{max-height:255px;}
+#quiz-dog .d-lv15{max-height:280px;}
 
 /* こたえた あとは せんたくしは もう おせないので ちいさくして、
    「おさんぽへ もどる」は かくす（「つぎへ」だけに する）。
@@ -866,9 +869,11 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   /* だんかいの さも のこしたまま、ぜんぶ 0.77ばいに する */
   .dog.d-lv1{--dw:154px;} .dog.d-lv3{--dw:173px;} .dog.d-lv5{--dw:196px;}
   .dog.d-sad-lv1{--dw:138px;} .dog.d-sad-lv3{--dw:173px;} .dog.d-sad-lv5{--dw:215px;}
+  .dog.d-lv15{--dw:215px;}
   #quiz-dog .d-lv1,#quiz-dog .d-sad-lv1{max-height:154px;}
   #quiz-dog .d-lv3,#quiz-dog .d-sad-lv3{max-height:173px;}
   #quiz-dog .d-lv5,#quiz-dog .d-sad-lv5{max-height:196px;}
+  #quiz-dog .d-lv15{max-height:215px;}
 }
 /* iPhone SE(だい1せだい) くらいの とても ちいさい がめん。
    もんだい画面だけ さらに つめて、スクロールを ださない。 */
@@ -1419,12 +1424,22 @@ var BREEDS = [
   { id:'pomeranian',    name:'ポメラニアン',         ready:true, small:true  },
   { id:'chihuahua',     name:'チワワ',               ready:true, small:true  },
   { id:'frenchbulldog', name:'フレンチブルドッグ',   ready:true, small:true  },
-  { id:'bichon',        name:'ビションフリーゼ',     ready:true, small:true  },
+  { id:'bichon',        name:'ビションフリーゼ',     ready:true, small:true,  family:true },
   { id:'golden',        name:'ゴールデンレトリバー', ready:true, small:false },
   { id:'husky',         name:'ハスキー',             ready:true, small:false },
   { id:'dalmatian',     name:'ダルメシアン',         ready:true, small:false }
 ];
 var FIRST_BREED = 'beagle';
+
+/* このレベルに なると こいぬが うまれて おやこの すがたに なる。
+   family:true の いぬしゅだけ。えが できて いない いぬしゅは
+   いままで どおり「でんせつの 犬」の ままに する。 */
+var FAMILY_LEVEL = 15;
+
+function hasFamilyArt(breedId){
+  var b = breedById(breedId || save.current);
+  return !!(b && b.family);
+}
 
 function breedById(id){
   for(var i = 0; i < BREEDS.length; i++){ if(BREEDS[i].id === id) return BREEDS[i]; }
@@ -1445,6 +1460,7 @@ function preloadDog(breedId){
   if(!breedId || preloaded[breedId]) return;
   preloaded[breedId] = true;
   var kinds = ['lv1', 'lv3', 'lv5', 'sad'], i, im;
+  if(hasFamilyArt(breedId)) kinds.push('lv15');
   for(i = 0; i < kinds.length; i++){
     im = new Image();
     im.src = picSrc(breedId, kinds[i]);
@@ -1465,9 +1481,10 @@ function dogPic(kind, anim, breedId){
          picSrc(breedId || save.current, kind) + '" alt="" draggable="false">';
 }
 
-function artForLevel(lv){
+function artForLevel(lv, breedId){
   if(lv <= 2) return 'lv1';
   if(lv <= 4) return 'lv3';
+  if(lv >= FAMILY_LEVEL && hasFamilyArt(breedId)) return 'lv15';
   return 'lv5';
 }
 /* いぬの なまえ（きめて いない ときは「いぬ」） */
@@ -1475,10 +1492,11 @@ function dogN(){ return pet().dogName; }
 /* 「ポチ（こいぬ）」のような ひょうじ */
 function dogLabel(){ return dogN() + '（' + nameForLevel(pet().level) + '）'; }
 
-function nameForLevel(lv){
+function nameForLevel(lv, breedId){
   if(lv <= 2) return 'こいぬ';
   if(lv <= 4) return 'わんこ';
   if(lv <= 7) return 'たくましい 犬';
+  if(lv >= FAMILY_LEVEL && hasFamilyArt(breedId)) return 'おかあさん';
   return 'でんせつの 犬';
 }
 
@@ -2214,7 +2232,8 @@ var RULE_SECTIONS = [
   { t:'なつき度と レベル', li:[
     'おさんぽが おわると、のこった ' + H + ' の かずだけ <b>なつき度</b>が ふえる',
     'なつき度が ' + AFFECTION_MAX + ' に なると <b>レベルアップ！</b>',
-    'レベルが あがると いぬが 大きく なるよ'
+    'レベルが あがると いぬが 大きく なるよ',
+    { key:true, x:'レベル ' + FAMILY_LEVEL + ' で <b>こいぬが うまれる</b> いぬも いるよ！' }
   ]},
   { t:'まいにち スタンプ', li:[
     'おさんぽを 1かい おえると <b>スタンプ</b>が 1こ もらえる',
@@ -2627,7 +2646,13 @@ function showLevelPop(fromLv, toLv, after){
   $('lvpop-dog').innerHTML = dogPic(newArt, 'grow');
   $('lvpop-num').textContent = toLv;
 
-  if(grew){
+  if(grew && newArt === 'lv15'){
+    /* こいぬが うまれた とき */
+    $('lvpop-stage-wrap').classList.remove('hidden');
+    $('lvpop-stage').innerHTML = nameForLevel(fromLv) +
+      '<span class="ar">▶</span>' + nameForLevel(toLv);
+    $('lvpop-note').innerHTML = '✧ ' + dogN() + 'に <b>こいぬが うまれた</b>よ！ ✧';
+  }else if(grew){
     $('lvpop-stage-wrap').classList.remove('hidden');
     $('lvpop-stage').innerHTML = nameForLevel(fromLv) +
       '<span class="ar">▶</span>' + nameForLevel(toLv);
@@ -2749,7 +2774,7 @@ function renderSelect(){
 
       var html;
       if(b.ready){
-        html = '<img src="' + picSrc(b.id, artForLevel(owned ? owned.level : 1)) + '" alt="">';
+        html = '<img src="' + picSrc(b.id, artForLevel(owned ? owned.level : 1, b.id)) + '" alt="">';
       }else{
         html = '<span class="ph">🐾</span>';
         card.disabled = true;
