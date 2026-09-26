@@ -277,8 +277,10 @@ body{
   font-family:ui-monospace,Menlo,Consolas,monospace;
   padding:6px;border:2px solid var(--line);border-radius:8px;resize:vertical;
   background:#fff;color:var(--ink);}
-.bk-card input.tk{width:100%;font-size:12px;padding:7px;
+.bk-card input.tk,.bk-card select.tk{width:100%;font-size:12px;padding:7px;
+  font-family:inherit;
   border:2px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
+.bk-card .tk + .tk{margin-top:6px;}
 .bk-row{display:flex;gap:7px;margin-top:6px;}
 .bk-row .btn{margin:0;flex:1;font-size:13px;padding:8px 4px;}
 .bk-state{font-size:12px;margin:0 0 6px;padding:6px 9px;border-radius:9px;
@@ -1282,12 +1284,22 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <h4>③ GitHub に じどうで ほぞん</h4>
       <input class="tk" type="password" id="bk-token" placeholder="GitHub トークン（gist だけ）"
              autocomplete="off" spellcheck="false">
+      <input class="tk" type="text" id="bk-dev" maxlength="12"
+             placeholder="この 端末の なまえ（れい：タブレット）"
+             autocomplete="off" spellcheck="false">
       <div class="bk-row">
         <button class="btn small" id="bk-push">いま ほぞん</button>
-        <button class="btn small purple" id="bk-pull">クラウドから もどす</button>
       </div>
-      <p class="note">トークンは この 端末の なかだけに おきます。
-        ほぞん すると、あそび おわる たびに じどうで ほぞんされます。</p>
+      <select class="tk" id="bk-slot" style="margin-top:9px">
+        <option value="">（「いちらん」を おすと でます）</option>
+      </select>
+      <div class="bk-row">
+        <button class="btn small purple" id="bk-list">いちらん</button>
+        <button class="btn small purple" id="bk-pull">えらんだ ものを もどす</button>
+      </div>
+      <p class="note">端末ごとに べつべつの わくに ほぞんするので、
+        スマホと タブレットで けしあう ことは ありません。<br>
+        トークンは この 端末の なかだけに おきます。</p>
     </div>
 
     <div class="bk-sec">
@@ -2046,66 +2058,142 @@ function ghReq(path, method, body, cb){
   x.send(body ? JSON.stringify(body) : null);
 }
 
-var GH_FILE = 'wanwanquest_save.json';
+/* ほぞん さきは 端末ごとに べつの ファイル（わく）に する。
+   おなじ トークンを スマホと タブレットで つかっても けしあわない。
+   むかしの ひとつだけの ファイルも わくの ひとつ として あつかう。 */
+var GH_OLD  = 'wanwanquest_save.json';
+var GH_HEAD = 'wanwanquest_';
+var GH_TAIL = '.json';
 
-function ghPush(cb){
-  var c = ghConf();
-  if(!c.token){ if(cb) cb('トークンが ありません'); return; }
-  var body = {
-    description: 'わんわんクエスト セーブデータ',
-    files: {}
-  };
-  body.files[GH_FILE] = {
-    content: JSON.stringify({ v:1, ts:Date.now(), score:saveScore(save), save:save }, null, 1)
-  };
-  if(c.gist){
-    ghReq('/gists/' + c.gist, 'PATCH', body, function(err, d){
-      if(err){ if(cb) cb(err); return; }
-      c.at = Date.now(); ghSave(c); if(cb) cb(null, d);
-    });
-  }else{
-    body.public = false;
-    ghReq('/gists', 'POST', body, function(err, d){
-      if(err){ if(cb) cb(err); return; }
-      c.gist = d.id; c.at = Date.now(); ghSave(c);
-      if(cb) cb(null, d);
-    });
-  }
+function ghIsSlot(fn){
+  return fn.indexOf(GH_HEAD) === 0 && fn.slice(-GH_TAIL.length) === GH_TAIL;
 }
 
-/* クラウドの データを とってくる（もどしは しない） */
-function ghFetch(cb){
+/* この 端末の わくの なまえ。いちど つくったら かえない */
+function ghMyFile(){
   var c = ghConf();
-  if(!c.token){ cb('トークンが ありません'); return; }
-  if(!c.gist){
-    ghReq('/gists', 'GET', null, function(err, list){
-      if(err){ cb(err); return; }
-      for(var i = 0; i < list.length; i++){
-        if(list[i].files && list[i].files[GH_FILE]){
-          c.gist = list[i].id; ghSave(c); ghFetch(cb); return;
+  if(!c.slot){
+    c.slot = 'd' + Math.random().toString(36).slice(2, 8);
+    ghSave(c);
+  }
+  return GH_HEAD + c.slot + GH_TAIL;
+}
+function ghMyName(){
+  var c = ghConf();
+  return c.dev || 'なまえの ない 端末';
+}
+
+/* gist を さがす／つくる まえに、ある かどうか たしかめる */
+function ghFindGist(cb){
+  var c = ghConf();
+  if(c.gist){ cb(null, c.gist); return; }
+  ghReq('/gists', 'GET', null, function(err, list){
+    if(err){ cb(err); return; }
+    for(var i = 0; i < list.length; i++){
+      var fs = list[i].files, k;
+      for(k in fs){
+        if(fs.hasOwnProperty(k) && ghIsSlot(k)){
+          c.gist = list[i].id; ghSave(c); cb(null, c.gist); return;
         }
       }
-      cb('クラウドに データが ありません');
-    });
-    return;
-  }
-  ghReq('/gists/' + c.gist, 'GET', null, function(err, d){
+    }
+    cb(null, null);                       /* まだ ない */
+  });
+}
+
+/* gist ぜんたいを とる */
+function ghGet(cb){
+  ghFindGist(function(err, id){
     if(err){ cb(err); return; }
-    var f = d.files && d.files[GH_FILE];
-    if(!f){ cb('クラウドに データが ありません'); return; }
-    try{ cb(null, JSON.parse(f.content)); }
-    catch(e){ cb('クラウドの データが よめません'); }
+    if(!id){ cb(null, null); return; }
+    ghReq('/gists/' + id, 'GET', null, function(e2, d){
+      if(e2){ cb(e2); return; }
+      cb(null, d);
+    });
+  });
+}
+
+/* わくの いちらん。[{file, dev, score, ts, mine}] */
+function ghSlots(cb){
+  ghGet(function(err, d){
+    if(err){ cb(err); return; }
+    if(!d || !d.files){ cb(null, []); return; }
+    var mine = ghMyFile(), out = [], k, o;
+    for(k in d.files){
+      if(!d.files.hasOwnProperty(k) || !ghIsSlot(k)) continue;
+      o = null;
+      try{ o = JSON.parse(d.files[k].content); }catch(e){}
+      out.push({
+        file : k,
+        dev  : (o && o.dev) ? o.dev : (k === GH_OLD ? 'まえの ほぞん' : k),
+        score: (o && typeof o.score === 'number') ? o.score : -1,
+        ts   : (o && o.ts) ? o.ts : 0,
+        save : (o && o.save) ? o.save : null,
+        mine : (k === mine)
+      });
+    }
+    out.sort(function(a, b){ return b.ts - a.ts; });
+    cb(null, out);
+  });
+}
+
+/* この 端末の わく だけ とる */
+function ghMine(cb){
+  ghSlots(function(err, list){
+    if(err){ cb(err); return; }
+    for(var i = 0; i < list.length; i++){ if(list[i].mine){ cb(null, list[i]); return; } }
+    cb(null, null);
+  });
+}
+
+/* ほぞん。force で ない ときは、クラウドの ほうが すすんで いたら やめる
+   （データが きえた ちょくごに からっぽで うわがき しない ため） */
+function ghPush(force, cb){
+  var c = ghConf();
+  if(!c.token){ if(cb) cb('トークンが ありません'); return; }
+  var file = ghMyFile(), mine = saveScore(save);
+
+  ghMine(function(err, cur){
+    if(!force && cur && cur.score > mine){
+      if(cb) cb('クラウドの ほうが すすんで いるので ほぞんしません');
+      return;
+    }
+    var body = { description:'わんわんクエスト セーブデータ', files:{} };
+    body.files[file] = {
+      content: JSON.stringify({ v:2, ts:Date.now(), dev:ghMyName(),
+                                score:mine, save:save }, null, 1)
+    };
+    ghFindGist(function(e2, id){
+      if(e2){ if(cb) cb(e2); return; }
+      if(id){
+        ghReq('/gists/' + id, 'PATCH', body, function(e3, d){
+          if(e3){ if(cb) cb(e3); return; }
+          c = ghConf(); c.at = Date.now(); ghSave(c);
+          if(cb) cb(null, d);
+        });
+      }else{
+        body.public = false;
+        ghReq('/gists', 'POST', body, function(e3, d){
+          if(e3){ if(cb) cb(e3); return; }
+          c = ghConf(); c.gist = d.id; c.at = Date.now(); ghSave(c);
+          if(cb) cb(null, d);
+        });
+      }
+    });
   });
 }
 
 /* あそび おわる たびに、すこし まってから じどう ほぞん */
-var ghTimer = null;
+var ghTimer = null, ghBootDone = false;
 function ghSchedule(){
   if(!ghConf().token) return;
   if(ghTimer) clearTimeout(ghTimer);
   ghTimer = setTimeout(function(){
     ghTimer = null;
-    ghPush(function(){ renderBackupState(); });
+    /* はじめの かくにんが おわる まえには ほぞんしない。
+       きえた データで クラウドを うわがき しない ため */
+    if(!ghBootDone){ ghSchedule(); return; }
+    ghPush(false, function(){ renderBackupState(); });
   }, 4000);
 }
 
@@ -2131,14 +2219,15 @@ function localBackupRescue(){
 /* はじめに クラウドを のぞいて、ずっと すすんで いたら きいて みる。
    （端末の データが けされた とき、ここで きづける） */
 function ghCheckOnBoot(){
-  if(!ghConf().token) return;
-  ghFetch(function(err, o){
-    if(err || !o || !o.save) return;
-    var mine = saveScore(save), theirs = saveScore(o.save);
-    if(theirs <= mine) return;
-    if(window.confirm('クラウドに、もっと すすんだ データが あります。\n' +
+  if(!ghConf().token){ ghBootDone = true; return; }
+  ghMine(function(err, cur){
+    ghBootDone = true;
+    if(err || !cur || !cur.save) return;
+    var mine = saveScore(save);
+    if(cur.score <= mine) return;
+    if(window.confirm('クラウドに、この 端末の もっと すすんだ データが あります。\n' +
                       'そちらに もどしますか？')){
-      if(applySave(o.save)){
+      if(applySave(cur.save)){
         renderTitle();
         window.alert('もどしました！');
       }
@@ -4142,11 +4231,13 @@ function renderBackupState(){
         ? (c.at ? '<b>ON</b>（さいご ' + new Date(c.at).toLocaleString('ja-JP') + '）'
                 : '<b>ON</b>')
         : '<b class="ng">OFF</b>';
-  e.innerHTML = 'けされない せってい：' + a + '<br>GitHub じどうほぞん：' + b;
+  e.innerHTML = 'けされない せってい：' + a + '<br>GitHub じどうほぞん：' + b +
+                (c.token ? '<br>この 端末の わく：' + ghMyName() : '');
 }
 
 function openBackup(){
   $('bk-token').value = ghConf().token || '';
+  $('bk-dev').value   = ghConf().dev || '';
   $('bk-out').value = '';
   $('bk-in').value  = '';
   bkMsg('');
@@ -4203,30 +4294,63 @@ $('bk-token').addEventListener('change', function(){
   bkMsg(v ? 'トークンを ほぞんしました。' : 'トークンを けしました。', 'ok');
 });
 
+$('bk-dev').addEventListener('change', function(){
+  var c = ghConf();
+  var v = $('bk-dev').value.replace(/^\s+|\s+$/g, '').slice(0, 12);
+  if(v){ c.dev = v; }else{ delete c.dev; }
+  ghSave(c);
+  renderBackupState();
+  bkMsg(v ? 'この 端末を「' + v + '」に しました。' : '端末の なまえを けしました。', 'ok');
+});
+
 $('bk-push').addEventListener('click', function(){
   sfxTap();
   if(!ghConf().token){ bkMsg('さきに トークンを いれてください。', 'ng'); return; }
   bkMsg('ほぞんして います…');
-  ghPush(function(err){
+  ghPush(true, function(err){          /* 手で おした ときは かならず ほぞん */
     renderBackupState();
     bkMsg(err ? err : 'クラウドに ほぞんしました！', err ? 'ng' : 'ok');
   });
 });
 
-$('bk-pull').addEventListener('click', function(){
+/* クラウドに ある わくの いちらん */
+var ghSlotCache = [];
+$('bk-list').addEventListener('click', function(){
   sfxTap();
   if(!ghConf().token){ bkMsg('さきに トークンを いれてください。', 'ng'); return; }
-  bkMsg('よみこんで います…');
-  ghFetch(function(err, o){
+  bkMsg('しらべて います…');
+  ghSlots(function(err, list){
     if(err){ bkMsg(err, 'ng'); return; }
-    if(!o || !o.save){ bkMsg('クラウドの データが よめません。', 'ng'); return; }
-    if(!window.confirm('いまの データは きえます。クラウドの データに もどしますか？')){
-      bkMsg(''); return;
+    ghSlotCache = list || [];
+    var sel = $('bk-slot'), h = '', i, t;
+    if(!ghSlotCache.length){
+      sel.innerHTML = '<option value="">クラウドに データが ありません</option>';
+      bkMsg('クラウドに データが ありません。', 'ng');
+      return;
     }
-    if(!applySave(o.save)){ bkMsg('もどせません でした。', 'ng'); return; }
-    renderTitle();
-    bkMsg('クラウドから もどしました！', 'ok');
+    for(i = 0; i < ghSlotCache.length; i++){
+      t = ghSlotCache[i];
+      h += '<option value="' + i + '">' + t.dev +
+           (t.mine ? '（この 端末）' : '') +
+           ' ／ ' + (t.ts ? new Date(t.ts).toLocaleDateString('ja-JP') : '？') +
+           '</option>';
+    }
+    sel.innerHTML = h;
+    bkMsg(ghSlotCache.length + ' この わくが あります。', 'ok');
   });
+});
+
+$('bk-pull').addEventListener('click', function(){
+  sfxTap();
+  var i = parseInt($('bk-slot').value, 10);
+  var t = ghSlotCache[i];
+  if(!t || !t.save){ bkMsg('さきに「いちらん」で えらんで ください。', 'ng'); return; }
+  if(!window.confirm('いまの データは きえます。\n「' + t.dev + '」の データに もどしますか？')){
+    bkMsg(''); return;
+  }
+  if(!applySave(t.save)){ bkMsg('もどせません でした。', 'ng'); return; }
+  renderTitle();
+  bkMsg('「' + t.dev + '」から もどしました！', 'ok');
 });
 
 /* =========================================================
