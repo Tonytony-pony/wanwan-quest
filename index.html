@@ -1442,11 +1442,10 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
         で、そだてて いた いぬと レベルを えらんで もどせます。</p>
     </div>
 
-    <div class="bk-sec hidden" id="bk-crane">
-      <h4>⑤ クレーンゲーム（テスト中）</h4>
+    <div class="bk-sec" id="bk-crane">
+      <h4>⑤ ぬいぐるみ</h4>
       <div class="bk-row">
-        <button class="btn small" id="bk-cr-add">ぬいぐるみを ぜんぶ けす</button>
-        <button class="btn small purple" id="bk-cr-off">テストを やめる</button>
+        <button class="btn small purple" id="bk-cr-add">あつめた ぬいぐるみを けす</button>
       </div>
       <p class="note" id="bk-cr-note" style="margin:6px 0 0"></p>
     </div>
@@ -2444,8 +2443,10 @@ function ensureAudio(){
    1日 やすんでも とりかえせる。30日を こえた あとの まいにちの もくひょう。 */
 /* ===== クレーンゲーム =====
    さんすうの おまけ。メインに ならない ように、
-   おさんぽを おえた ときだけ けんが もらえて、1日 2かいまで。 */
-var CRANE_MAX   = 2;      /* 1日に もらえる けんの かず */
+   おさんぽを おえた ときだけ けんが もらえて、1日 なんかいまで と きめる。
+   けんは おさんぽ 1かいに つき 1まい なので、
+   5まい もらうには 10もんを 5かい（50もん）とく ひつようが ある。 */
+var CRANE_MAX   = 5;      /* 1日に もらえる けんの かず */
 var CRANE_PITY  = 2;      /* これだけ はずすと つぎは かならず とれる */
 var CRANE_SWEEP = 1750;   /* アームが はしから はしまで うごく ミリびょう */
 var CRANE_UPDOWN = 1000;  /* アームが おりる／あがる ミリびょう（ゆっくりめ） */
@@ -2743,18 +2744,6 @@ function keyToText(key){
    6b. クレーンゲーム
    ========================================================= */
 
-/* テスト中は ?crane=1 を つけた 端末にだけ だす。
-   ?crane=0 で けせる。ほんばん公開の ときは この しくみを はずす。 */
-var CRANE_KEY = 'wanwanquest_crane_test';
-(function(){
-  var m = location.search.match(/[?&]crane=([01])/);
-  if(!m) return;
-  try{ localStorage.setItem(CRANE_KEY, m[1]); }catch(e){}
-})();
-function craneOn(){
-  try{ return localStorage.getItem(CRANE_KEY) === '1'; }catch(e){ return false; }
-}
-
 /* 日が かわったら けんは リセット。もちこしは しない */
 function craneSync(){
   var t = dkey();
@@ -2764,7 +2753,6 @@ function craneSync(){
 }
 function craneLeft(){
   craneSync();
-  if(craneOn()) return 99;          /* テスト中は なんかいでも あそべる */
   return Math.max(0, save.craneGot - save.craneUse);
 }
 /* おさんぽを おえた ときに よぶ。ゲームオーバーでは よばない */
@@ -3034,10 +3022,8 @@ function crStepFall(t){
 function craneStart(){
   if(craneLeft() <= 0) return;
   var strong = save.craneGrip > 0;
-  if(!craneOn()){                    /* テスト中は けんを つかわない */
-    save.craneUse++;
-    if(strong) save.craneGrip--;
-  }
+  save.craneUse++;
+  if(strong) save.craneGrip--;
   writeSave();
 
   $('cr-arm').classList.remove('shut');
@@ -3046,8 +3032,7 @@ function craneStart(){
   $('cr-tap').disabled = false;
   $('cr-tap').classList.remove('hidden');
   $('cr-tap').textContent = 'とめる！';
-  $('cr-tickets').textContent = craneOn() ? 'テスト：むせいげん'
-                                          : 'のこり ' + craneLeft() + ' かい';
+  $('cr-tickets').textContent = 'のこり ' + craneLeft() + ' かい';
   /* さきに がめんを みせる。かくれて いる あいだは たかさが 0 なので、
      土台の おおきさを まちがえて しまう。 */
   show('crane');
@@ -3282,12 +3267,11 @@ function crEnd(){
   /* けんが なくなったら うえの ボタンは かくす。
      したの「おさんぽへ もどる」と おなじに なって しまうため */
   $('cr-tap').classList.toggle('hidden', left <= 0);
-  $('cr-tickets').textContent = craneOn() ? 'テスト：むせいげん'
-                                          : 'のこり ' + left + ' かい';
+  $('cr-tickets').textContent = 'のこり ' + left + ' かい';
   if(left <= 0){
     crMsg($('cr-msg').innerHTML +
           '<br><span class="tiny">きょうの クレーンけんは おしまい。' +
-          'また おさんぽ すると もらえるよ</span>');
+          'また あした おさんぽ すると もらえるよ</span>');
   }
 }
 
@@ -4100,18 +4084,17 @@ function renderMap(){
   $('btn-sound').classList.toggle('off', !save.sound);
   $('btn-bgm').classList.toggle('off', !save.bgm);
 
-  /* クレーンゲーム（テスト中は かくして おく） */
-  var cOn = craneOn(), cLeft = craneLeft();
-  $('btn-crane').classList.toggle('hidden', !cOn);
-  $('map-crane').classList.toggle('hidden', !cOn);
+  /* クレーンゲーム */
+  var cLeft = craneLeft();
+  $('btn-crane').classList.remove('hidden');
+  $('map-crane').classList.remove('hidden');
   $('btn-crane').disabled = (cLeft <= 0);
-  $('map-crane').innerHTML = craneOn()
-    ? '<b>テスト中</b>：クレーンけんは むせいげん'
-    : (cLeft > 0
-        ? '<span class="tk">' + new Array(cLeft + 1).join('🎫') + '</span> ' +
-          'クレーンけん <b>' + cLeft + '</b>まい'
-        : 'クレーンけんは おさんぽを おえると もらえるよ（1日 2まいまで）');
-  $('plush-win').classList.toggle('hidden', !cOn || plushCount() === 0);
+  $('map-crane').innerHTML = cLeft > 0
+    ? '<span class="tk">' + new Array(cLeft + 1).join('🎫') + '</span> ' +
+      'クレーンけん <b>' + cLeft + '</b>まい'
+    : 'クレーンけんは おさんぽを おえると もらえるよ（1日 ' +
+      CRANE_MAX + 'まいまで）';
+  $('plush-win').classList.toggle('hidden', plushCount() === 0);
   renderPlushRow();
 
   $('mini-best').innerHTML = save.catchBest > 0
@@ -4560,7 +4543,7 @@ function finishRun(){
   /* きょうの スタンプ。せいせきに かんけいなく 1日 1こ もらえる */
   run.stamp = stampToday();
 
-  /* クレーンけん。さいごまで あるけた ときだけ。1日 2まいまで */
+  /* クレーンけん。さいごまで あるけた ときだけ。1日 CRANE_MAX まいまで */
   run.crane = craneEarn(run.ng === 0);
 
   /* いぬが たからものを ひろって くる。ぜんもん せいかいなら もう 1こ。
@@ -5055,7 +5038,6 @@ function renderBackupState(){
 function openBackup(){
   $('bk-token').value = ghConf().token || '';
   $('bk-dev').value   = ghConf().dev || '';
-  $('bk-crane').classList.toggle('hidden', !craneOn());
   renderCraneTest();
   $('bk-out').value = '';
   $('bk-in').value  = '';
@@ -5064,12 +5046,12 @@ function openBackup(){
   $('bkpop').classList.remove('hidden');
 }
 
-/* クレーンゲームの テスト用。?crane=1 の 端末にだけ でる */
+/* クレーンゲームで あつめた ぬいぐるみの ようす */
 function renderCraneTest(){
-  if(!craneOn()) return;
   $('bk-cr-note').innerHTML =
-    'テスト中は クレーンけんが <b>むせいげん</b>です。<br>' +
-    'もっている ぬいぐるみ：' + plushCount() + ' / ' + PLUSHES.length + ' しゅるい';
+    'もっている ぬいぐるみ：<b>' + plushCount() + '</b> / ' +
+    PLUSHES.length + ' しゅるい<br>' +
+    'けすと クレーンゲームを はじめから あつめなおせます。';
 }
 $('bk-cr-add').addEventListener('click', function(){
   sfxTap();
@@ -5078,14 +5060,6 @@ $('bk-cr-add').addEventListener('click', function(){
   writeSave(); renderCraneTest(); renderMap();
   bkMsg('ぬいぐるみを ぜんぶ けしました。', 'ok');
 });
-$('bk-cr-off').addEventListener('click', function(){
-  sfxTap();
-  try{ localStorage.setItem(CRANE_KEY, '0'); }catch(e){}
-  $('bk-crane').classList.add('hidden');
-  renderMap();
-  bkMsg('クレーンゲームを かくしました。', 'ok');
-});
-
 $('btn-grown').addEventListener('click', function(){ sfxTap(); openBackup(); });
 $('bk-close').addEventListener('click', function(){
   sfxTap(); $('bkpop').classList.add('hidden');
