@@ -2842,7 +2842,7 @@ function crDecide(p, dist){
   var near = dist / 9;                    /* 0 に ちかいほど ぴったり */
   var base = (near < 0.5) ? 0.90 : (near < 1.0) ? 0.55 : 0.20;
   base *= [1, 0.8, 0.62][p.size];
-  if(save.craneGrip > 0) base = Math.min(0.95, base * 1.3);
+  if(cr && cr.strong) base = Math.min(0.95, base * 1.3);
   return Math.random() < base;
 }
 
@@ -3022,9 +3022,8 @@ function crStepFall(t){
 function craneStart(){
   if(craneLeft() <= 0) return;
   var strong = save.craneGrip > 0;
-  save.craneUse++;
-  if(strong) save.craneGrip--;
-  writeSave();
+  /* けんは ここでは へらさない。けっかが 出た ときに へらす。
+     とちゅうで よみこみ なおしても 1まい むだに ならない ように。 */
 
   $('cr-arm').classList.remove('shut');
   $('cr-hold').innerHTML = '';
@@ -3032,14 +3031,16 @@ function craneStart(){
   $('cr-tap').disabled = false;
   $('cr-tap').classList.remove('hidden');
   $('cr-tap').textContent = 'とめる！';
-  $('cr-tickets').textContent = 'のこり ' + craneLeft() + ' かい';
+  /* いま あそぶ 1かいぶんを ひいて みせる */
+  $('cr-tickets').textContent = 'のこり ' + (craneLeft() - 1) + ' かい';
   /* さきに がめんを みせる。かくれて いる あいだは たかさが 0 なので、
      土台の おおきさを まちがえて しまう。 */
   show('crane');
 
   cr = { phase:'move', t0:crNow(), x:CR_L, slots:null, tilt:null, xs:null,
          target:-1, win:false, taken:-1, strong:strong, armY:0,
-         slipped:false, noGrip:false, fall:null, fallRest:null, heapTop:0 };
+         slipped:false, noGrip:false, spent:false,
+         fall:null, fallRest:null, heapTop:0 };
 
   /* きかいの なかみは もちこす。土台は さいしょの 1かいだけ つくる。 */
   /* がめんの おおきさが かわったら（よこむきに した など）
@@ -3212,7 +3213,17 @@ function crStep(){
   }
 }
 
+/* この 1かいぶんの けんを つかう。1かいに 1どだけ。 */
+function craneSpend(){
+  if(!cr || cr.spent) return;
+  cr.spent = true;
+  save.craneUse++;
+  if(cr.strong) save.craneGrip--;
+  writeSave();
+}
+
 function crWin(){
+  craneSpend();
   var p = cr.slots[cr.target];
   /* とれた ところにだけ あたらしい ぬいぐるみを 1たい おぎなう。
      のこりの 2たいと 土台は うごかさない。 */
@@ -3236,6 +3247,7 @@ function crWin(){
 }
 
 function crMiss(){
+  craneSpend();
   var p = cr.slots[cr.target];
   /* おちた ところに そのまま のこす。つぎは その いちから ねらえる */
   if(cr.fallRest){
@@ -3302,6 +3314,9 @@ $('cr-back').addEventListener('click', function(){ sfxTap(); crQuit(); });
 
 function crQuit(){
   if(cr){
+    /* アームを とめた あと に やめた ときは けんを つかった あつかい。
+       はずれそう な とき に やめて やりなおす のを ふせぐ。 */
+    if(cr.phase !== 'move' && cr.phase !== 'done') craneSpend();
     if(cr.raf) cancelAnimationFrame(cr.raf);
     if(cr.tid) clearTimeout(cr.tid);
   }
