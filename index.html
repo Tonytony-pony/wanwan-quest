@@ -492,7 +492,7 @@ body{
 .cr-arm .hold{position:absolute;left:50%;transform:translateX(-50%);}
 
 /* したに つみあげた ぬいぐるみ（かざり。とれない） */
-.cr-heap{position:absolute;left:0;right:0;bottom:16px;pointer-events:none;}
+.cr-heap{position:absolute;left:0;right:0;bottom:8px;pointer-events:none;}
 .cr-heap img{position:absolute;bottom:0;width:auto;
   filter:drop-shadow(0 2px 2px rgba(90,70,130,.22)) saturate(.92) brightness(.97);}
 
@@ -1444,7 +1444,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <div class="bk-sec hidden" id="bk-crane">
       <h4>⑤ クレーンゲーム（テスト中）</h4>
       <div class="bk-row">
-        <button class="btn small" id="bk-cr-add">けんを 2まいに する</button>
+        <button class="btn small" id="bk-cr-add">ぬいぐるみを ぜんぶ けす</button>
         <button class="btn small purple" id="bk-cr-off">テストを やめる</button>
       </div>
       <p class="note" id="bk-cr-note" style="margin:6px 0 0"></p>
@@ -2760,6 +2760,7 @@ function craneSync(){
 }
 function craneLeft(){
   craneSync();
+  if(craneOn()) return 99;          /* テスト中は なんかいでも あそべる */
   return Math.max(0, save.craneGot - save.craneUse);
 }
 /* おさんぽを おえた ときに よぶ。ゲームオーバーでは よばない */
@@ -2875,52 +2876,68 @@ function crHeapH(){
   var h = $('cr-box').clientHeight;
   return Math.max(70, Math.min(160, Math.round(h * 0.30)));
 }
-/* とれる ぬいぐるみの したばしの いち（ゆかから） */
+/* 土台の したばしの いち。ゆかバー（16px）に 8px ぶん うめて すきまを なくす */
+var CR_HEAP_BOT = 8;
+
+/* とれる ぬいぐるみの したばしの いち。
+   土台の ほんとうの たかさ（crMakeHeap で はかる）から きめて、
+   かならず ぬいぐるみの たかさの 8% ぶん 土台に めりこませる。 */
 function crPrizeBottom(){
-  return 16 + Math.round(crHeapH() * 0.70);
+  var top = (cr && cr.heapTop) ? cr.heapTop : Math.round(crHeapH() * 0.62);
+  return CR_HEAP_BOT + top - Math.round(crPlushH() * 0.08);
 }
 
 /* したの 土台を つくる。ぜんぶの しゅるいから てきとうに ばらまく。
    これは かざりなので、もって いなくても でる。とれない。 */
-/* とりだし口（ひだり はし）の うえには ぬいぐるみを おかない。
-   ふさいで いたら おとせない ので、ほんものの きかいでも あけて ある。 */
-var CR_HEAP_L = 26, CR_HEAP_R = 99;
+/* とりだし口（ひだり はし・3%〜22%）の うえには ぬいぐるみを おかない。
+   ふさいで いたら おとせない ので、ほんものの きかいでも あけて ある。
+   ただし すきまは できるだけ つめる。 */
+var CR_CHUTE_R = 22.0, CR_HEAP_R = 99;
 
 function crMakeHeap(){
-  var hh = crHeapH(), ph = crPlushH(), html = '', i;
-  var span = CR_HEAP_R - CR_HEAP_L;
-  /* した 1れつ＋うえ 1れつ で すきまを うめる */
+  var hh = crHeapH(), ph = crPlushH(), bw = $('cr-box').clientWidth || 340;
+  var html = '', top = 0;
+  /* 3れつで すきまなく うめる。まえほど おおきく、ひくく */
   var rows = [
-    { n:rnd(12, 14), lo:0.00, hi:0.10, sz:[0.72, 0.28] },  /* まえ（した） */
-    { n:rnd(10, 12), lo:0.13, hi:0.28, sz:[0.64, 0.24] },  /* なか */
-    { n:rnd(7, 9),   lo:0.30, hi:0.46, sz:[0.56, 0.20] }   /* おく（うえ） */
+    { n:rnd(12, 14), lo:-0.03, hi:0.06, sz:[0.74, 0.26], rot:34 },  /* まえ */
+    { n:rnd(10, 12), lo:0.10,  hi:0.24, sz:[0.64, 0.24], rot:52 },  /* なか */
+    { n:rnd(8, 10),  lo:0.26,  hi:0.40, sz:[0.54, 0.20], rot:58 }   /* おく */
   ];
-  var r, j, cnt = 0;
+  var r, j;
   for(r = 0; r < rows.length; r++){
     var row = rows[r];
     for(j = 0; j < row.n; j++){
       var p   = PLUSHES[rnd(0, PLUSHES.length - 1)];
       var sz  = Math.round(ph * (row.sz[0] + Math.random() * row.sz[1]));
-      /* くぎって ならべる。となりと かさなる ように はばを ひろめに とる */
-      var x   = CR_HEAP_L + (j + 0.5) / row.n * span
-                + (Math.random() - 0.5) * (span / row.n) * 0.7;
-      if(x < CR_HEAP_L) x = CR_HEAP_L;
+      /* この ぬいぐるみの はば（％）。とりだし口に かからない いちを もとめる */
+      var halfW = (sz * 0.78 / 2) / bw * 100;
+      var lo = CR_CHUTE_R + halfW;
+      var span = CR_HEAP_R - lo;
+      var x = lo + (j + 0.5) / row.n * span
+              + (Math.random() - 0.5) * (span / row.n) * 0.6;
+      if(x < lo) x = lo;
       if(x > CR_HEAP_R) x = CR_HEAP_R;
       /* まんなかほど たかく つみあがる */
-      var mid = 1 - Math.abs(x - (CR_HEAP_L + span * 0.5)) / (span * 0.5);
+      var mid = 1 - Math.abs(x - (lo + span * 0.5)) / (span * 0.5);
       var y   = Math.round(hh * (row.lo + Math.random() * (row.hi - row.lo))
-                           + hh * mid * 0.12);
-      var rot = Math.round(-58 + Math.random() * 116);
-      if(Math.random() < 0.25) rot = (Math.random() < 0.5 ? -1 : 1) * rnd(72, 98);
+                           + hh * mid * 0.10);
+      var rot = Math.round((Math.random() * 2 - 1) * row.rot);
+      if(r > 0 && Math.random() < 0.22){
+        rot = (Math.random() < 0.5 ? -1 : 1) * rnd(72, 98);
+      }
+      /* 見た目の てっぺん。かたむいて いる ぶん すこし ひくく みつもる */
+      var vt = y + Math.round(sz * 0.80);
+      if(vt > top) top = vt;
       html += '<img src="img/plush_' + p.id + '.png" alt="" ' +
               'style="height:' + sz + 'px;left:' + x.toFixed(1) + '%;bottom:' + y + 'px;' +
-              'z-index:' + (60 - Math.round(y / 2)) + ';' +
+              'z-index:' + Math.max(10, 50 - Math.round(y / 3)) + ';' +
               'transform:translateX(-50%) rotate(' + rot + 'deg)">';
-      cnt++;
     }
   }
   $('cr-heap').style.height = hh + 'px';
   $('cr-heap').innerHTML = html;
+  if(cr) cr.heapTop = top;
+  return top;
 }
 
 /* とれる 3たいの かたむき。まいかい かわる */
@@ -2941,7 +2958,7 @@ function crRender(){
     el.style.left = CR_SLOT[i] + '%';
     el.style.bottom = bt + 'px';
     el.style.height = h + 'px';
-    el.style.zIndex = 45;
+    el.style.zIndex = 52;      /* 土台より まえ。かくれない ように */
     el.style.transform = 'translateX(-50%) rotate(' + cr.tilt[i] + 'deg)';
     el.innerHTML = cr.taken === i ? '' :
       '<img src="img/plush_' + cr.slots[i].id + '.png" alt="">';
@@ -2953,9 +2970,11 @@ function crMsg(t){ $('cr-msg').innerHTML = t; }
 
 function craneStart(){
   if(craneLeft() <= 0) return;
-  save.craneUse++;
   var strong = save.craneGrip > 0;
-  if(strong) save.craneGrip--;
+  if(!craneOn()){                    /* テスト中は けんを つかわない */
+    save.craneUse++;
+    if(strong) save.craneGrip--;
+  }
   writeSave();
 
   /* はずした あとは おなじ ならびで もういちど。
@@ -2964,14 +2983,21 @@ function craneStart(){
   var tilt  = crKeep ? crKeep.tilt  : crMakeTilt();
   cr = { phase:'move', t0:crNow(), x:CR_L, slots:slots, tilt:tilt,
          target:-1, win:false, taken:-1, strong:strong, armY:0 };
-  if(crKeep){ $('cr-heap').innerHTML = crKeep.heap; }else{ crMakeHeap(); }
+  if(crKeep){
+    $('cr-heap').style.height = crHeapH() + 'px';
+    $('cr-heap').innerHTML = crKeep.heap;
+    cr.heapTop = crKeep.top;
+  }else{
+    crMakeHeap();
+  }
   $('cr-arm').classList.remove('shut');
   $('cr-hold').innerHTML = '';
   $('cr-fall').classList.add('hidden');
   $('cr-tap').disabled = false;
   $('cr-tap').classList.remove('hidden');
   $('cr-tap').textContent = 'とめる！';
-  $('cr-tickets').textContent = 'のこり ' + craneLeft() + ' かい';
+  $('cr-tickets').textContent = craneOn() ? 'テスト：むせいげん'
+                                          : 'のこり ' + craneLeft() + ' かい';
   show('crane');
   crRender();
   crArmY(0);
@@ -3102,7 +3128,7 @@ function crWin(){
 function crMiss(){
   var p = cr.slots[cr.target];
   /* おなじ ならびで もういちど ちょうせん できる ように とっておく */
-  crKeep = { slots:cr.slots, tilt:cr.tilt, heap:$('cr-heap').innerHTML };
+  crKeep = { slots:cr.slots, tilt:cr.tilt, heap:$('cr-heap').innerHTML, top:cr.heapTop };
   save.craneM[p.id] = (save.craneM[p.id] || 0) + 1;
   writeSave();
   cr.phase = 'done';
@@ -3124,7 +3150,8 @@ function crEnd(){
   /* けんが なくなったら うえの ボタンは かくす。
      したの「おさんぽへ もどる」と おなじに なって しまうため */
   $('cr-tap').classList.toggle('hidden', left <= 0);
-  $('cr-tickets').textContent = 'のこり ' + left + ' かい';
+  $('cr-tickets').textContent = craneOn() ? 'テスト：むせいげん'
+                                          : 'のこり ' + left + ' かい';
   if(left <= 0){
     crMsg($('cr-msg').innerHTML +
           '<br><span class="tiny">きょうの クレーンけんは おしまい。' +
@@ -3946,10 +3973,12 @@ function renderMap(){
   $('btn-crane').classList.toggle('hidden', !cOn);
   $('map-crane').classList.toggle('hidden', !cOn);
   $('btn-crane').disabled = (cLeft <= 0);
-  $('map-crane').innerHTML = cLeft > 0
-    ? '<span class="tk">' + new Array(cLeft + 1).join('🎫') + '</span> ' +
-      'クレーンけん <b>' + cLeft + '</b>まい'
-    : 'クレーンけんは おさんぽを おえると もらえるよ（1日 2まいまで）';
+  $('map-crane').innerHTML = craneOn()
+    ? '<b>テスト中</b>：クレーンけんは むせいげん'
+    : (cLeft > 0
+        ? '<span class="tk">' + new Array(cLeft + 1).join('🎫') + '</span> ' +
+          'クレーンけん <b>' + cLeft + '</b>まい'
+        : 'クレーンけんは おさんぽを おえると もらえるよ（1日 2まいまで）');
   $('plush-win').classList.toggle('hidden', !cOn || plushCount() === 0);
   renderPlushRow();
 
@@ -4907,15 +4936,15 @@ function openBackup(){
 function renderCraneTest(){
   if(!craneOn()) return;
   $('bk-cr-note').innerHTML =
-    'のこり <b>' + craneLeft() + '</b>まい／きょう もらった ' + save.craneGot +
-    'まい<br>もっている ぬいぐるみ：' + plushCount() + ' / ' + PLUSHES.length + ' しゅるい';
+    'テスト中は クレーンけんが <b>むせいげん</b>です。<br>' +
+    'もっている ぬいぐるみ：' + plushCount() + ' / ' + PLUSHES.length + ' しゅるい';
 }
 $('bk-cr-add').addEventListener('click', function(){
   sfxTap();
-  craneSync();
-  save.craneGot = CRANE_MAX; save.craneUse = 0; save.craneGrip = 1;
+  if(!window.confirm('あつめた ぬいぐるみを ぜんぶ けします。いい ですか？')) return;
+  save.plush = {}; save.craneM = {}; save.plushPick = '';
   writeSave(); renderCraneTest(); renderMap();
-  bkMsg('けんを ' + CRANE_MAX + 'まいに しました。', 'ok');
+  bkMsg('ぬいぐるみを ぜんぶ けしました。', 'ok');
 });
 $('bk-cr-off').addEventListener('click', function(){
   sfxTap();
