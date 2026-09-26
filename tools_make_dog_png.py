@@ -20,6 +20,7 @@ Geminiの しゅつりょくを JPGで ほぞんすると、とうめいぶぶ�
   python tools_make_dog_png.py shiba        しばいぬ だけ
   python tools_make_dog_png.py paw          あしあと だけ
   python tools_make_dog_png.py items        アイテム だけ
+  python tools_make_dog_png.py plush        ぬいぐるみ だけ
 """
 import os, sys
 from collections import deque
@@ -42,6 +43,12 @@ POSES = [
     ('05', 'lv15', 440),  # おやこ    （レベル 15〜。ない いぬしゅは とばす）
 ]
 EXTS = ('.jpg', '.jpeg', '.png', '.webp')   # どの かたちで ほぞんしても OK
+
+# ぬいぐるみ（クレーンゲームの けいひん）。
+# イラストぬいぐるみ/<なまえ>.png を おいて おくだけで へんかんされる。
+# いぬの おへやでは 100ドットくらいで みせるので、そのばい で つくる。
+PLUSH_DIR = 'イラストぬいぐるみ'
+PLUSH_H   = 220
 
 # アイテム（いぬ小屋・ごはん・ボール・メダル）。おおきさは たかさで そろえる。
 ITEM_DIR = 'items'
@@ -555,6 +562,21 @@ if __name__ == '__main__':
                     print('  %-16s (%s.jpg が ないので とばす)' % (stem, stem))
                     continue
                 process(src, '%s.png' % stem, th, 'center', pad=False)
+                done += 1
+
+    # ぬいぐるみ。フォルダに ある ぶん ぜんぶ
+    if not only or 'plush' in only:
+        if os.path.isdir(PLUSH_DIR):
+            names = sorted(set(
+                os.path.splitext(f)[0] for f in os.listdir(PLUSH_DIR)
+                if os.path.splitext(f)[1].lower() in EXTS))
+            if names:
+                print('ぬいぐるみ')
+            for nm in names:
+                src = find_src(PLUSH_DIR, nm)
+                if not src:
+                    continue
+                process(src, 'plush_%s.png' % nm, PLUSH_H, 'center', pad=False)
                 done += 1
 
     paw = find_src(SRC_ROOT, 'paw')
