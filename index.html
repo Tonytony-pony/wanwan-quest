@@ -2450,19 +2450,20 @@ var CRANE_SWEEP = 1750;   /* アームが はしから はしまで うごく �
 
 /* けいひんの ぬいぐるみ。size 0=ちいさい 1=ふつう 2=おおきい
    （え が できた ぶんだけ ならべる。あとから ふやせる） */
+/* ar = え の よこ/たて。とりだし口に かぶらない いちを だす のに つかう */
 var PLUSHES = [
-  { id:'rabbit',   name:'うさぎ',  size:0 },
-  { id:'chick',    name:'ひよこ',  size:0 },
-  { id:'elephant', name:'ぞう',    size:0 },
-  { id:'cat',      name:'ねこ',    size:0 },
-  { id:'pig',      name:'ぶた',    size:0 },
-  { id:'penguin',  name:'ぺんぎん', size:0 },
-  { id:'koala',    name:'こあら',   size:1 },
-  { id:'panda',    name:'ぱんだ',   size:1 },
-  { id:'cow',      name:'うし',     size:1 },
-  { id:'fox',      name:'きつね',   size:1 },
-  { id:'lion',     name:'ライオン', size:2 },
-  { id:'unicorn',  name:'ユニコーン', size:2 }
+  { id:'rabbit',   name:'うさぎ',  size:0, ar:1.00 },
+  { id:'chick',    name:'ひよこ',  size:0, ar:0.80 },
+  { id:'elephant', name:'ぞう',    size:0, ar:1.02 },
+  { id:'cat',      name:'ねこ',    size:0, ar:0.73 },
+  { id:'pig',      name:'ぶた',    size:0, ar:0.82 },
+  { id:'penguin',  name:'ぺんぎん', size:0, ar:0.91 },
+  { id:'koala',    name:'こあら',   size:1, ar:1.05 },
+  { id:'panda',    name:'ぱんだ',   size:1, ar:0.78 },
+  { id:'cow',      name:'うし',     size:1, ar:0.90 },
+  { id:'fox',      name:'きつね',   size:1, ar:0.82 },
+  { id:'lion',     name:'ライオン', size:2, ar:0.86 },
+  { id:'unicorn',  name:'ユニコーン', size:2, ar:0.82 }
 ];
 function plushById(id){
   for(var i = 0; i < PLUSHES.length; i++){ if(PLUSHES[i].id === id) return PLUSHES[i]; }
@@ -2893,12 +2894,12 @@ function crPrizeBottom(){
    ふさいで いたら おとせない ので、ほんものの きかいでも あけて ある。
    ただし すきまは できるだけ つめる。 */
 var CR_CHUTE_R = 22.0, CR_HEAP_R = 99;
-var CR_ASPECT  = 1.10;    /* いちばん よこながの ぬいぐるみ（こあら 1.05）より ひろめ */
-
-/* たかさ h・かたむき rot の ぬいぐるみの、よこはばの はんぶん（％） */
-function crHalfW(h, rot, boxW){
+/* たかさ h・かたむき rot の ぬいぐるみの、よこはばの はんぶん（％）。
+   ar は その ぬいぐるみの よこ/たて。まわすと はばが かわる ので
+   w|cos| + h|sin| で だす。 */
+function crHalfW(h, rot, boxW, ar){
   var a = Math.abs(rot) * Math.PI / 180;
-  var w = h * (CR_ASPECT * Math.abs(Math.cos(a)) + Math.abs(Math.sin(a)));
+  var w = h * ((ar || 0.9) * Math.abs(Math.cos(a)) + Math.abs(Math.sin(a)));
   return (w / 2) / boxW * 100;
 }
 
@@ -2923,11 +2924,12 @@ function crMakeHeap(){
         rot = (Math.random() < 0.5 ? -1 : 1) * rnd(72, 98);
       }
       /* とりだし口に かからない いちを もとめる */
-      var halfW = crHalfW(sz, rot, bw);
+      var halfW = crHalfW(sz, rot, bw, p.ar);
       var lo = CR_CHUTE_R + halfW;
       var span = CR_HEAP_R - lo;
-      var x = lo + (j + 0.5) / row.n * span
-              + (Math.random() - 0.5) * (span / row.n) * 0.6;
+      /* はしから はしまで ならべる。さいしょの 1たいは とりだし口に ぴったり */
+      var x = lo + (row.n > 1 ? j / (row.n - 1) : 0.5) * span
+              + (Math.random() - 0.5) * (span / row.n) * 0.5;
       if(x < lo) x = lo;
       if(x > CR_HEAP_R) x = CR_HEAP_R;
       /* まんなかほど たかく つみあがる */
@@ -2980,7 +2982,8 @@ function crRender(){
     /* はじめて ならべる ときだけ とりだし口を よける */
     cr.xs = [];
     for(i = 0; i < 3; i++){
-      cr.xs.push(Math.max(CR_SLOT[i], CR_CHUTE_R + crHalfW(h, cr.tilt[i], bw)));
+      cr.xs.push(Math.max(CR_SLOT[i],
+                 CR_CHUTE_R + crHalfW(h, cr.tilt[i], bw, cr.slots[i].ar)));
     }
   }
   cr.px = [];
@@ -3135,7 +3138,8 @@ function crLoop(){
            とりだし口に かぶらない いちを せいかくに だせる */
         var srot = rnd(-40, 40);
         var minX = CR_CHUTE_R +
-                   crHalfW(crPlushH(), srot, $('cr-box').clientWidth || 340);
+                   crHalfW(crPlushH(), srot, $('cr-box').clientWidth || 340,
+                           cr.slots[cr.target].ar);
         cr.slipX = Math.max(minX, cr.fromX + (CR_CHUTE - cr.fromX) * 0.42);
         cr.slipRot = srot;
       }
@@ -3202,7 +3206,8 @@ function crWin(){
   crKeep.tilt[cr.target]  = crOneTilt();
   crKeep.xs[cr.target]    = Math.max(CR_SLOT[cr.target],
         CR_CHUTE_R + crHalfW(crPlushH(), crKeep.tilt[cr.target],
-                             $('cr-box').clientWidth || 340));
+                             $('cr-box').clientWidth || 340,
+                             crKeep.slots[cr.target].ar));
   save.plush[p.id] = (save.plush[p.id] || 0) + 1;
   delete save.craneM[p.id];
   writeSave();
