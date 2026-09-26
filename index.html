@@ -503,7 +503,8 @@ body{
 .cr-fall{position:absolute;}
 
 .cr-msg{text-align:center;font-size:13px;line-height:1.5;margin:7px 0 0;
-  min-height:2.6em;color:var(--purple-deep);}
+  /* ぎょうすうで きかいの たかさが かわらない ように ひろめに とる */
+  min-height:4.4em;color:var(--purple-deep);}
 .cr-msg b{color:var(--pink-deep);}
 .cr-left{text-align:center;font-size:12.5px;color:var(--ink-soft);margin:5px 0 0;}
 .cr-left b{color:var(--pink-deep);font-size:15px;}
@@ -3056,7 +3057,9 @@ function craneStart(){
   /* きかいの なかみは もちこす。土台は さいしょの 1かいだけ つくる。 */
   /* がめんの おおきさが かわったら（よこむきに した など）
      土台の いちが ずれる ので つくりなおす */
-  if(crKeep && crKeep.boxH !== $('cr-box').clientHeight) crKeep = null;
+  /* メッセージの ぎょうすうで すうドット かわる ので、
+     おおきく かわった とき（よこむきに した など）だけ つくりなおす */
+  if(crKeep && Math.abs(crKeep.boxH - $('cr-box').clientHeight) > 40) crKeep = null;
 
   if(!crKeep){
     crMakeHeap();
