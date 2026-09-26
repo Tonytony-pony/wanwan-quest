@@ -453,6 +453,80 @@ body{
 
 /* おさんぽ がめんの いりぐち */
 .mini-btn .sub{display:block;font-size:11.5px;opacity:.95;margin-top:2px;}
+/* ===== クレーンゲーム ===== */
+#screen-crane{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+.cr-box{
+  position:relative;flex:1 1 auto;min-height:190px;
+  border-radius:14px;overflow:hidden;margin:2px 0 0;
+  background:linear-gradient(180deg,#eaf3ff 0%,#dde8ff 62%,#cdddf8 100%);
+  border:4px solid var(--purple-deep);
+  box-shadow:inset 0 3px 10px rgba(80,60,130,.18);
+}
+.cr-rail{position:absolute;left:0;right:0;top:10px;height:7px;
+  background:linear-gradient(180deg,#c3abe2,#9b82bd);}
+.cr-floor{position:absolute;left:0;right:0;bottom:0;height:16px;
+  background:linear-gradient(180deg,#c9b6e6,#a98fd0);}
+
+/* とりだし口 */
+.cr-chute{position:absolute;left:3%;bottom:16px;width:19%;height:52px;
+  border:3px solid #7a5fae;border-bottom:0;border-radius:9px 9px 0 0;
+  background:rgba(255,255,255,.55);}
+.cr-chute b{position:absolute;left:0;right:0;bottom:4px;text-align:center;
+  font-family:"DotGothic16",monospace;font-size:10px;color:#6b4c9a;}
+
+/* アーム */
+.cr-arm{position:absolute;top:10px;width:0;}
+.cr-arm .rod{position:absolute;left:-3px;top:0;width:6px;border-radius:3px;
+  background:linear-gradient(90deg,#cbb6e8,#8a6fb0 55%,#6f57a0);}
+.cr-arm .head{position:absolute;left:-26px;width:52px;height:17px;border-radius:9px;
+  background:linear-gradient(180deg,#d6c3ee,#9b82bd 60%,#7a5fae);
+  box-shadow:0 2px 0 rgba(90,60,140,.45);}
+.cr-arm .claw{position:absolute;width:11px;height:34px;border-radius:6px;
+  background:linear-gradient(180deg,#c3abe2,#7a5fae);
+  box-shadow:0 1px 0 rgba(90,60,140,.4);
+  transform-origin:50% 0;transition:transform .28s ease;}
+.cr-arm .claw.l{left:-19px;transform:rotate(26deg);}
+.cr-arm .claw.r{left:8px;transform:rotate(-26deg);}
+.cr-arm.shut .claw.l{transform:rotate(5deg);}
+.cr-arm.shut .claw.r{transform:rotate(-5deg);}
+.cr-arm .hold{position:absolute;left:50%;transform:translateX(-50%);}
+
+/* ゆかに ならぶ ぬいぐるみ */
+.cr-p{position:absolute;bottom:14px;transform:translateX(-50%);
+  transition:opacity .2s;}
+.cr-p img,.cr-arm .hold img,.cr-fall img{display:block;height:100%;width:auto;}
+.cr-fall{position:absolute;transform:translateX(-50%);}
+
+.cr-msg{text-align:center;font-size:13px;line-height:1.5;margin:7px 0 0;
+  min-height:2.6em;color:var(--purple-deep);}
+.cr-msg b{color:var(--pink-deep);}
+.cr-left{text-align:center;font-size:12.5px;color:var(--ink-soft);margin:5px 0 0;}
+.cr-left b{color:var(--pink-deep);font-size:15px;}
+.cr-left .tk{font-size:15px;letter-spacing:2px;}
+
+/* もらった ぬいぐるみの ポップアップ */
+.ppop{position:fixed;inset:0;z-index:75;display:flex;
+  align-items:center;justify-content:center;padding:18px;
+  background:rgba(70,25,70,.55);animation:tpopBg .25s ease-out;}
+.ppop-card{width:100%;max-width:300px;text-align:center;
+  padding:16px 15px 13px;border-radius:20px;
+  background:linear-gradient(180deg,#fffdfe,#ffeaf6);
+  border:5px solid var(--pink-deep);
+  box-shadow:0 8px 0 var(--pink-deep),0 14px 26px rgba(60,20,60,.45);
+  animation:tpopIn .5s cubic-bezier(.18,1.5,.42,1) both;}
+.ppop-card .hd{font-family:"DotGothic16",monospace;font-size:17px;
+  color:var(--pink-deep);margin-bottom:4px;}
+.ppop-card img{display:block;height:130px;width:auto;margin:2px auto 4px;}
+.ppop-card .nm{font-family:"DotGothic16",monospace;font-size:16px;
+  color:var(--purple-deep);}
+.ppop-card .cnt{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+
+/* おへやの ぬいぐるみ */
+.plush-row{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:2px;}
+.plush-row img{height:54px;width:auto;
+  filter:drop-shadow(0 2px 2px rgba(140,90,150,.3));}
+.plush-row .none{font-size:12px;color:var(--ink-soft);}
+
 .mini-best{text-align:center;font-size:12px;color:var(--ink-soft);margin:6px 0 0;}
 .mini-best b{color:var(--pink-deep);font-size:15px;}
 
@@ -1097,6 +1171,14 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <button class="btn gold mini-btn" id="btn-catch">🎾 ボールキャッチ
       <span class="sub">おちてくる ボールから こたえを タップ！</span></button>
     <p class="mini-best" id="mini-best"></p>
+    <button class="btn gold mini-btn hidden" id="btn-crane">🧸 クレーンゲーム
+      <span class="sub">ぬいぐるみを ゲットしよう！</span></button>
+    <p class="cr-left hidden" id="map-crane"></p>
+  </div>
+
+  <div class="win purple hidden" id="plush-win">
+    <span class="win-title">おへやの ぬいぐるみ</span>
+    <div class="plush-row" id="plush-row"></div>
   </div>
 
   <div class="win purple">
@@ -1146,6 +1228,38 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <button class="btn purple hidden" id="btn-next">つぎへ ▶</button>
   <div class="spacer"></div>
   <button class="btn small purple" id="btn-give-up">おさんぽへ もどる</button>
+</section>
+
+<!-- ============ 4b. クレーンゲーム ============ -->
+<section id="screen-crane" class="screen hidden">
+  <div class="status">
+    <div class="who">
+      <span class="nm">クレーンゲーム</span>
+      <span class="tiny">ぬいぐるみを ゲット！</span>
+    </div>
+    <div class="lv" id="cr-tickets">けん 0</div>
+  </div>
+
+  <div class="cr-box" id="cr-box">
+    <div class="cr-rail"></div>
+    <div class="cr-chute"><b>とりだし口</b></div>
+    <div class="cr-floor"></div>
+    <div class="cr-p" id="cr-p0"></div>
+    <div class="cr-p" id="cr-p1"></div>
+    <div class="cr-p" id="cr-p2"></div>
+    <div class="cr-fall hidden" id="cr-fall"></div>
+    <div class="cr-arm" id="cr-arm">
+      <i class="rod" id="cr-rod"></i>
+      <i class="head"></i>
+      <i class="claw l"></i>
+      <i class="claw r"></i>
+      <span class="hold" id="cr-hold"></span>
+    </div>
+  </div>
+
+  <p class="cr-msg" id="cr-msg"></p>
+  <button class="btn gold" id="cr-tap">とめる！</button>
+  <button class="btn small purple" id="cr-back">おさんぽへ もどる</button>
 </section>
 
 <!-- ============ 5. リザルト ============ -->
@@ -1310,9 +1424,30 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
         で、そだてて いた いぬと レベルを えらんで もどせます。</p>
     </div>
 
+    <div class="bk-sec hidden" id="bk-crane">
+      <h4>⑤ クレーンゲーム（テスト中）</h4>
+      <div class="bk-row">
+        <button class="btn small" id="bk-cr-add">けんを 2まいに する</button>
+        <button class="btn small purple" id="bk-cr-off">テストを やめる</button>
+      </div>
+      <p class="note" id="bk-cr-note" style="margin:6px 0 0"></p>
+    </div>
+
     <p class="bk-msg" id="bk-msg"></p>
     <button class="btn small purple" id="bk-close" style="margin-top:10px">とじる</button>
   </div>
+</div>
+
+<!-- ぬいぐるみを ゲットした ときの ポップアップ -->
+<div class="ppop hidden" id="ppop">
+  <div class="ppop-card">
+    <div class="hd" id="ppop-hd">ゲット！</div>
+    <img id="ppop-img" src="" alt="">
+    <div class="nm" id="ppop-nm"></div>
+    <div class="cnt" id="ppop-cnt"></div>
+    <button class="btn" id="ppop-ok">やったー！</button>
+  </div>
+  <div class="tpop-fx" id="ppop-fx"></div>
 </div>
 
 <!-- レベルアップの ポップアップ -->
@@ -1838,6 +1973,12 @@ function defaultSave(){
     /* ここから したは いぬに よらず きょうよう（こどもの がくしゅう きろく） */
     cleared : {}, mistakes:{}, totalOk:0, totalNg:0,
     catchBest: 0,      /* ボールキャッチの ハイスコア */
+    plush   : {},      /* ぬいぐるみ id -> こすう（クレーンゲーム） */
+    craneD  : '',      /* クレーンけんを かぞえた日 */
+    craneGot: 0,       /* きょう もらった けん */
+    craneUse: 0,       /* きょう つかった けん */
+    craneGrip: 0,      /* ぜんもん せいかいの つよい けん */
+    craneM  : {},      /* ぬいぐるみ id -> はずした かいすう */
     rares   : {},      /* レアアイテム id -> もらった日 'YYYY-MM-DD' */
     months  : {},      /* 'YYYY-MM' -> true  月の ごほうびを もらった */
     rest    : 0,       /* もっている おやすみけん */
@@ -1896,6 +2037,22 @@ function loadSave(){
     if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
     if(typeof d.totalNg === 'number')   s.totalNg = d.totalNg|0;
     if(typeof d.catchBest === 'number') s.catchBest = Math.max(0, d.catchBest|0);
+    if(d.plush && typeof d.plush === 'object'){
+      for(var pk in d.plush){
+        if(d.plush.hasOwnProperty(pk) && d.plush[pk] > 0 && plushById(pk)){
+          s.plush[pk] = d.plush[pk]|0;
+        }
+      }
+    }
+    if(d.craneM && typeof d.craneM === 'object'){
+      for(var cm in d.craneM){
+        if(d.craneM.hasOwnProperty(cm) && d.craneM[cm] > 0) s.craneM[cm] = d.craneM[cm]|0;
+      }
+    }
+    if(typeof d.craneD === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.craneD)) s.craneD = d.craneD;
+    if(typeof d.craneGot  === 'number') s.craneGot  = Math.max(0, Math.min(CRANE_MAX, d.craneGot|0));
+    if(typeof d.craneUse  === 'number') s.craneUse  = Math.max(0, Math.min(CRANE_MAX, d.craneUse|0));
+    if(typeof d.craneGrip === 'number') s.craneGrip = Math.max(0, Math.min(CRANE_MAX, d.craneGrip|0));
     if(d.rares && typeof d.rares === 'object'){
       for(var rk in d.rares){
         if(d.rares.hasOwnProperty(rk) && typeof d.rares[rk] === 'string') s.rares[rk] = d.rares[rk];
@@ -2265,6 +2422,26 @@ function ensureAudio(){
    ワンは いま いっしょに いる いぬの 大きさで きめる。 */
 /* 月ごとの ごほうび。れんぞくで なく「その月に なん日 あそんだか」なので、
    1日 やすんでも とりかえせる。30日を こえた あとの まいにちの もくひょう。 */
+/* ===== クレーンゲーム =====
+   さんすうの おまけ。メインに ならない ように、
+   おさんぽを おえた ときだけ けんが もらえて、1日 2かいまで。 */
+var CRANE_MAX   = 2;      /* 1日に もらえる けんの かず */
+var CRANE_PITY  = 2;      /* これだけ はずすと つぎは かならず とれる */
+var CRANE_SWEEP = 1750;   /* アームが はしから はしまで うごく ミリびょう */
+
+/* けいひんの ぬいぐるみ。size 0=ちいさい 1=ふつう 2=おおきい
+   （え が できた ぶんだけ ならべる。あとから ふやせる） */
+var PLUSHES = [
+  { id:'rabbit',   name:'うさぎ',  size:0 },
+  { id:'chick',    name:'ひよこ',  size:0 },
+  { id:'elephant', name:'ぞう',    size:0 },
+  { id:'cat',      name:'ねこ',    size:0 }
+];
+function plushById(id){
+  for(var i = 0; i < PLUSHES.length; i++){ if(PLUSHES[i].id === id) return PLUSHES[i]; }
+  return null;
+}
+
 var MONTHLY_NEED = 20;         /* その月に なん日 あそべば もらえるか */
 var MONTHLY = [
   { m:1,  em:'⛄',  name:'ゆきだるま' },
@@ -2469,13 +2646,13 @@ function sfxOver() { tone(392,0,.2,'triangle',.12); tone(311,.2,.2,'triangle',.1
    5. がめん きりかえ
    ========================================================= */
 function $(id){ return document.getElementById(id); }
-var SCREENS = ['title','select','map','quiz','result','gameover','catch'];
+var SCREENS = ['title','select','map','quiz','result','gameover','catch','crane'];
 function show(name){
   for(var i=0;i<SCREENS.length;i++){
     $('screen-' + SCREENS[i]).classList.toggle('hidden', SCREENS[i] !== name);
   }
   /* もんだい画面と ミニゲームは たかさを こていして、スクロールを ださない */
-  $('app').classList.toggle('fit', name === 'quiz' || name === 'catch');
+  $('app').classList.toggle('fit', name === 'quiz' || name === 'catch' || name === 'crane');
   window.scrollTo(0, 0);
 }
 
@@ -2530,6 +2707,316 @@ function keyToText(key){
   var p = key.split('|')[1].split('+');
   return p[0] + ' + ' + p[1] + ' = ' + (parseInt(p[0],10) + parseInt(p[1],10));
 }
+
+/* =========================================================
+   6b. クレーンゲーム
+   ========================================================= */
+
+/* テスト中は ?crane=1 を つけた 端末にだけ だす。
+   ?crane=0 で けせる。ほんばん公開の ときは この しくみを はずす。 */
+var CRANE_KEY = 'wanwanquest_crane_test';
+(function(){
+  var m = location.search.match(/[?&]crane=([01])/);
+  if(!m) return;
+  try{ localStorage.setItem(CRANE_KEY, m[1]); }catch(e){}
+})();
+function craneOn(){
+  try{ return localStorage.getItem(CRANE_KEY) === '1'; }catch(e){ return false; }
+}
+
+/* 日が かわったら けんは リセット。もちこしは しない */
+function craneSync(){
+  var t = dkey();
+  if(save.craneD === t) return false;
+  save.craneD = t; save.craneGot = 0; save.craneUse = 0; save.craneGrip = 0;
+  return true;
+}
+function craneLeft(){
+  craneSync();
+  return Math.max(0, save.craneGot - save.craneUse);
+}
+/* おさんぽを おえた ときに よぶ。ゲームオーバーでは よばない */
+function craneEarn(perfect){
+  craneSync();
+  if(save.craneGot >= CRANE_MAX) return false;
+  save.craneGot++;
+  if(perfect) save.craneGrip++;
+  return true;
+}
+
+function plushCount(){
+  var c = 0, k;
+  for(k in save.plush){ if(save.plush.hasOwnProperty(k) && save.plush[k] > 0) c++; }
+  return c;
+}
+
+/* ===== がめんの うごき ===== */
+var CR_L = 24, CR_R = 80;                 /* アームが うごく はば（%） */
+var CR_SLOT = [34, 52, 70];               /* ぬいぐるみの いち（%） */
+var CR_CHUTE = 12.5;                      /* とりだし口の いち（%） */
+var CR_TOP = 10, CR_DOWN = 0;             /* アームの たかさ（px） */
+var cr = null;
+
+function crNow(){ return performance.now(); }
+
+/* ならべる 3たいを えらぶ。まだ もって いない ものを ゆうせん */
+function crPick(){
+  var yet = [], own = [], i, p;
+  for(i = 0; i < PLUSHES.length; i++){
+    p = PLUSHES[i];
+    (save.plush[p.id] > 0 ? own : yet).push(p);
+  }
+  function shuffle(a){
+    for(var j = a.length - 1; j > 0; j--){
+      var k = rnd(0, j), t = a[j]; a[j] = a[k]; a[k] = t;
+    }
+    return a;
+  }
+  var pool = shuffle(yet).concat(shuffle(own));
+  var out = [];
+  for(i = 0; i < 3; i++) out.push(pool[i % pool.length]);
+  return out;
+}
+
+/* とれるか どうかは アニメの まえに きめる */
+function crDecide(p, dist){
+  if((save.craneM[p.id] || 0) >= CRANE_PITY) return true;   /* すくいあげ */
+  var near = dist / 9;                    /* 0 に ちかいほど ぴったり */
+  var base = (near < 0.5) ? 0.90 : (near < 1.0) ? 0.55 : 0.20;
+  base *= [1, 0.8, 0.62][p.size];
+  if(save.craneGrip > 0) base = Math.min(0.95, base * 1.3);
+  return Math.random() < base;
+}
+
+function crArmY(px){
+  var box = $('cr-box').clientHeight;
+  $('cr-rod').style.height = px + 'px';
+  $('cr-arm').style.top = CR_TOP + 'px';
+  $('cr-arm').querySelector('.head').style.top = px + 'px';
+  var cl = $('cr-arm').querySelectorAll('.claw');
+  cl[0].style.top = (px + 12) + 'px';
+  cl[1].style.top = (px + 12) + 'px';
+  $('cr-hold').style.top = (px + 34) + 'px';
+  return box;
+}
+function crArmX(pct){ $('cr-arm').style.left = pct + '%'; }
+
+function crPlushH(){
+  var h = $('cr-box').clientHeight;
+  return Math.max(46, Math.min(78, Math.round(h * 0.30)));
+}
+
+function crRender(){
+  var h = crPlushH(), i;
+  for(i = 0; i < 3; i++){
+    var el = $('cr-p' + i);
+    el.style.left = CR_SLOT[i] + '%';
+    el.style.height = h + 'px';
+    el.innerHTML = cr.taken === i ? '' :
+      '<img src="img/plush_' + cr.slots[i].id + '.png" alt="">';
+    el.style.opacity = (cr.taken === i) ? 0 : 1;
+  }
+}
+
+function crMsg(t){ $('cr-msg').innerHTML = t; }
+
+function craneStart(){
+  if(craneLeft() <= 0) return;
+  save.craneUse++;
+  var strong = save.craneGrip > 0;
+  if(strong) save.craneGrip--;
+  writeSave();
+
+  cr = { phase:'move', t0:crNow(), x:CR_L, slots:crPick(),
+         target:-1, win:false, taken:-1, strong:strong, armY:0 };
+  $('cr-arm').classList.remove('shut');
+  $('cr-hold').innerHTML = '';
+  $('cr-fall').classList.add('hidden');
+  $('cr-tap').disabled = false;
+  $('cr-tap').textContent = 'とめる！';
+  $('cr-tickets').textContent = 'のこり ' + craneLeft() + ' かい';
+  show('crane');
+  crRender();
+  crArmY(0);
+  crMsg(strong
+    ? 'ぜんもん せいかい だったから <b>アームが つよい</b>！<br>とりたい ぬいぐるみの うえで タップ！'
+    : 'アームが うごいて いるよ。<br>とりたい ぬいぐるみの うえで タップ！');
+  crLoop();
+}
+
+function crStop(){
+  if(!cr || cr.phase !== 'move') return;
+  sfxTap();
+  var best = 0, bd = 999, i, d;
+  for(i = 0; i < 3; i++){
+    d = Math.abs(cr.x - CR_SLOT[i]);
+    if(d < bd){ bd = d; best = i; }
+  }
+  cr.target = best;
+  cr.win = crDecide(cr.slots[best], bd);
+  cr.phase = 'down';
+  cr.t0 = crNow();
+  $('cr-tap').disabled = true;
+  crMsg('アームが おりて いくよ…');
+}
+
+function crLoop(){
+  if(!cr) return;
+  var t = crNow(), box = $('cr-box').clientHeight;
+  var low = box - 16 - crPlushH() - 24;      /* つかむ たかさ */
+  var e;
+
+  if(cr.phase === 'move'){
+    var u = ((t - cr.t0) / CRANE_SWEEP) % 2;
+    cr.x = CR_L + (CR_R - CR_L) * (u < 1 ? u : 2 - u);
+    crArmX(cr.x); crArmY(0);
+
+  }else if(cr.phase === 'down'){
+    e = Math.min(1, (t - cr.t0) / 700);
+    crArmY(low * e);
+    if(e >= 1){ cr.phase = 'shut'; cr.t0 = t; $('cr-arm').classList.add('shut'); }
+
+  }else if(cr.phase === 'shut'){
+    if(t - cr.t0 > 420){
+      cr.taken = cr.target;
+      crRender();
+      $('cr-hold').style.height = crPlushH() + 'px';
+      $('cr-hold').innerHTML =
+        '<img src="img/plush_' + cr.slots[cr.target].id + '.png" alt="">';
+      cr.phase = 'up'; cr.t0 = t;
+      crMsg('もちあげた！');
+    }
+
+  }else if(cr.phase === 'up'){
+    e = Math.min(1, (t - cr.t0) / 700);
+    crArmY(low * (1 - e));
+    if(e >= 1){ cr.phase = 'carry'; cr.t0 = t; cr.fromX = cr.x; }
+
+  }else if(cr.phase === 'carry'){
+    e = Math.min(1, (t - cr.t0) / 1100);
+    cr.x = cr.fromX + (CR_CHUTE - cr.fromX) * e;
+    crArmX(cr.x);
+    if(!cr.win && e >= 0.42){          /* とちゅうで おとす */
+      cr.phase = 'slip'; cr.t0 = t;
+      $('cr-arm').classList.remove('shut');
+      $('cr-hold').innerHTML = '';
+      var f = $('cr-fall');
+      f.style.height = crPlushH() + 'px';
+      f.style.left = cr.x + '%';
+      f.innerHTML = '<img src="img/plush_' + cr.slots[cr.target].id + '.png" alt="">';
+      f.classList.remove('hidden');
+      sfxNg();
+      crMsg('あっ…！');
+    }else if(e >= 1){
+      cr.phase = 'open'; cr.t0 = t;
+      $('cr-arm').classList.remove('shut');
+      $('cr-hold').innerHTML = '';
+      var f2 = $('cr-fall');
+      f2.style.height = crPlushH() + 'px';
+      f2.style.left = CR_CHUTE + '%';
+      f2.innerHTML = '<img src="img/plush_' + cr.slots[cr.target].id + '.png" alt="">';
+      f2.classList.remove('hidden');
+    }
+
+  }else if(cr.phase === 'slip' || cr.phase === 'open'){
+    e = Math.min(1, (t - cr.t0) / 520);
+    var top0 = CR_TOP + 26;
+    var goal = box - 16 - crPlushH() - (cr.phase === 'open' ? 6 : 0);
+    $('cr-fall').style.top = (top0 + (goal - top0) * e * e) + 'px';
+    if(e >= 1){
+      if(cr.phase === 'open'){ crWin(); }else{ crMiss(); }
+      return;
+    }
+  }
+
+  crStep();
+}
+
+/* つぎの コマを よやくする。
+   がめんが かくれて いる ときは requestAnimationFrame が
+   まったく こない ので、タイマーで すすめる（とちゅうで かたまらない ように）。 */
+function crStep(){
+  if(!cr) return;
+  if(document.hidden){
+    cr.tid = setTimeout(crLoop, 250);
+  }else{
+    cr.raf = requestAnimationFrame(crLoop);
+  }
+}
+
+function crWin(){
+  var p = cr.slots[cr.target];
+  save.plush[p.id] = (save.plush[p.id] || 0) + 1;
+  delete save.craneM[p.id];
+  writeSave();
+  sfxLevel();
+  cr.phase = 'done';
+  $('cr-fall').classList.add('hidden');
+  crMsg('<b>' + p.name + '</b>を ゲット！');
+  showPlushPop(p);
+}
+
+function crMiss(){
+  var p = cr.slots[cr.target];
+  save.craneM[p.id] = (save.craneM[p.id] || 0) + 1;
+  writeSave();
+  cr.phase = 'done';
+  $('cr-fall').classList.add('hidden');
+  cr.taken = -1;            /* おとした ぬいぐるみは ゆかに もどす */
+  crRender();
+  var left = CRANE_PITY - save.craneM[p.id];
+  crMsg('おしい！ おとして しまった…<br>' +
+        (left <= 0
+          ? '<b>つぎは かならず とれる よ！</b>'
+          : 'でも <b>' + p.name + 'は つぎ とりやすく なった</b>よ'));
+  crEnd();
+}
+
+function crEnd(){
+  $('cr-tap').disabled = false;
+  $('cr-tap').textContent = craneLeft() > 0 ? 'もう いっかい！' : 'おさんぽへ もどる';
+  $('cr-tickets').textContent = 'のこり ' + craneLeft() + ' かい';
+}
+
+function showPlushPop(p){
+  $('ppop-img').src = 'img/plush_' + p.id + '.png';
+  $('ppop-nm').textContent = p.name + 'の ぬいぐるみ';
+  var c = save.plush[p.id];
+  $('ppop-hd').textContent = (c === 1) ? 'はじめて ゲット！' : 'ゲット！';
+  $('ppop-cnt').textContent = (c > 1 ? c + 'こめ／' : '') +
+    PLUSHES.length + 'しゅるい のうち ' + plushCount() + 'しゅるい';
+  $('ppop').classList.remove('hidden');
+  tpopSparkle(3, 'ppop-fx');
+}
+
+$('ppop-ok').addEventListener('click', function(e){
+  e.stopPropagation(); sfxTap();
+  $('ppop').classList.add('hidden');
+  crEnd();
+});
+
+$('cr-tap').addEventListener('click', function(){
+  if(!cr) return;
+  if(cr.phase === 'move'){ crStop(); return; }
+  if(cr.phase !== 'done') return;
+  if(craneLeft() > 0){ craneStart(); }else{ sfxTap(); crQuit(); }
+});
+$('cr-back').addEventListener('click', function(){ sfxTap(); crQuit(); });
+
+function crQuit(){
+  if(cr){
+    if(cr.raf) cancelAnimationFrame(cr.raf);
+    if(cr.tid) clearTimeout(cr.tid);
+  }
+  cr = null;
+  gotoMap();
+}
+
+$('btn-crane').addEventListener('click', function(){
+  sfxTap();
+  if(craneLeft() <= 0) return;
+  craneStart();
+});
 
 /* =========================================================
    7. もんだいを つくる
@@ -3300,6 +3787,25 @@ function renderMap(){
   $('btn-sound').classList.toggle('off', !save.sound);
   $('btn-bgm').classList.toggle('off', !save.bgm);
 
+  /* クレーンゲーム（テスト中は かくして おく） */
+  var cOn = craneOn(), cLeft = craneLeft();
+  $('btn-crane').classList.toggle('hidden', !cOn);
+  $('map-crane').classList.toggle('hidden', !cOn);
+  $('btn-crane').disabled = (cLeft <= 0);
+  $('map-crane').innerHTML = cLeft > 0
+    ? '<span class="tk">' + new Array(cLeft + 1).join('🎫') + '</span> ' +
+      'クレーンけん <b>' + cLeft + '</b>まい'
+    : 'クレーンけんは おさんぽを おえると もらえるよ（1日 2まいまで）';
+  $('plush-win').classList.toggle('hidden', !cOn || plushCount() === 0);
+  var ph = '', pi;
+  for(pi = 0; pi < PLUSHES.length; pi++){
+    if(save.plush[PLUSHES[pi].id] > 0){
+      ph += '<img src="img/plush_' + PLUSHES[pi].id + '.png" alt="' +
+            PLUSHES[pi].name + '" title="' + PLUSHES[pi].name + '">';
+    }
+  }
+  $('plush-row').innerHTML = ph;
+
   $('mini-best').innerHTML = save.catchBest > 0
     ? 'さいこう きろく <b>' + save.catchBest + '</b>こ'
     : '♥は へらないよ。きらくに あそんでね！';
@@ -3745,6 +4251,9 @@ function finishRun(){
 
   /* きょうの スタンプ。せいせきに かんけいなく 1日 1こ もらえる */
   run.stamp = stampToday();
+
+  /* クレーンけん。さいごまで あるけた ときだけ。1日 2まいまで */
+  run.crane = craneEarn(run.ng === 0);
 
   /* いぬが たからものを ひろって くる。ぜんもん せいかいなら もう 1こ。
      ゲームオーバーの ときは ひろって こない（さいごまで あるけて いないため）。 */
@@ -4238,12 +4747,36 @@ function renderBackupState(){
 function openBackup(){
   $('bk-token').value = ghConf().token || '';
   $('bk-dev').value   = ghConf().dev || '';
+  $('bk-crane').classList.toggle('hidden', !craneOn());
+  renderCraneTest();
   $('bk-out').value = '';
   $('bk-in').value  = '';
   bkMsg('');
   renderBackupState();
   $('bkpop').classList.remove('hidden');
 }
+
+/* クレーンゲームの テスト用。?crane=1 の 端末にだけ でる */
+function renderCraneTest(){
+  if(!craneOn()) return;
+  $('bk-cr-note').innerHTML =
+    'のこり <b>' + craneLeft() + '</b>まい／きょう もらった ' + save.craneGot +
+    'まい<br>もっている ぬいぐるみ：' + plushCount() + ' / ' + PLUSHES.length + ' しゅるい';
+}
+$('bk-cr-add').addEventListener('click', function(){
+  sfxTap();
+  craneSync();
+  save.craneGot = CRANE_MAX; save.craneUse = 0; save.craneGrip = 1;
+  writeSave(); renderCraneTest(); renderMap();
+  bkMsg('けんを ' + CRANE_MAX + 'まいに しました。', 'ok');
+});
+$('bk-cr-off').addEventListener('click', function(){
+  sfxTap();
+  try{ localStorage.setItem(CRANE_KEY, '0'); }catch(e){}
+  $('bk-crane').classList.add('hidden');
+  renderMap();
+  bkMsg('クレーンゲームを かくしました。', 'ok');
+});
 
 $('btn-grown').addEventListener('click', function(){ sfxTap(); openBackup(); });
 $('bk-close').addEventListener('click', function(){
