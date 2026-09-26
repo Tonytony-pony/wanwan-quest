@@ -2819,6 +2819,8 @@ var CR_SLOT = [34, 52, 70];               /* ぬいぐるみの いち（%） */
 var CR_CHUTE = 12.5;                      /* とりだし口の いち（%） */
 var CR_TOP = 10, CR_DOWN = 0;             /* アームの たかさ（px） */
 var cr = null;
+/* はずした ときに とっておく ならび。とれたら から に する */
+var crKeep = null;
 
 function crNow(){ return performance.now(); }
 
@@ -2880,23 +2882,42 @@ function crPrizeBottom(){
 
 /* したの 土台を つくる。ぜんぶの しゅるいから てきとうに ばらまく。
    これは かざりなので、もって いなくても でる。とれない。 */
+/* とりだし口（ひだり はし）の うえには ぬいぐるみを おかない。
+   ふさいで いたら おとせない ので、ほんものの きかいでも あけて ある。 */
+var CR_HEAP_L = 26, CR_HEAP_R = 99;
+
 function crMakeHeap(){
-  var hh = crHeapH(), ph = crPlushH(), html = '', i, n = rnd(13, 16);
-  for(i = 0; i < n; i++){
-    var p = PLUSHES[rnd(0, PLUSHES.length - 1)];
-    var sz  = Math.round(ph * (0.62 + Math.random() * 0.30));
-    /* よこは くぎって ちらす。かたよって すきまが できない ように */
-    var x   = (i + 0.5) / n * 96 + 2 + (Math.random() - 0.5) * (96 / n) * 1.6;
-    if(x < 1) x = 1; if(x > 99) x = 99;
-    /* まんなかほど たかく つみあがる ように する */
-    var mid = 1 - Math.abs(x - 50) / 50;
-    var y   = Math.round(Math.pow(Math.random(), 1.5) * hh * (0.30 + mid * 0.55));
-    var rot = Math.round(-58 + Math.random() * 116);
-    if(Math.random() < 0.25) rot = (Math.random() < 0.5 ? -1 : 1) * rnd(72, 98);
-    html += '<img src="img/plush_' + p.id + '.png" alt="" ' +
-            'style="height:' + sz + 'px;left:' + x.toFixed(1) + '%;bottom:' + y + 'px;' +
-            'z-index:' + (60 - Math.round(y / 2)) + ';' +
-            'transform:translateX(-50%) rotate(' + rot + 'deg)">';
+  var hh = crHeapH(), ph = crPlushH(), html = '', i;
+  var span = CR_HEAP_R - CR_HEAP_L;
+  /* した 1れつ＋うえ 1れつ で すきまを うめる */
+  var rows = [
+    { n:rnd(12, 14), lo:0.00, hi:0.10, sz:[0.72, 0.28] },  /* まえ（した） */
+    { n:rnd(10, 12), lo:0.13, hi:0.28, sz:[0.64, 0.24] },  /* なか */
+    { n:rnd(7, 9),   lo:0.30, hi:0.46, sz:[0.56, 0.20] }   /* おく（うえ） */
+  ];
+  var r, j, cnt = 0;
+  for(r = 0; r < rows.length; r++){
+    var row = rows[r];
+    for(j = 0; j < row.n; j++){
+      var p   = PLUSHES[rnd(0, PLUSHES.length - 1)];
+      var sz  = Math.round(ph * (row.sz[0] + Math.random() * row.sz[1]));
+      /* くぎって ならべる。となりと かさなる ように はばを ひろめに とる */
+      var x   = CR_HEAP_L + (j + 0.5) / row.n * span
+                + (Math.random() - 0.5) * (span / row.n) * 0.7;
+      if(x < CR_HEAP_L) x = CR_HEAP_L;
+      if(x > CR_HEAP_R) x = CR_HEAP_R;
+      /* まんなかほど たかく つみあがる */
+      var mid = 1 - Math.abs(x - (CR_HEAP_L + span * 0.5)) / (span * 0.5);
+      var y   = Math.round(hh * (row.lo + Math.random() * (row.hi - row.lo))
+                           + hh * mid * 0.12);
+      var rot = Math.round(-58 + Math.random() * 116);
+      if(Math.random() < 0.25) rot = (Math.random() < 0.5 ? -1 : 1) * rnd(72, 98);
+      html += '<img src="img/plush_' + p.id + '.png" alt="" ' +
+              'style="height:' + sz + 'px;left:' + x.toFixed(1) + '%;bottom:' + y + 'px;' +
+              'z-index:' + (60 - Math.round(y / 2)) + ';' +
+              'transform:translateX(-50%) rotate(' + rot + 'deg)">';
+      cnt++;
+    }
   }
   $('cr-heap').style.height = hh + 'px';
   $('cr-heap').innerHTML = html;
@@ -2937,9 +2958,13 @@ function craneStart(){
   if(strong) save.craneGrip--;
   writeSave();
 
-  cr = { phase:'move', t0:crNow(), x:CR_L, slots:crPick(), tilt:crMakeTilt(),
+  /* はずした あとは おなじ ならびで もういちど。
+     ねらって いた ぬいぐるみに ちょうせん しつづけられる ように する。 */
+  var slots = crKeep ? crKeep.slots : crPick();
+  var tilt  = crKeep ? crKeep.tilt  : crMakeTilt();
+  cr = { phase:'move', t0:crNow(), x:CR_L, slots:slots, tilt:tilt,
          target:-1, win:false, taken:-1, strong:strong, armY:0 };
-  crMakeHeap();
+  if(crKeep){ $('cr-heap').innerHTML = crKeep.heap; }else{ crMakeHeap(); }
   $('cr-arm').classList.remove('shut');
   $('cr-hold').innerHTML = '';
   $('cr-fall').classList.add('hidden');
@@ -3063,6 +3088,7 @@ function crStep(){
 
 function crWin(){
   var p = cr.slots[cr.target];
+  crKeep = null;                 /* とれたら きかいを いれかえる */
   save.plush[p.id] = (save.plush[p.id] || 0) + 1;
   delete save.craneM[p.id];
   writeSave();
@@ -3075,6 +3101,8 @@ function crWin(){
 
 function crMiss(){
   var p = cr.slots[cr.target];
+  /* おなじ ならびで もういちど ちょうせん できる ように とっておく */
+  crKeep = { slots:cr.slots, tilt:cr.tilt, heap:$('cr-heap').innerHTML };
   save.craneM[p.id] = (save.craneM[p.id] || 0) + 1;
   writeSave();
   cr.phase = 'done';
