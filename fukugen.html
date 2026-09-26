@@ -103,6 +103,26 @@ textarea{width:100%;height:76px;font-size:11px;line-height:1.35;
 .msg.ok{color:var(--good-deep);font-weight:bold;}
 .msg.ng{color:var(--pink-deep);font-weight:bold;}
 
+/* たからもの の こすう */
+.tgrp{margin-bottom:11px;}
+.tgrp > h3{font-family:"DotGothic16",monospace;font-size:13px;color:var(--purple-deep);
+  margin:0 0 4px;padding-bottom:3px;border-bottom:2px dotted var(--line);}
+.trow{display:flex;align-items:center;gap:7px;padding:3px 0;}
+.trow .em{font-size:19px;width:24px;text-align:center;flex:none;}
+.trow .tn{flex:1;font-size:12.5px;line-height:1.35;}
+.trow.on .tn{color:var(--good-deep);font-weight:bold;}
+.stp{display:flex;align-items:center;gap:0;flex:none;}
+.stp button{width:30px;height:30px;padding:0;cursor:pointer;
+  font-family:"DotGothic16",monospace;font-size:16px;line-height:1;
+  color:var(--purple-deep);background:#f3e9ff;border:2px solid #d9c6ef;}
+.stp button.mi{border-radius:9px 0 0 9px;}
+.stp button.pl{border-radius:0 9px 9px 0;}
+.stp button:active{background:#e3d2f8;}
+.stp .n{width:30px;text-align:center;font-family:"DotGothic16",monospace;
+  font-size:14px;border-top:2px solid #d9c6ef;border-bottom:2px solid #d9c6ef;
+  background:#fff;line-height:26px;height:30px;}
+.trow.on .stp .n{color:var(--good-deep);background:#f2fcf5;}
+
 .peek{font-size:12.5px;line-height:1.75;margin:0;}
 .peek dt{float:left;clear:left;width:7.2em;color:var(--ink-soft);}
 .peek dd{margin:0 0 0 7.4em;}
@@ -147,20 +167,24 @@ textarea{width:100%;height:76px;font-size:11px;line-height:1.35;
     <label class="fl">▼ なん日 つづけて おさんぽ していた？</label>
     <select id="streak"></select>
 
-    <label class="fl">▼ たからもの は どれくらい あつめて いた？</label>
-    <select id="tre">
-      <option value="0">あまり あつめて いない</option>
-      <option value="1" selected>そこそこ あつめて いた</option>
-      <option value="2">かなり あつめて いた</option>
-      <option value="3">ほとんど ぜんぶ あつめて いた</option>
-    </select>
-
     <label class="fl">▼ ボールキャッチの さいこう きろく</label>
     <select id="catch"></select>
   </div>
 
+  <div class="win">
+    <h2>③ あつめて いた たからもの</h2>
+    <p class="sub">1つずつ こすうを えらびます。わからない ものは 0 のままで OK</p>
+    <div class="quick" style="margin:0 0 10px">
+      <button type="button" id="t-zero">ぜんぶ 0</button>
+      <button type="button" id="t-one">ぜんぶ 1こ</button>
+      <button type="button" id="t-few">ざっくり うめる</button>
+    </div>
+    <div id="tlist"></div>
+    <p class="sub" id="tsum" style="margin:10px 0 0"></p>
+  </div>
+
   <div class="win gold">
-    <h2>③ もどす</h2>
+    <h2>④ もどす</h2>
     <p class="sub">えらんだ ないようで じょうしょがきします</p>
     <div class="now" id="peekbox" style="background:#fff8e6;border-color:#e8d08a;color:#6b4c00">
       <dl class="peek" id="peek"></dl>
@@ -202,12 +226,28 @@ var BREEDS = [
   { id:'dalmatian',     name:'ダルメシアン' }
 ];
 var COURSES = ['garden', 'park', 'forest', 'mountain'];
-var TRE = {
-  garden  : ['flower','ladybug','snail','butterfly','berry','clover'],
-  park    : ['acorn','maple','balloon','ribbon','kite','bell'],
-  forest  : ['mushroom','herb','squirrel','grape','candle','orb'],
-  mountain: ['cloud','snow','grass','key','drop','gem']
-};
+
+/* たからもの。アプリの TREASURES と おなじ ならび */
+var TGROUP = [
+  { c:'garden',   mark:'🌷', name:'はじまりの にわ', list:[
+    ['flower','💮','しろい おはな'], ['ladybug','🐞','てんとうむし'],
+    ['snail','🐌','かたつむり'],     ['butterfly','🦋','ちょうちょ'],
+    ['berry','🍓','あまい いちご'],  ['clover','🍀','よつばの クローバー'] ] },
+  { c:'park',     mark:'🌳', name:'ぼうけんの こうえん', list:[
+    ['acorn','🌰','どんぐり'],       ['maple','🍁','もみじの は'],
+    ['balloon','🎈','とんできた ふうせん'], ['ribbon','🎀','おちていた リボン'],
+    ['kite','🪁','たこ'],            ['bell','🔔','きんいろの すず'] ] },
+  { c:'forest',   mark:'🍄', name:'むずかしの もり', list:[
+    ['mushroom','🍄','きのこ'],      ['herb','🌿','ふしぎな くさ'],
+    ['squirrel','🐿️','もりの りす'], ['grape','🍇','やまぶどう'],
+    ['candle','🕯️','ふるい ろうそく'], ['orb','🔮','ふしぎな 玉'] ] },
+  { c:'mountain', mark:'⛰', name:'でんせつの やま', list:[
+    ['cloud','☁️','ちぎれた くも'],  ['snow','❄️','とけない ゆき'],
+    ['grass','🌾','やまの くさ'],    ['key','🗝️','ふるい かぎ'],
+    ['drop','💧','わきみずの しずく'], ['gem','💎','ひかる ほうせき'] ] },
+  { c:'any',      mark:'🌟', name:'どこでも まれに', list:[
+    ['rainbow','🌈','にじの かけら'] ] }
+];
 /* れんぞく なん日で もらえる レアアイテム */
 var RARES = [['star',3],['gift',5],['badge',7],['crown',10],
              ['bear',14],['shoot',21],['trophy',30]];
@@ -334,10 +374,90 @@ $('picked').addEventListener('click', function(e){
   $('catch').innerHTML = o;
 })();
 
-['player','course','streak','tre','catch'].forEach(function(id){
+['player','course','streak','catch'].forEach(function(id){
   $(id).addEventListener('change', peek);
   $(id).addEventListener('input', peek);
 });
+
+/* ------- たからものの こすう ------- */
+var tcount = {};      /* たからものの id -> こすう */
+
+(function(){
+  var html = '', g, i, t;
+  for(g = 0; g < TGROUP.length; g++){
+    html += '<div class="tgrp"><h3>' + TGROUP[g].mark + ' ' + TGROUP[g].name + '</h3>';
+    for(i = 0; i < TGROUP[g].list.length; i++){
+      t = TGROUP[g].list[i];
+      tcount[t[0]] = 0;
+      html += '<div class="trow" data-id="' + t[0] + '">' +
+                '<span class="em">' + t[1] + '</span>' +
+                '<span class="tn">' + t[2] + '</span>' +
+                '<span class="stp">' +
+                  '<button type="button" class="mi" data-d="-1" aria-label="へらす">−</button>' +
+                  '<span class="n">0</span>' +
+                  '<button type="button" class="pl" data-d="1" aria-label="ふやす">＋</button>' +
+                '</span>' +
+              '</div>';
+    }
+    html += '</div>';
+  }
+  $('tlist').innerHTML = html;
+})();
+
+function setCount(id, v){
+  v = Math.max(0, Math.min(99, v));
+  tcount[id] = v;
+  var row = $('tlist').querySelector('.trow[data-id="' + id + '"]');
+  if(row){
+    row.querySelector('.n').textContent = v;
+    row.classList.toggle('on', v > 0);
+  }
+}
+
+$('tlist').addEventListener('click', function(e){
+  var d = e.target.getAttribute && e.target.getAttribute('data-d');
+  if(!d) return;
+  var row = e.target.closest('.trow');
+  if(!row) return;
+  var id = row.getAttribute('data-id');
+  setCount(id, (tcount[id] || 0) + parseInt(d, 10));
+  tsum(); peek();
+});
+
+function fillAll(v){
+  var k;
+  for(k in tcount){ if(tcount.hasOwnProperty(k)) setCount(k, v); }
+  tsum(); peek();
+}
+$('t-zero').addEventListener('click', function(){ fillAll(0); });
+$('t-one').addEventListener('click',  function(){ fillAll(1); });
+
+/* ひらいた コースぶん、それっぽく うめる（あとから 手で なおせる） */
+$('t-few').addEventListener('click', function(){
+  var ci = parseInt($('course').value, 10) || 0, g, i, t, k;
+  for(k in tcount){ if(tcount.hasOwnProperty(k)) setCount(k, 0); }
+  for(g = 0; g < TGROUP.length; g++){
+    var gi = COURSES.indexOf(TGROUP[g].c);
+    if(gi < 0 || gi > ci) continue;              /* まだ ひらいて いない コース */
+    for(i = 0; i < TGROUP[g].list.length; i++){
+      t = TGROUP[g].list[i];
+      /* めずらしく ない ものほど おおく もって いる */
+      setCount(t[0], i < 3 ? 3 - i + 1 : (i < 5 ? 1 : 0));
+    }
+  }
+  tsum(); peek();
+});
+
+function tsum(){
+  var kinds = 0, total = 0, k;
+  for(k in tcount){
+    if(!tcount.hasOwnProperty(k)) continue;
+    if(tcount[k] > 0){ kinds++; total += tcount[k]; }
+  }
+  $('tsum').textContent = '25 しゅるいの うち ' + kinds + ' しゅるい／あわせて ' +
+                          total + ' こ';
+}
+tsum();
 
 /* ------- いまの データを みる ------- */
 function readNow(){
@@ -395,15 +515,21 @@ function buildSave(){
   var ci = parseInt($('course').value, 10) || 0;
   for(i = 0; i <= ci; i++) s.cleared[COURSES[i]] = true;
 
-  /* たからもの。ひらいた コースから えらぶ */
-  var lvl = parseInt($('tre').value, 10);
-  var rate = [0.25, 0.55, 0.8, 1][lvl];
-  for(i = 0; i <= ci; i++){
-    var list = TRE[COURSES[i]], got = Math.round(list.length * rate);
-    for(j = 0; j < got; j++) s.found[list[j]] = 1 + (j % 3);
-    if(got >= list.length) s.zbonus[COURSES[i]] = true;
+  /* たからもの。1つずつ えらんだ こすうを そのまま いれる */
+  var k;
+  for(k in tcount){
+    if(tcount.hasOwnProperty(k) && tcount[k] > 0) s.found[k] = tcount[k];
   }
-  if(lvl >= 3) s.found.rainbow = 1;
+  /* コースの たからものを ぜんぶ あつめたら ずかん ボーナス */
+  for(i = 0; i < TGROUP.length; i++){
+    var gi = COURSES.indexOf(TGROUP[i].c);
+    if(gi < 0) continue;
+    var all = true;
+    for(j = 0; j < TGROUP[i].list.length; j++){
+      if(!(tcount[TGROUP[i].list[j][0]] > 0)){ all = false; break; }
+    }
+    if(all) s.zbonus[TGROUP[i].c] = true;
+  }
 
   /* まいにち スタンプと れんぞく きろく */
   var st = parseInt($('streak').value, 10) || 0;
@@ -420,7 +546,7 @@ function buildSave(){
   }
 
   /* こんげつの ごほうび（20日 あそんだら） */
-  var cnt = {}, k;
+  var cnt = {};
   for(k in s.days){
     if(s.days.hasOwnProperty(k)){
       var m = k.slice(0,7);
@@ -450,13 +576,16 @@ function peek(){
     parts.push(s.dogs[ids[i]].dogName + '（レベル ' + s.dogs[ids[i]].level + '）' +
                (ids[i] === s.current ? ' ★いま' : ''));
   }
-  var nfound = Object.keys(s.found).length;
+  var nfound = 0, ntotal = 0, fk;
+  for(fk in s.found){
+    if(s.found.hasOwnProperty(fk)){ nfound++; ntotal += s.found[fk]; }
+  }
   $('peek').innerHTML =
     '<dt>きみの なまえ</dt><dd>' + s.name + '</dd>' +
     '<dt>いぬ</dt><dd>' + parts.join('<br>') + '</dd>' +
     '<dt>といた もんだい</dt><dd>' + s.totalOk + ' もん</dd>' +
     '<dt>ひらいた コース</dt><dd>' + Object.keys(s.cleared).length + ' コース</dd>' +
-    '<dt>たからもの</dt><dd>' + nfound + ' しゅるい</dd>' +
+    '<dt>たからもの</dt><dd>' + nfound + ' しゅるい／' + ntotal + ' こ</dd>' +
     '<dt>れんぞく きろく</dt><dd>' + s.streak + ' 日' +
       (s.streak ? '（きょう あそべば ' + (s.streak + 1) + ' 日め）' : '') + '</dd>' +
     '<dt>レアアイテム</dt><dd>' + Object.keys(s.rares).length + ' こ</dd>' +
