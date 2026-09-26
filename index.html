@@ -523,9 +523,17 @@ body{
 
 /* おへやの ぬいぐるみ */
 .plush-row{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;margin-top:2px;}
-.plush-row img{height:54px;width:auto;
+.plush-row button{
+  padding:4px 5px;cursor:pointer;line-height:0;
+  background:linear-gradient(180deg,#fff,#fdf3fb);
+  border:3px solid var(--line);border-radius:12px;}
+.plush-row button.on{border-color:var(--good);
+  background:linear-gradient(180deg,#f2fcf5,#e3f6ea);
+  box-shadow:0 3px 0 var(--good-deep);}
+.plush-row button:active{transform:translateY(2px);}
+.plush-row img{height:54px;width:auto;display:block;
   filter:drop-shadow(0 2px 2px rgba(140,90,150,.3));}
-.plush-row .none{font-size:12px;color:var(--ink-soft);}
+.plush-note{text-align:center;font-size:11.5px;color:var(--ink-soft);margin:7px 0 0;}
 
 .mini-best{text-align:center;font-size:12px;color:var(--ink-soft);margin:6px 0 0;}
 .mini-best b{color:var(--pink-deep);font-size:15px;}
@@ -886,6 +894,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 .item.house{left:16px; bottom:0;   width:130px; z-index:0;}
 .item.ball {right:78px; bottom:2px; width:44px;  z-index:2;}
 .item.bowl {right:8px;  bottom:2px; width:62px;  z-index:2;}
+.item.plushd{left:10px; bottom:2px; width:62px;  z-index:2;}
 .inline-item{height:20px;vertical-align:-5px;margin-right:3px;}
 .medal-badge{width:18px;height:27px;vertical-align:-6px;margin-left:3px;
   filter:drop-shadow(0 1px 0 rgba(150,70,130,.25));}
@@ -1157,6 +1166,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <div id="map-dog"></div>
       <img class="item ball hidden"  id="item-ball"  src="img/ball.png"  alt="" draggable="false">
       <img class="item bowl hidden"  id="item-bowl"  src="img/bowl.png"  alt="" draggable="false">
+      <img class="item plushd hidden" id="item-plush" src="" alt="" draggable="false">
     </div>
     <div class="gauge-wrap">
       <div class="gauge-cap"><span>なつき度</span><span id="map-aff-num">♥ 0 / 100</span></div>
@@ -1179,6 +1189,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <div class="win purple hidden" id="plush-win">
     <span class="win-title">おへやの ぬいぐるみ</span>
     <div class="plush-row" id="plush-row"></div>
+    <p class="plush-note" id="plush-note"></p>
   </div>
 
   <div class="win purple">
@@ -1979,6 +1990,7 @@ function defaultSave(){
     craneUse: 0,       /* きょう つかった けん */
     craneGrip: 0,      /* ぜんもん せいかいの つよい けん */
     craneM  : {},      /* ぬいぐるみ id -> はずした かいすう */
+    plushPick: '',     /* おへやに かざって いる ぬいぐるみ */
     rares   : {},      /* レアアイテム id -> もらった日 'YYYY-MM-DD' */
     months  : {},      /* 'YYYY-MM' -> true  月の ごほうびを もらった */
     rest    : 0,       /* もっている おやすみけん */
@@ -2053,6 +2065,7 @@ function loadSave(){
     if(typeof d.craneGot  === 'number') s.craneGot  = Math.max(0, Math.min(CRANE_MAX, d.craneGot|0));
     if(typeof d.craneUse  === 'number') s.craneUse  = Math.max(0, Math.min(CRANE_MAX, d.craneUse|0));
     if(typeof d.craneGrip === 'number') s.craneGrip = Math.max(0, Math.min(CRANE_MAX, d.craneGrip|0));
+    if(typeof d.plushPick === 'string' && s.plush[d.plushPick] > 0) s.plushPick = d.plushPick;
     if(d.rares && typeof d.rares === 'object'){
       for(var rk in d.rares){
         if(d.rares.hasOwnProperty(rk) && typeof d.rares[rk] === 'string') s.rares[rk] = d.rares[rk];
@@ -2743,6 +2756,42 @@ function craneEarn(perfect){
   if(perfect) save.craneGrip++;
   return true;
 }
+
+/* おへやに かざる ぬいぐるみを えらぶ。
+   えらんだ 1つだけ いぬの となりに ならぶ。 */
+function renderPlushRow(){
+  var ph = '', pi, p;
+  if(save.plushPick && !(save.plush[save.plushPick] > 0)) save.plushPick = '';
+  for(pi = 0; pi < PLUSHES.length; pi++){
+    p = PLUSHES[pi];
+    if(!(save.plush[p.id] > 0)) continue;
+    ph += '<button type="button" data-id="' + p.id + '"' +
+          (save.plushPick === p.id ? ' class="on"' : '') + '>' +
+          '<img src="img/plush_' + p.id + '.png" alt="' + p.name + '"></button>';
+  }
+  $('plush-row').innerHTML = ph;
+  $('plush-note').textContent = save.plushPick
+    ? 'もう いちど タップすると しまえるよ'
+    : 'タップすると ' + dogN() + 'の となりに かざれるよ';
+
+  var im = $('item-plush');
+  if(save.plushPick){
+    im.src = 'img/plush_' + save.plushPick + '.png';
+    im.classList.remove('hidden');
+  }else{
+    im.classList.add('hidden');
+  }
+}
+
+$('plush-row').addEventListener('click', function(e){
+  var b = e.target.closest ? e.target.closest('button[data-id]') : null;
+  if(!b) return;
+  sfxTap();
+  var id = b.getAttribute('data-id');
+  save.plushPick = (save.plushPick === id) ? '' : id;
+  writeSave();
+  renderPlushRow();
+});
 
 function plushCount(){
   var c = 0, k;
@@ -3797,14 +3846,7 @@ function renderMap(){
       'クレーンけん <b>' + cLeft + '</b>まい'
     : 'クレーンけんは おさんぽを おえると もらえるよ（1日 2まいまで）';
   $('plush-win').classList.toggle('hidden', !cOn || plushCount() === 0);
-  var ph = '', pi;
-  for(pi = 0; pi < PLUSHES.length; pi++){
-    if(save.plush[PLUSHES[pi].id] > 0){
-      ph += '<img src="img/plush_' + PLUSHES[pi].id + '.png" alt="' +
-            PLUSHES[pi].name + '" title="' + PLUSHES[pi].name + '">';
-    }
-  }
-  $('plush-row').innerHTML = ph;
+  renderPlushRow();
 
   $('mini-best').innerHTML = save.catchBest > 0
     ? 'さいこう きろく <b>' + save.catchBest + '</b>こ'
