@@ -2968,6 +2968,30 @@ function crRender(){
 
 function crMsg(t){ $('cr-msg').innerHTML = t; }
 
+/* ぬいぐるみが おちる うごき。アームの うごきとは べつに すすむ ので、
+   おとしても アームは そのまま とりだし口まで いける。 */
+function crStartFall(t, xPct, goalTop, rot){
+  var f = $('cr-fall');
+  f.style.height = crPlushH() + 'px';
+  f.style.left = xPct + '%';
+  f.style.transform = 'translateX(-50%) rotate(' + rot + 'deg)';
+  f.innerHTML = '<img src="img/plush_' + cr.slots[cr.target].id + '.png" alt="">';
+  f.style.top = (CR_TOP + 26) + 'px';
+  f.classList.remove('hidden');
+  cr.fall = { t0:t, from:CR_TOP + 26, to:goalTop };
+}
+
+function crStepFall(t){
+  if(!cr.fall) return;
+  var e = Math.min(1, (t - cr.fall.t0) / 520);
+  $('cr-fall').style.top =
+    (cr.fall.from + (cr.fall.to - cr.fall.from) * e * e) + 'px';
+  if(e >= 1){
+    cr.fall = null;
+    $('cr-fall').classList.add('hidden');
+  }
+}
+
 function craneStart(){
   if(craneLeft() <= 0) return;
   var strong = save.craneGrip > 0;
@@ -2982,7 +3006,8 @@ function craneStart(){
   var slots = crKeep ? crKeep.slots : crPick();
   var tilt  = crKeep ? crKeep.tilt  : crMakeTilt();
   cr = { phase:'move', t0:crNow(), x:CR_L, slots:slots, tilt:tilt,
-         target:-1, win:false, taken:-1, strong:strong, armY:0 };
+         target:-1, win:false, taken:-1, strong:strong, armY:0,
+         slipped:false, fall:null, heapTop:0 };
   if(crKeep){
     $('cr-heap').style.height = crHeapH() + 'px';
     $('cr-heap').innerHTML = crKeep.heap;
@@ -3062,41 +3087,38 @@ function crLoop(){
     e = Math.min(1, (t - cr.t0) / 1100);
     cr.x = cr.fromX + (CR_CHUTE - cr.fromX) * e;
     crArmX(cr.x);
-    if(!cr.win && e >= 0.42){          /* とちゅうで おとす */
-      cr.phase = 'slip'; cr.t0 = t;
-      $('cr-arm').classList.remove('shut');
+
+    /* にぎりが よわくて とちゅうで すべりおちる。
+       アームは とまらずに そのまま すすむ。 */
+    if(!cr.win && !cr.slipped && e >= 0.42){
+      cr.slipped = true;
       $('cr-hold').innerHTML = '';
-      var f = $('cr-fall');
-      f.style.height = crPlushH() + 'px';
-      f.style.left = cr.x + '%';
-      f.style.transform = 'translateX(-50%) rotate(' + rnd(-40, 40) + 'deg)';
-      f.innerHTML = '<img src="img/plush_' + cr.slots[cr.target].id + '.png" alt="">';
-      f.classList.remove('hidden');
       sfxNg();
       crMsg('あっ…！');
-    }else if(e >= 1){
-      cr.phase = 'open'; cr.t0 = t;
-      $('cr-arm').classList.remove('shut');
-      $('cr-hold').innerHTML = '';
-      var f2 = $('cr-fall');
-      f2.style.height = crPlushH() + 'px';
-      f2.style.left = CR_CHUTE + '%';
-      f2.style.transform = 'translateX(-50%) rotate(' + rnd(-25, 25) + 'deg)';
-      f2.innerHTML = '<img src="img/plush_' + cr.slots[cr.target].id + '.png" alt="">';
-      f2.classList.remove('hidden');
+      crStartFall(t, cr.x,
+                  box - CR_HEAP_BOT - (cr.heapTop || 0) - Math.round(crPlushH() * 0.85),
+                  rnd(-40, 40));
     }
 
-  }else if(cr.phase === 'slip' || cr.phase === 'open'){
-    e = Math.min(1, (t - cr.t0) / 520);
-    var top0 = CR_TOP + 26;
-    var goal = box - (cr.phase === 'open' ? 22 : crPrizeBottom()) - crPlushH();
-    $('cr-fall').style.top = (top0 + (goal - top0) * e * e) + 'px';
-    if(e >= 1){
-      if(cr.phase === 'open'){ crWin(); }else{ crMiss(); }
+    if(e >= 1){                        /* とりだし口に ついた */
+      cr.phase = 'open'; cr.t0 = t;
+      $('cr-arm').classList.remove('shut');
+      if(cr.win){
+        $('cr-hold').innerHTML = '';
+        crStartFall(t, CR_CHUTE,
+                    box - 20 - Math.round(crPlushH() * 0.75), rnd(-25, 25));
+      }
+    }
+
+  }else if(cr.phase === 'open'){
+    /* アームが ひらきおわって、おちおわってから けっかを しらせる */
+    if(!cr.fall && t - cr.t0 > 430){
+      if(cr.win){ crWin(); }else{ crMiss(); }
       return;
     }
   }
 
+  crStepFall(t);
   crStep();
 }
 
@@ -3132,9 +3154,8 @@ function crMiss(){
   save.craneM[p.id] = (save.craneM[p.id] || 0) + 1;
   writeSave();
   cr.phase = 'done';
-  $('cr-fall').classList.add('hidden');
-  cr.taken = -1;            /* おとした ぬいぐるみは ゆかに もどす */
-  crRender();
+  /* おとした ぬいぐるみは、おちた ところに ころがった まま に する。
+     つぎの かいで きかいを かきなおす ときに もとの いちに もどる。 */
   var left = CRANE_PITY - save.craneM[p.id];
   crMsg('おしい！ おとして しまった…<br>' +
         (left <= 0
