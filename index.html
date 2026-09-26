@@ -497,7 +497,7 @@ body{
   filter:drop-shadow(0 2px 2px rgba(90,70,130,.22)) saturate(.92) brightness(.97);}
 
 /* とれる ぬいぐるみ。ななめや よこむきに おく */
-.cr-p{position:absolute;transition:opacity .2s;}
+.cr-p{position:absolute;transition:opacity .2s, transform .35s ease;}
 .cr-p img{filter:drop-shadow(0 3px 3px rgba(90,70,130,.3));}
 .cr-p img,.cr-arm .hold img,.cr-fall img{display:block;height:100%;width:auto;}
 .cr-fall{position:absolute;}
@@ -2448,6 +2448,8 @@ function ensureAudio(){
 var CRANE_MAX   = 2;      /* 1日に もらえる けんの かず */
 var CRANE_PITY  = 2;      /* これだけ はずすと つぎは かならず とれる */
 var CRANE_SWEEP = 1750;   /* アームが はしから はしまで うごく ミリびょう */
+var CRANE_UPDOWN = 1000;  /* アームが おりる／あがる ミリびょう（ゆっくりめ） */
+var CRANE_NOGRIP = 0.10;  /* つかめずに かたむくだけ に なる かくりつ */
 
 /* けいひんの ぬいぐるみ。size 0=ちいさい 1=ふつう 2=おおきい
    （え が できた ぶんだけ ならべる。あとから ふやせる） */
@@ -3052,7 +3054,7 @@ function craneStart(){
 
   cr = { phase:'move', t0:crNow(), x:CR_L, slots:null, tilt:null, xs:null,
          target:-1, win:false, taken:-1, strong:strong, armY:0,
-         slipped:false, fall:null, fallRest:null, heapTop:0 };
+         slipped:false, noGrip:false, fall:null, fallRest:null, heapTop:0 };
 
   /* きかいの なかみは もちこす。土台は さいしょの 1かいだけ つくる。 */
   /* がめんの おおきさが かわったら（よこむきに した など）
@@ -3095,6 +3097,11 @@ function crStop(){
   }
   cr.target = best;
   cr.win = crDecide(cr.slots[best], bd);
+  /* ときどき「つかめなくて かたむくだけ」に なる。
+     すくいあげ（2かい はずした つぎ）の かいは かならず とれる ので のぞく。 */
+  var pity = (save.craneM[cr.slots[best].id] || 0) >= CRANE_PITY;
+  cr.noGrip = (!pity && Math.random() < CRANE_NOGRIP);
+  if(cr.noGrip){ cr.win = false; cr.slipped = true; }
   cr.phase = 'down';
   cr.t0 = crNow();
   $('cr-tap').disabled = true;
@@ -3114,12 +3121,24 @@ function crLoop(){
     crArmX(cr.x); crArmY(0);
 
   }else if(cr.phase === 'down'){
-    e = Math.min(1, (t - cr.t0) / 700);
+    e = Math.min(1, (t - cr.t0) / CRANE_UPDOWN);
     crArmY(low * e);
     if(e >= 1){ cr.phase = 'shut'; cr.t0 = t; $('cr-arm').classList.add('shut'); }
 
   }else if(cr.phase === 'shut'){
-    if(t - cr.t0 > 420){
+    if(t - cr.t0 > 420 && cr.noGrip){
+      /* つかめなかった。ぬいぐるみは すこし かたむくだけ で のこる */
+      var nt = cr.tilt[cr.target] +
+               (Math.random() < 0.5 ? -1 : 1) * rnd(9, 20);
+      if(nt >  110) nt =  110;
+      if(nt < -110) nt = -110;
+      cr.tilt[cr.target] = nt;
+      if(crKeep) crKeep.tilt[cr.target] = nt;
+      crRender();
+      sfxNg();
+      crMsg('つかめない…！');
+      cr.phase = 'nogrip'; cr.t0 = t;
+    }else if(t - cr.t0 > 420){
       cr.taken = cr.target;
       crRender();
       $('cr-hold').style.height = crPlushH() + 'px';
@@ -3131,8 +3150,15 @@ function crLoop(){
       crMsg('もちあげた！');
     }
 
+  }else if(cr.phase === 'nogrip'){
+    /* かたむいた のを 見せてから、アームを ひらいて あがる */
+    if(t - cr.t0 > 560){
+      $('cr-arm').classList.remove('shut');
+      cr.phase = 'up'; cr.t0 = t;
+    }
+
   }else if(cr.phase === 'up'){
-    e = Math.min(1, (t - cr.t0) / 700);
+    e = Math.min(1, (t - cr.t0) / CRANE_UPDOWN);
     crArmY(low * (1 - e));
     if(e >= 1){
       cr.phase = 'carry'; cr.t0 = t; cr.fromX = cr.x;
@@ -3239,7 +3265,10 @@ function crMiss(){
   crRender();                    /* おちた ところに おきなおす */
   $('cr-fall').classList.add('hidden');
   var left = CRANE_PITY - save.craneM[p.id];
-  crMsg('おしい！ おとして しまった…<br>' +
+  /* つかめなかった ときと、もちあげて おとした ときで いいかたを かえる */
+  crMsg((cr.noGrip
+          ? 'つかめなかった… <b>' + p.name + 'が ちょっと うごいた</b>よ<br>'
+          : 'おしい！ おとして しまった…<br>') +
         (left <= 0
           ? '<b>つぎは かならず とれる よ！</b>'
           : 'でも <b>' + p.name + 'は つぎ とりやすく なった</b>よ'));
