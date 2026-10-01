@@ -49,6 +49,8 @@ EXTS = ('.jpg', '.jpeg', '.png', '.webp')   # どの かたちで ほぞんし�
 # いぬの おへやでは 100ドットくらいで みせるので、そのばい で つくる。
 PLUSH_DIR = 'イラストぬいぐるみ'
 PLUSH_H   = 220
+# いろちがいの セット。B_rabbit.png -> plush_B_rabbit.png に なる
+PLUSH_DIRS = [PLUSH_DIR, 'イラストぬいぐるみ色違い']
 
 # アイテム（いぬ小屋・ごはん・ボール・メダル）。おおきさは たかさで そろえる。
 ITEM_DIR = 'items'
@@ -566,14 +568,16 @@ if __name__ == '__main__':
 
     # ぬいぐるみ。フォルダに ある ぶん ぜんぶ
     if not only or 'plush' in only:
-        if os.path.isdir(PLUSH_DIR):
+        for pdir in PLUSH_DIRS:
+            if not os.path.isdir(pdir):
+                continue
             names = sorted(set(
-                os.path.splitext(f)[0] for f in os.listdir(PLUSH_DIR)
+                os.path.splitext(f)[0] for f in os.listdir(pdir)
                 if os.path.splitext(f)[1].lower() in EXTS))
             if names:
-                print('ぬいぐるみ')
+                print('ぬいぐるみ（%s）' % pdir)
             for nm in names:
-                src = find_src(PLUSH_DIR, nm)
+                src = find_src(pdir, nm)
                 if not src:
                     continue
                 process(src, 'plush_%s.png' % nm, PLUSH_H, 'center', pad=False)
