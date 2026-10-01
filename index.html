@@ -540,6 +540,10 @@ body{
 .plush-row img{height:54px;width:auto;display:block;
   filter:drop-shadow(0 2px 2px rgba(140,90,150,.3));}
 .plush-note{text-align:center;font-size:11.5px;color:var(--ink-soft);margin:7px 0 0;}
+.plush-set{width:100%;text-align:center;font-size:12px;font-weight:bold;
+  color:var(--purple-deep);margin:9px 0 0;}
+.plush-set:first-child{margin-top:0;}
+.plush-set span{color:var(--ink-soft);font-weight:normal;}
 
 .mini-best{text-align:center;font-size:12px;color:var(--ink-soft);margin:6px 0 0;}
 .mini-best b{color:var(--pink-deep);font-size:15px;}
@@ -2455,7 +2459,7 @@ var CRANE_NOGRIP = 0.10;  /* つかめずに かたむくだけ に なる か�
 /* けいひんの ぬいぐるみ。size 0=ちいさい 1=ふつう 2=おおきい
    （え が できた ぶんだけ ならべる。あとから ふやせる） */
 /* ar = え の よこ/たて。とりだし口に かぶらない いちを だす のに つかう */
-var PLUSHES = [
+var PLUSH_BASE = [
   { id:'rabbit',   name:'うさぎ',  size:0, ar:1.00 },
   { id:'chick',    name:'ひよこ',  size:0, ar:0.80 },
   { id:'elephant', name:'ぞう',    size:0, ar:1.02 },
@@ -2469,9 +2473,54 @@ var PLUSHES = [
   { id:'lion',     name:'ライオン', size:2, ar:0.86 },
   { id:'unicorn',  name:'ユニコーン', size:2, ar:0.82 }
 ];
+
+/* おなじ どうぶつの いろちがい。12しゅるい そろえると つぎが でてくる。
+   id は がぞうの なまえと おなじ（img/plush_<id>.png）。
+   さいしょの セットは むかしの セーブと おなじ id のまま。 */
+var PLUSH_SETS = [
+  { pre:'',   name:'どうぶつの くに',   nick:'' },
+  { pre:'B_', name:'おかしの くに',     nick:'おかしの ' },
+  { pre:'C_', name:'ほしぞらの くに',   nick:'ほしぞらの ' }
+];
+var PLUSH_PER_SET = PLUSH_BASE.length;
+
+var PLUSHES = (function(){
+  var out = [], si, bi, b, st;
+  for(si = 0; si < PLUSH_SETS.length; si++){
+    st = PLUSH_SETS[si];
+    for(bi = 0; bi < PLUSH_BASE.length; bi++){
+      b = PLUSH_BASE[bi];
+      out.push({ id:st.pre + b.id, name:st.nick + b.name,
+                 size:b.size, ar:b.ar, set:si });
+    }
+  }
+  return out;
+})();
+
 function plushById(id){
   for(var i = 0; i < PLUSHES.length; i++){ if(PLUSHES[i].id === id) return PLUSHES[i]; }
   return null;
+}
+/* そのセットで もって いる しゅるいの かず */
+function plushCountSet(si){
+  var c = 0, i;
+  for(i = 0; i < PLUSHES.length; i++){
+    if(PLUSHES[i].set === si && save.plush[PLUSHES[i].id] > 0) c++;
+  }
+  return c;
+}
+function plushSetDone(si){ return plushCountSet(si) >= PLUSH_PER_SET; }
+/* いま クレーンゲームに でる セット。
+   そろって いない いちばん さきの セット。ぜんぶ そろったら さいご。 */
+function plushCurSet(){
+  for(var i = 0; i < PLUSH_SETS.length; i++){ if(!plushSetDone(i)) return i; }
+  return PLUSH_SETS.length - 1;
+}
+/* そのセットの ぬいぐるみ だけ あつめる */
+function plushOfSet(si){
+  var out = [], i;
+  for(i = 0; i < PLUSHES.length; i++){ if(PLUSHES[i].set === si) out.push(PLUSHES[i]); }
+  return out;
 }
 
 var MONTHLY_NEED = 20;         /* その月に なん日 あそべば もらえるか */
@@ -2767,14 +2816,20 @@ function craneEarn(perfect){
 /* おへやに かざる ぬいぐるみを えらぶ。
    えらんだ 1つだけ いぬの となりに ならぶ。 */
 function renderPlushRow(){
-  var ph = '', pi, p;
+  var ph = '', si, pi, p, list, any;
   if(save.plushPick && !(save.plush[save.plushPick] > 0)) save.plushPick = '';
-  for(pi = 0; pi < PLUSHES.length; pi++){
-    p = PLUSHES[pi];
-    if(!(save.plush[p.id] > 0)) continue;
-    ph += '<button type="button" data-id="' + p.id + '"' +
-          (save.plushPick === p.id ? ' class="on"' : '') + '>' +
-          '<img src="img/plush_' + p.id + '.png" alt="' + p.name + '"></button>';
+  for(si = 0; si < PLUSH_SETS.length; si++){
+    list = plushOfSet(si); any = '';
+    for(pi = 0; pi < list.length; pi++){
+      p = list[pi];
+      if(!(save.plush[p.id] > 0)) continue;
+      any += '<button type="button" data-id="' + p.id + '"' +
+             (save.plushPick === p.id ? ' class="on"' : '') + '>' +
+             '<img src="img/plush_' + p.id + '.png" alt="' + p.name + '"></button>';
+    }
+    if(!any) continue;
+    ph += '<div class="plush-set">' + PLUSH_SETS[si].name +
+          ' <span>' + plushCountSet(si) + ' / ' + PLUSH_PER_SET + '</span></div>' + any;
   }
   $('plush-row').innerHTML = ph;
   $('plush-note').textContent = save.plushPick
@@ -2817,11 +2872,13 @@ var crKeep = null;
 
 function crNow(){ return performance.now(); }
 
-/* ならべる 3たいを えらぶ。まだ もって いない ものを ゆうせん */
-function crPick(){
+/* ならべる 3たいを えらぶ。まだ もって いない ものを ゆうせん。
+   いま あつめて いる セットの ぬいぐるみ だけ。 */
+function crPick(si){
   var yet = [], own = [], i, p;
-  for(i = 0; i < PLUSHES.length; i++){
-    p = PLUSHES[i];
+  var all = plushOfSet(si === undefined ? plushCurSet() : si);
+  for(i = 0; i < all.length; i++){
+    p = all[i];
     (save.plush[p.id] > 0 ? own : yet).push(p);
   }
   function shuffle(a){
@@ -2897,6 +2954,8 @@ function crHalfW(h, rot, boxW, ar){
 function crMakeHeap(){
   var hh = crHeapH(), ph = crPlushH(), bw = $('cr-box').clientWidth || 340;
   var html = '', top = 0;
+  /* 土台も いま あつめて いる セットの ぬいぐるみ で つくる */
+  var heapPool = plushOfSet(plushCurSet());
   /* 3れつで すきまなく うめる。まえほど おおきく、ひくく */
   var rows = [
     { n:rnd(12, 14), lo:-0.03, hi:0.06, sz:[0.74, 0.26], rot:34 },  /* まえ */
@@ -2907,7 +2966,7 @@ function crMakeHeap(){
   for(r = 0; r < rows.length; r++){
     var row = rows[r];
     for(j = 0; j < row.n; j++){
-      var p   = PLUSHES[rnd(0, PLUSHES.length - 1)];
+      var p   = heapPool[rnd(0, heapPool.length - 1)];
       var sz  = Math.round(ph * (row.sz[0] + Math.random() * row.sz[1]));
       /* かたむきを さきに きめる。かたむくと はばが かわる ので */
       var rot = Math.round((Math.random() * 2 - 1) * row.rot);
@@ -2955,14 +3014,15 @@ function crMakeTilt(){
 
 /* おぎなう 1たいを えらぶ。いま ならんで いない もので、
    まだ もって いない ものを ゆうせん する。 */
-function crPickOne(now){
+function crPickOne(now, si){
   var yet = [], own = [], i, p;
-  for(i = 0; i < PLUSHES.length; i++){
-    p = PLUSHES[i];
+  var all = plushOfSet(si === undefined ? plushCurSet() : si);
+  for(i = 0; i < all.length; i++){
+    p = all[i];
     if(now && now.indexOf(p) >= 0) continue;
     (save.plush[p.id] > 0 ? own : yet).push(p);
   }
-  var pool = yet.length ? yet : (own.length ? own : PLUSHES);
+  var pool = yet.length ? yet : (own.length ? own : all);
   return pool[rnd(0, pool.length - 1)];
 }
 
@@ -3039,7 +3099,7 @@ function craneStart(){
 
   cr = { phase:'move', t0:crNow(), x:CR_L, slots:null, tilt:null, xs:null,
          target:-1, win:false, taken:-1, strong:strong, armY:0,
-         slipped:false, noGrip:false, spent:false,
+         slipped:false, noGrip:false, spent:false, newSet:-1,
          fall:null, fallRest:null, heapTop:0 };
 
   /* きかいの なかみは もちこす。土台は さいしょの 1かいだけ つくる。 */
@@ -3051,7 +3111,7 @@ function craneStart(){
 
   if(!crKeep){
     crMakeHeap();
-    crKeep = { slots:crPick(), tilt:crMakeTilt(), xs:null,
+    crKeep = { slots:crPick(plushCurSet()), tilt:crMakeTilt(), xs:null,
                heap:$('cr-heap').innerHTML, top:cr.heapTop,
                boxH:$('cr-box').clientHeight };
   }else{
@@ -3225,17 +3285,24 @@ function craneSpend(){
 function crWin(){
   craneSpend();
   var p = cr.slots[cr.target];
+  var si = p.set;
+  var wasDone = plushSetDone(si);
+  save.plush[p.id] = (save.plush[p.id] || 0) + 1;
+  delete save.craneM[p.id];
+  writeSave();
+  /* いま この セットが そろった？ -1 なし / 0いじょう つぎの セット / -2 ぜんぶ */
+  cr.newSet = -1;
+  if(!wasDone && plushSetDone(si)){
+    cr.newSet = (si + 1 < PLUSH_SETS.length) ? si + 1 : -2;
+  }
   /* とれた ところにだけ あたらしい ぬいぐるみを 1たい おぎなう。
      のこりの 2たいと 土台は うごかさない。 */
-  crKeep.slots[cr.target] = crPickOne(cr.slots);
+  crKeep.slots[cr.target] = crPickOne(cr.slots, si);
   crKeep.tilt[cr.target]  = crOneTilt();
   crKeep.xs[cr.target]    = Math.max(CR_SLOT[cr.target],
         CR_CHUTE_R + crHalfW(crPlushH(), crKeep.tilt[cr.target],
                              $('cr-box').clientWidth || 340,
                              crKeep.slots[cr.target].ar));
-  save.plush[p.id] = (save.plush[p.id] || 0) + 1;
-  delete save.craneM[p.id];
-  writeSave();
   sfxLevel();
   cr.phase = 'done';
   $('cr-fall').classList.add('hidden');
@@ -3288,19 +3355,32 @@ function crEnd(){
 }
 
 function showPlushPop(p){
+  var ns = (cr && typeof cr.newSet === 'number') ? cr.newSet : -1;
   $('ppop-img').src = 'img/plush_' + p.id + '.png';
   $('ppop-nm').textContent = p.name + 'の ぬいぐるみ';
   var c = save.plush[p.id];
-  $('ppop-hd').textContent = (c === 1) ? 'はじめて ゲット！' : 'ゲット！';
-  $('ppop-cnt').textContent = (c > 1 ? c + 'こめ／' : '') +
-    PLUSHES.length + 'しゅるい のうち ' + plushCount() + 'しゅるい';
+  $('ppop-hd').textContent = (ns !== -1) ? 'コンプリート！'
+                           : (c === 1)   ? 'はじめて ゲット！' : 'ゲット！';
+  var cnt = (c > 1 ? c + 'こめ／' : '') + PLUSH_SETS[p.set].name + ' ' +
+            plushCountSet(p.set) + ' / ' + PLUSH_PER_SET + ' しゅるい';
+  if(ns >= 0){
+    cnt += '<br><b>' + PLUSH_SETS[p.set].name + 'を ぜんぶ あつめた！</b><br>' +
+           'つぎは <b>' + PLUSH_SETS[ns].name + '</b>の ぬいぐるみが でてくるよ！';
+  }else if(ns === -2){
+    cnt += '<br><b>' + PLUSHES.length + 'しゅるい ぜんぶ あつめた！</b><br>' +
+           'クレーンゲーム マスター だね！';
+  }
+  $('ppop-cnt').innerHTML = cnt;
   $('ppop').classList.remove('hidden');
-  tpopSparkle(3, 'ppop-fx');
+  tpopSparkle(ns !== -1 ? 7 : 3, 'ppop-fx');
 }
 
 $('ppop-ok').addEventListener('click', function(e){
   e.stopPropagation(); sfxTap();
   $('ppop').classList.add('hidden');
+  /* セットが そろったら きかいを まるごと つくりなおす。
+     つぎの あそびから あたらしい セットが ならぶ。 */
+  if(cr && cr.newSet !== -1) crKeep = null;
   crEnd();
 });
 
@@ -5063,10 +5143,18 @@ function openBackup(){
 
 /* クレーンゲームで あつめた ぬいぐるみの ようす */
 function renderCraneTest(){
-  $('bk-cr-note').innerHTML =
-    'もっている ぬいぐるみ：<b>' + plushCount() + '</b> / ' +
-    PLUSHES.length + ' しゅるい<br>' +
-    'けすと クレーンゲームを はじめから あつめなおせます。';
+  var h = 'もっている ぬいぐるみ：<b>' + plushCount() + '</b> / ' +
+          PLUSHES.length + ' しゅるい<br>', si;
+  for(si = 0; si < PLUSH_SETS.length; si++){
+    h += '<span class="tiny">' + PLUSH_SETS[si].name + '：' +
+         plushCountSet(si) + ' / ' + PLUSH_PER_SET +
+         (plushSetDone(si) ? '　コンプリート'
+                           : (si === plushCurSet() ? '　（いま あつめ中）' : '　（まだ）')) +
+         '</span><br>';
+  }
+  h += '12しゅるい そろえると つぎの セットが でてきます。<br>' +
+       'けすと はじめから あつめなおせます。';
+  $('bk-cr-note').innerHTML = h;
 }
 $('bk-cr-add').addEventListener('click', function(){
   sfxTap();
