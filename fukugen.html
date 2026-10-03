@@ -245,6 +245,10 @@ var TGROUP = [
     ['cloud','☁️','ちぎれた くも'],  ['snow','❄️','とけない ゆき'],
     ['grass','🌾','やまの くさ'],    ['key','🗝️','ふるい かぎ'],
     ['drop','💧','わきみずの しずく'], ['gem','💎','ひかる ほうせき'] ] },
+  { c:'weak',     mark:'🎯', name:'にがて とっくんじょう', list:[
+    ['onigiri','🍙','がんばりの おにぎり'], ['muscle','💪','ちからこぶ'],
+    ['boots','🥾','はきこんだ くつ'],       ['target','🎯','まとの まんなか'],
+    ['gmedal','🏅','がんばった メダル'],    ['belt','🥋','くろおび'] ] },
   { c:'any',      mark:'🌟', name:'どこでも まれに', list:[
     ['rainbow','🌈','にじの かけら'] ] }
 ];
@@ -523,7 +527,7 @@ function buildSave(){
   /* コースの たからものを ぜんぶ あつめたら ずかん ボーナス */
   for(i = 0; i < TGROUP.length; i++){
     var gi = COURSES.indexOf(TGROUP[i].c);
-    if(gi < 0) continue;
+    if(gi < 0 && TGROUP[i].c !== 'weak') continue;
     var all = true;
     for(j = 0; j < TGROUP[i].list.length; j++){
       if(!(tcount[TGROUP[i].list[j][0]] > 0)){ all = false; break; }

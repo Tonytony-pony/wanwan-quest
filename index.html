@@ -1582,6 +1582,14 @@ var TREASURES = [
   { id:'drop',      em:'💧',  name:'わきみずの しずく',      c:'mountain', r:1 },
   { id:'gem',       em:'💎',  name:'ひかる ほうせき',        c:'mountain', r:2 },
 
+  /* 🎯 にがて とっくんじょう（ここだけの たからもの） */
+  { id:'onigiri',   em:'🍙',  name:'がんばりの おにぎり',    c:'weak',     r:0 },
+  { id:'muscle',    em:'💪',  name:'ちからこぶ',            c:'weak',     r:0 },
+  { id:'boots',     em:'🥾',  name:'はきこんだ くつ',        c:'weak',     r:0 },
+  { id:'target',    em:'🎯',  name:'まとの まんなか',        c:'weak',     r:1 },
+  { id:'gmedal',    em:'🏅',  name:'がんばった メダル',      c:'weak',     r:1 },
+  { id:'belt',      em:'🥋',  name:'くろおび',              c:'weak',     r:2 },
+
   /* 🌟 どこでも まれに */
   { id:'rainbow',   em:'🌈',  name:'にじの かけら',          c:'any',      r:3 }
 ];
@@ -3463,13 +3471,10 @@ function makeWeakQuestion(){
            choices: makeChoices(a + b) };
 }
 
-/* にがて とっくんじょうには たからものが ないので、
-   あけて いる コースから 1つ えらんで そこの ものを もらう */
+/* ひろう たからものの コース。にがて とっくんじょうは 専用の ものを ひろう
+   （ほかの コースの ものは でない）。 */
 function treasureCourseFor(courseId){
-  if(courseId !== 'weak') return courseId;
-  var un = [], i;
-  for(i = 0; i < COURSES.length; i++){ if(isUnlocked(i)) un.push(COURSES[i].id); }
-  return un[rnd(0, un.length - 1)];
+  return courseId;
 }
 
 function makeChoices(ans){
@@ -4002,6 +4007,8 @@ function renderZukan(){
     c = COURSES[i];
     html += zukanGroup(c.mark, c.name, treasuresByCourse(c.id), courseZukanDone(c.id));
   }
+  html += zukanGroup(WEAK_COURSE.mark, WEAK_COURSE.name, treasuresByCourse('weak'),
+                     courseZukanDone('weak'));
   html += zukanGroup('🌟', 'どこでも まれに', treasuresByCourse('any'),
                      allZukanDone());
   $('zukan-body').innerHTML = html;
@@ -4661,12 +4668,13 @@ function finishRun(){
 
   /* ずかんが そろった ごほうび。1かいだけ もらえる */
   run.zBonus = 0; run.zBanner = '';
-  for(var zi = 0; zi < COURSES.length; zi++){
-    if(!save.zbonus[COURSES[zi].id] && courseZukanDone(COURSES[zi].id)){
-      save.zbonus[COURSES[zi].id] = true;
+  var zCourses = COURSES.concat([WEAK_COURSE]);
+  for(var zi = 0; zi < zCourses.length; zi++){
+    if(!save.zbonus[zCourses[zi].id] && courseZukanDone(zCourses[zi].id)){
+      save.zbonus[zCourses[zi].id] = true;
       run.zBonus += ZUKAN_COURSE_AFF;
-      run.zBanner += '<div class="banner">✧ ' + COURSES[zi].mark + ' ' +
-                     COURSES[zi].name + ' の たからもの ぜんぶ そろった！<br>' +
+      run.zBanner += '<div class="banner">✧ ' + zCourses[zi].mark + ' ' +
+                     zCourses[zi].name + ' の たからもの ぜんぶ そろった！<br>' +
                      'なつき度 ＋' + ZUKAN_COURSE_AFF + ' ✧</div>';
     }
   }
