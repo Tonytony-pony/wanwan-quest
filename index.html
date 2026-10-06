@@ -1461,6 +1461,19 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     </div>
 
     <div class="bk-sec">
+      <h4>③-2 Discord に まいにち おくる</h4>
+      <input class="tk" type="password" id="dc-url" placeholder="Discord の Webhook URL"
+             autocomplete="off" spellcheck="false">
+      <div class="bk-row">
+        <button class="btn small" id="dc-send">いま おくる</button>
+      </div>
+      <p class="note" id="dc-state"></p>
+      <p class="note">まいにち さいしょに ひらいた ときだけ、
+        がくしゅうの きろくと、ふっかつ用の データ（ファイル）を おくります。<br>
+        URLは この 端末の なかだけに おきます。</p>
+    </div>
+
+    <div class="bk-sec">
       <h4>④ きえて しまった ときは</h4>
       <p class="note" style="margin:0">
         ひかえが どこにも ない ときは、
@@ -2050,6 +2063,9 @@ function defaultSave(){
     dogs    : {},      /* いぬしゅ -> { dogName, level, affection, kidName, view } */
     /* ここから したは いぬに よらず きょうよう（こどもの がくしゅう きろく） */
     cleared : {}, mistakes:{}, totalOk:0, totalNg:0,
+    qlog    : {},      /* 'YYYY-MM-DD' -> { ok, ng }  その日の せいかい・ふせいかい */
+    missTotal: {},     /* もんだい key -> これまでに まちがえた かいすう（へらない） */
+    missLog : {},      /* もんだい key -> { 'YYYY-MM-DD': まちがえた かいすう }（14日ぶん） */
     catchBest: 0,      /* ボールキャッチの ハイスコア */
     plush   : {},      /* ぬいぐるみ id -> こすう（クレーンゲーム） */
     craneD  : '',      /* クレーンけんを かぞえた日 */
@@ -2116,7 +2132,34 @@ function loadSave(){
     if(d.cleared   && typeof d.cleared   === 'object') s.cleared   = d.cleared;
     if(d.mistakes  && typeof d.mistakes  === 'object') s.mistakes  = d.mistakes;
     if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
+    var qk, qd;
+    if(d.qlog && typeof d.qlog === 'object'){
+      for(qd in d.qlog){
+        if(d.qlog.hasOwnProperty(qd) && /^\d{4}-\d{2}-\d{2}$/.test(qd) && d.qlog[qd]){
+          s.qlog[qd] = { ok:Math.max(0, d.qlog[qd].ok|0), ng:Math.max(0, d.qlog[qd].ng|0) };
+        }
+      }
+    }
+    if(d.missTotal && typeof d.missTotal === 'object'){
+      for(qk in d.missTotal){
+        if(d.missTotal.hasOwnProperty(qk) && d.missTotal[qk] > 0) s.missTotal[qk] = d.missTotal[qk]|0;
+      }
+    }
+    if(d.missLog && typeof d.missLog === 'object'){
+      for(qk in d.missLog){
+        if(!d.missLog.hasOwnProperty(qk) || !d.missLog[qk] || typeof d.missLog[qk] !== 'object') continue;
+        for(qd in d.missLog[qk]){
+          if(d.missLog[qk].hasOwnProperty(qd) && /^\d{4}-\d{2}-\d{2}$/.test(qd) && d.missLog[qk][qd] > 0){
+            (s.missLog[qk] = s.missLog[qk] || {})[qd] = d.missLog[qk][qd]|0;
+          }
+        }
+      }
+    }
     if(typeof d.totalNg === 'number')   s.totalNg = d.totalNg|0;
+    /* この きのうが ふえる まえの きろく：いまの にがて度を これまでの かいすうと して つかう */
+    for(qk in s.mistakes){
+      if(s.mistakes.hasOwnProperty(qk) && s.mistakes[qk] > 0 && !s.missTotal[qk]) s.missTotal[qk] = s.mistakes[qk]|0;
+    }
     if(typeof d.catchBest === 'number') s.catchBest = Math.max(0, d.catchBest|0);
     if(d.plush && typeof d.plush === 'object'){
       for(var pk in d.plush){
@@ -2822,6 +2865,24 @@ function popFx(container, chars, count){
 /* =========================================================
    6. にがて もんだいの きろく
    ========================================================= */
+/* 1もん こたえる たびに きろく（にがて度と ちがって、せいかいしても へらさない） */
+function recordAnswer(key, correct){
+  var t = dkey(), L = save.qlog[t] || (save.qlog[t] = { ok:0, ng:0 }), k, d, cut;
+  if(correct){ L.ok++; return; }
+  L.ng++;
+  save.missTotal[key] = (save.missTotal[key] || 0) + 1;
+  var ml = save.missLog[key] || (save.missLog[key] = {});
+  ml[t] = (ml[t] || 0) + 1;
+  /* 古い ぶんを すてる */
+  cut = addDays(t, -30);
+  for(d in save.qlog){ if(save.qlog.hasOwnProperty(d) && d < cut) delete save.qlog[d]; }
+  cut = addDays(t, -14);
+  for(k in save.missLog){
+    if(!save.missLog.hasOwnProperty(k)) continue;
+    for(d in save.missLog[k]){ if(save.missLog[k].hasOwnProperty(d) && d < cut) delete save.missLog[k][d]; }
+  }
+}
+
 function mkey(courseId, a, b){
   var lo = Math.min(a,b), hi = Math.max(a,b);
   return courseId + '|' + lo + '+' + hi;
@@ -4519,6 +4580,7 @@ function answer(value, btnEl){
     /* ------- せいかい ------- */
     run.ok++;
     save.totalOk++;
+    recordAnswer(q.key, true);
     run.hearts += HEART_UP;
     run.streak++;
     sfxOk();
@@ -4552,6 +4614,7 @@ function answer(value, btnEl){
     /* ------- ふせいかい ------- */
     run.ng++;
     save.totalNg++;
+    recordAnswer(q.key, false);
     save.mistakes[q.key] = (save.mistakes[q.key] || 0) + 1;
     sfxNg();
     voice('ng', 0.42);          /* ブブーの あと「くぅ～ん」 */
@@ -4647,6 +4710,7 @@ function answerReview(q, correct){
   if(correct){
     run.reviewOk++;
     save.totalOk++;
+    recordAnswer(q.key, true);
     run.hearts     += HEART_UP;
     run.gained     += HEART_UP;
     pet().affection += HEART_UP;
@@ -4680,6 +4744,7 @@ function answerReview(q, correct){
   }else{
     run.reviewNg++;
     save.totalNg++;
+    recordAnswer(q.key, false);
     save.mistakes[q.key] = (save.mistakes[q.key] || 0) + 1;
     sfxNg();
     voice('ng', 0.42);
@@ -5208,6 +5273,142 @@ $('btn-over-again').addEventListener('click', function(){ sfxTap(); startRun(run
 $('btn-over-map').addEventListener('click', function(){ sfxTap(); gotoMap(); });
 
 /* =========================================================
+   12a. Discord へ まいにち おくる
+   さいしょに ひらいた ときだけ。がくしゅうの きろく ＋ ふっかつ用の データ。
+   ========================================================= */
+var DC_KEY = 'wanwanquest_discord_v1';
+function dcConf(){
+  try{ return JSON.parse(localStorage.getItem(DC_KEY)) || {}; }catch(e){ return {}; }
+}
+function dcSave(c){
+  try{ localStorage.setItem(DC_KEY, JSON.stringify(c)); }catch(e){}
+}
+function dcUrlOK(u){
+  return /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/.test(u || '');
+}
+
+/* today を ふくむ 7日の あいだに まちがえた かいすう */
+function weekMiss(key, today){
+  var ml = save.missLog[key] || {}, from = addDays(today, -6), d, n = 0;
+  for(d in ml){ if(ml.hasOwnProperty(d) && d >= from && d <= today) n += ml[d]; }
+  return n;
+}
+
+/* おくる もじを つくる。1つが 1900もじ いない になるように わける */
+function dcBuild(since){
+  var today = dkey(), days = [], d, k, i, j;
+  /* since より あと〜きのう の あいだで あそんだ 日（さいだい 7日） */
+  for(d in save.qlog){
+    if(save.qlog.hasOwnProperty(d) && d < today && (!since || d > since) &&
+       d >= addDays(today, -7)) days.push(d);
+  }
+  days.sort();
+  var lines = ['**わんわんクエスト　がくしゅう きろく**（' + dayLabel(today) + ' ほうこく）', ''];
+  if(!days.length) lines.push('きのうまでに あたらしく あそんだ きろくは ありません。', '');
+  for(i = 0; i < days.length; i++){
+    d = days[i];
+    var L = save.qlog[d], miss = [];
+    lines.push('■ ' + dayLabel(d) + '　せいかい ' + L.ok + ' ／ ふせいかい ' + L.ng);
+    for(k in save.missLog){
+      if(save.missLog.hasOwnProperty(k) && save.missLog[k][d]){
+        miss.push({ k:k, n:save.missLog[k][d] });
+      }
+    }
+    miss.sort(function(a, b){ return b.n - a.n; });
+    if(!miss.length) lines.push('　ふせいかいの もんだいは なし');
+    for(j = 0; j < miss.length; j++){
+      lines.push('　✕ ' + keyToText(miss[j].k) + '（この日 ' + miss[j].n + '回）');
+    }
+    lines.push('');
+  }
+  /* これまでに まちがえた もんだい ぜんぶ */
+  var all = [];
+  for(k in save.missTotal){
+    if(save.missTotal.hasOwnProperty(k)) all.push({ k:k, t:save.missTotal[k], w:weekMiss(k, today) });
+  }
+  all.sort(function(a, b){ return b.t - a.t || b.w - a.w; });
+  lines.push('■ これまでに まちがえた もんだい（これまで ／ 1しゅうかん）');
+  if(!all.length) lines.push('　なし');
+  for(i = 0; i < all.length; i++){
+    lines.push('　' + keyToText(all[i].k) + '　' + all[i].t + '回 ／ ' + all[i].w + '回');
+  }
+
+  var chunks = [], cur = '';
+  for(i = 0; i < lines.length; i++){
+    if(cur.length + lines[i].length + 1 > 1900){ chunks.push(cur); cur = ''; }
+    cur += lines[i] + '\n';
+  }
+  if(cur) chunks.push(cur);
+  return chunks;
+}
+
+/* done(エラーの もじ or null) */
+function dcSend(done){
+  var c = dcConf();
+  if(!dcUrlOK(c.url)){ done('URLが ただしく ありません'); return; }
+  var chunks = dcBuild(c.since), today = dkey();
+
+  function post(body, cb){
+    var x = new XMLHttpRequest();
+    x.open('POST', c.url, true);
+    if(typeof body === 'string') x.setRequestHeader('Content-Type', 'application/json');
+    x.onload  = function(){ cb(x.status >= 200 && x.status < 300 ? null : ('エラー ' + x.status)); };
+    x.onerror = function(){ cb('つながりません'); };
+    x.send(body);
+  }
+
+  var fd = new FormData();
+  fd.append('payload_json', JSON.stringify({ username:'わんわんクエスト', content:chunks[0] }));
+  fd.append('files[0]', new Blob([makeBackup()], { type:'text/plain' }),
+            'wanwan_backup_' + today + '.txt');
+  post(fd, function(err){
+    if(err){ done(err); return; }
+    var cc = dcConf();
+    cc.last = today;                          /* さいしょが とどけば きょうは おわり */
+    cc.since = addDays(today, -1);            /* きのうまでを ほうこく ずみに する */
+    dcSave(cc);
+    var n = 1;
+    (function next(){
+      if(n >= chunks.length){ done(null); return; }
+      post(JSON.stringify({ username:'わんわんクエスト', content:chunks[n++] }), function(){ next(); });
+    })();
+  });
+}
+
+/* ひらいた とき：きょうの 1かいめ なら おくる */
+function dcDaily(){
+  var c = dcConf();
+  if(!dcUrlOK(c.url) || c.last === dkey()) return;
+  if(saveScore(save) <= 0) return;            /* からっぽの データは おくらない */
+  dcSend(function(){});
+}
+
+function renderDcState(){
+  var c = dcConf(), e = $('dc-state');
+  if(!e) return;
+  e.innerHTML = dcUrlOK(c.url)
+    ? (c.last ? 'さいご おくった 日：<b>' + dayLabel(c.last) + '</b>' : 'まだ おくって いません')
+    : 'URLが まだ はいって いません';
+}
+$('dc-url').addEventListener('change', function(){
+  var c = dcConf(), v = $('dc-url').value.replace(/\s+/g, '');
+  if(v && !dcUrlOK(v)){ bkMsg('Webhook URL では ない みたいです。', 'ng'); return; }
+  if(v){ c.url = v; }else{ delete c.url; }
+  dcSave(c);
+  renderDcState();
+  bkMsg(v ? 'URLを ほぞんしました。' : 'URLを けしました。', 'ok');
+});
+$('dc-send').addEventListener('click', function(){
+  sfxTap();
+  if(!dcUrlOK(dcConf().url)){ bkMsg('さきに URLを いれてください。', 'ng'); return; }
+  bkMsg('おくって います…');
+  dcSend(function(err){
+    renderDcState();
+    bkMsg(err ? err : 'Discord に おくりました！', err ? 'ng' : 'ok');
+  });
+});
+
+/* =========================================================
    12b. おうちの人へ：データの ほぞん がめん
    ========================================================= */
 function bkMsg(t, kind){
@@ -5237,6 +5438,8 @@ function renderBackupState(){
 function openBackup(){
   $('bk-token').value = ghConf().token || '';
   $('bk-dev').value   = ghConf().dev || '';
+  $('dc-url').value   = dcConf().url || '';
+  renderDcState();
   renderCraneTest();
   $('bk-out').value = '';
   $('bk-in').value  = '';
@@ -5382,6 +5585,7 @@ loadSave();
 askPersist();
 localBackupRescue();
 ghCheckOnBoot();
+setTimeout(dcDaily, 3000);
 (function(){
   var i, srcs = ['img/paw.png', 'img/stamp.png'];
   for(i = 0; i < srcs.length; i++){ var im = new Image(); im.src = srcs[i]; }
