@@ -248,6 +248,10 @@ body{
 .rename-card .field-label{margin-top:4px;}
 .rename-card input{margin-bottom:4px;}
 .rename-card .btn{margin:8px 0 0;}
+.rename-card .kid-note{font-size:12.5px;color:#9a6600;margin:2px 0 4px;}
+/* おや・おやこ・こ の きりかえ */
+.viewsel{display:flex;gap:4px;margin:2px 0 8px;}
+.viewsel .tab{padding:6px 1px;}
 
 /* おうちの人へ（データの ほぞん） */
 .grownbtn{
@@ -1178,6 +1182,11 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <img class="item bowl hidden"  id="item-bowl"  src="img/bowl.png"  alt="" draggable="false">
       <img class="item plushd hidden" id="item-plush" src="" alt="" draggable="false">
     </div>
+    <div class="viewsel hidden" id="map-view">
+      <button class="tab" data-view="parent">おや</button>
+      <button class="tab" data-view="both">おやこ</button>
+      <button class="tab" data-view="kid">こ</button>
+    </div>
     <div class="gauge-wrap">
       <div class="gauge-cap"><span>なつき度</span><span id="map-aff-num">♥ 0 / 100</span></div>
       <div class="gauge"><i id="map-aff-bar"></i></div>
@@ -1384,6 +1393,19 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
            autocomplete="off" spellcheck="false">
     <button class="btn" id="btn-rename-ok">この なまえに する</button>
     <button class="btn small purple" id="btn-rename-cancel">やめる</button>
+  </div>
+</div>
+
+<!-- こいぬに なまえを つける -->
+<div class="rename hidden" id="kid-pop">
+  <div class="rename-card">
+    <div class="rn-ttl">こいぬが うまれたよ！</div>
+    <div id="kid-pop-dog"></div>
+    <div class="kid-note">あたらしい こいぬに なまえを つけてね</div>
+    <div class="field-label">▼ こいぬの なまえ</div>
+    <input type="text" id="input-kidname" maxlength="8" placeholder="コロ"
+           autocomplete="off" spellcheck="false">
+    <button class="btn" id="btn-kid-ok">この なまえに する</button>
   </div>
 </div>
 
@@ -1743,7 +1765,7 @@ function preloadDog(breedId){
    いまの だんかいに あわせて べつの はばに する。 */
 function dogSizeClass(kind){
   if(kind === 'paw') return '';
-  if(kind === 'sad') return 'd-sad-' + artForLevel(pet().level);
+  if(kind === 'sad') return 'd-sad-' + petArt();
   return 'd-' + kind;
 }
 
@@ -1759,7 +1781,7 @@ function artForLevel(lv, breedId){
   return 'lv5';
 }
 /* いぬの なまえ（きめて いない ときは「いぬ」） */
-function dogN(){ return pet().dogName; }
+function dogN(){ var p = pet(); return (kidShown() && p.kidName) ? p.kidName : p.dogName; }
 /* 「ポチ（こいぬ）」のような ひょうじ */
 function dogLabel(){ return dogN() + '（' + nameForLevel(pet().level) + '）'; }
 
@@ -1767,8 +1789,35 @@ function nameForLevel(lv, breedId){
   if(lv <= 2) return 'こいぬ';
   if(lv <= 4) return 'わんこ';
   if(lv <= 7) return 'たくましい 犬';
-  if(lv >= FAMILY_LEVEL && hasFamilyArt(breedId)) return 'おかあさん';
+  if(lv >= FAMILY_LEVEL && hasFamilyArt(breedId)){
+    if(!breedId){                       /* いま あそんでいる いぬ → えらんだ すがた */
+      var v = pet().view;
+      if(v === 'kid')    return 'こいぬ';
+      if(v === 'parent') return 'おかあさん';
+    }
+    return 'おやこ';
+  }
   return 'でんせつの 犬';
+}
+
+/* ---- おや・おやこ・こ（レベル15から。えらんだ すがたを みせる） ----
+   おや=lv5の え / こ=lv1の え / おやこ=lv15の え */
+function isFamily(lv, breedId){
+  return lv >= FAMILY_LEVEL && hasFamilyArt(breedId);
+}
+function viewArt(lv, view, breedId){
+  var a = artForLevel(lv, breedId);
+  if(a !== 'lv15') return a;
+  return view === 'kid' ? 'lv1' : view === 'parent' ? 'lv5' : 'lv15';
+}
+function petArt(lv){
+  var p = pet();
+  return viewArt(lv == null ? p.level : lv, p.view);
+}
+/* いま 「こ」を みせて いるか */
+function kidShown(){
+  var p = pet();
+  return p.view === 'kid' && isFamily(p.level);
 }
 
 /* =========================================================
@@ -1998,7 +2047,7 @@ function defaultSave(){
   return {
     name    : '',      /* かいぬしの なまえ */
     current : '',      /* いま えらんでいる いぬしゅ */
-    dogs    : {},      /* いぬしゅ -> { dogName, level, affection } */
+    dogs    : {},      /* いぬしゅ -> { dogName, level, affection, kidName, view } */
     /* ここから したは いぬに よらず きょうよう（こどもの がくしゅう きろく） */
     cleared : {}, mistakes:{}, totalOk:0, totalNg:0,
     catchBest: 0,      /* ボールキャッチの ハイスコア */
@@ -2048,7 +2097,9 @@ function loadSave(){
         s.dogs[k] = {
           dogName   : (typeof o.dogName === 'string' ? o.dogName.slice(0,8) : 'ポチ'),
           level     : Math.max(1, Math.min(99, o.level|0 || 1)),
-          affection : Math.max(0, Math.min(AFFECTION_MAX, o.affection|0))
+          affection : Math.max(0, Math.min(AFFECTION_MAX, o.affection|0)),
+          kidName   : (typeof o.kidName === 'string' ? o.kidName.slice(0,8) : ''),
+          view      : (o.view === 'parent' || o.view === 'kid') ? o.view : 'both'
         };
       }
       if(typeof d.current === 'string' && s.dogs[d.current]) s.current = d.current;
@@ -4063,7 +4114,7 @@ function renderSelect(){
 
       var html;
       if(b.ready){
-        html = '<img src="' + picSrc(b.id, artForLevel(owned ? owned.level : 1, b.id)) + '" alt="">';
+        html = '<img src="' + picSrc(b.id, viewArt(owned ? owned.level : 1, owned && owned.view, b.id)) + '" alt="">';
       }else{
         html = '<span class="ph">🐾</span>';
         card.disabled = true;
@@ -4109,7 +4160,7 @@ $('btn-adopt').addEventListener('click', function(){
   if(!pendingBreed) return;
   var d = $('input-dogname').value.replace(/\s+/g, '').slice(0, 8);
   if(!d) d = 'ポチ';
-  save.dogs[pendingBreed] = { dogName:d, level:1, affection:0 };
+  save.dogs[pendingBreed] = { dogName:d, level:1, affection:0, kidName:'', view:'both' };
   save.current = pendingBreed;
   pendingBreed = null;
   writeSave();
@@ -4121,7 +4172,7 @@ $('btn-adopt').addEventListener('click', function(){
 function openRename(){
   if(!save.dogs[save.current]) return;
   $('input-rename').value = dogN();
-  $('rename-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
+  $('rename-dog').innerHTML = dogPic(petArt(), 'idle');
   $('rename-pop').classList.remove('hidden');
   setTimeout(function(){ try{ $('input-rename').focus(); }catch(e){} }, 80);
 }
@@ -4133,7 +4184,8 @@ $('btn-rename-ok').addEventListener('click', function(){
   if(!save.dogs[save.current]){ closeRename(); return; }
   var d = $('input-rename').value.replace(/\s+/g, '').slice(0, 8);
   if(!d) d = dogN();                    /* からっぽなら そのまま */
-  save.dogs[save.current].dogName = d;
+  if(kidShown()) save.dogs[save.current].kidName = d;
+  else           save.dogs[save.current].dogName = d;
   writeSave();
   sfxLevel();
   closeRename();
@@ -4162,7 +4214,43 @@ function gotoMap(){
   preloadDog(save.current);
   renderMap();
   show('map');
+  checkKidName();
 }
+
+/* ---- こいぬの なまえ ---- */
+$('map-view').addEventListener('click', function(e){
+  var v = e.target.getAttribute && e.target.getAttribute('data-view');
+  if(!v || !save.dogs[save.current]) return;
+  sfxTap();
+  save.dogs[save.current].view = v;
+  writeSave();
+  renderMap();
+});
+
+/* レベル15で おやこに なったのに、こいぬの なまえが まだ なければ きく */
+function checkKidName(){
+  var p = save.dogs[save.current];
+  if(!p || !isFamily(p.level) || p.kidName) return;
+  if(!$('kid-pop').classList.contains('hidden')) return;
+  $('kid-pop-dog').innerHTML = dogPic('lv1', 'idle');
+  $('input-kidname').value = '';
+  $('kid-pop').classList.remove('hidden');
+  setTimeout(function(){ try{ $('input-kidname').focus(); }catch(e){} }, 80);
+}
+$('btn-kid-ok').addEventListener('click', function(){
+  var p = save.dogs[save.current];
+  if(!p) return;
+  var d = $('input-kidname').value.replace(/\s+/g, '').slice(0, 8);
+  if(!d) d = 'コロ';
+  p.kidName = d;
+  writeSave();
+  sfxLevel();
+  $('kid-pop').classList.add('hidden');
+  if(!$('screen-map').classList.contains('hidden')) renderMap();
+});
+$('input-kidname').addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){ e.preventDefault(); $('btn-kid-ok').click(); }
+});
 
 function renderMap(){
   $('map-win-title').textContent = dogN() + ' の ようす';
@@ -4171,7 +4259,12 @@ function renderMap(){
     (hasItem('medal', pet().level)
       ? ' <img class="medal-badge" src="img/medal.png" alt="きんの メダル">' : '');
   $('map-level').textContent   = pet().level;
-  $('map-dog').innerHTML       = dogPic(artForLevel(pet().level), 'idle');
+  $('map-dog').innerHTML       = dogPic(petArt(), 'idle');
+  var fam = isFamily(pet().level), vb = $('map-view').children, vi;
+  $('map-view').classList.toggle('hidden', !fam);
+  for(vi = 0; vi < vb.length; vi++){
+    vb[vi].classList.toggle('on', vb[vi].getAttribute('data-view') === (pet().view || 'both'));
+  }
   $('item-house').classList.toggle('hidden', !hasItem('house', pet().level));
   $('item-bowl').classList.toggle('hidden',  !hasItem('bowl',  pet().level));
   $('item-ball').classList.toggle('hidden',  !hasItem('ball',  pet().level));
@@ -4318,7 +4411,7 @@ function startRun(courseId){
   };
   $('quiz-course').textContent = courseById(courseId).name;
   $('quiz-dogname').textContent = dogLabel();
-  $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
+  $('quiz-dog').innerHTML = dogPic(petArt(), 'idle');
   show('quiz');
   nextQuestion();
 }
@@ -4430,7 +4523,7 @@ function answer(value, btnEl){
     run.streak++;
     sfxOk();
     voice('ok', 0.30);          /* ピロリンの あと「ワン！」 */
-    $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
+    $('quiz-dog').innerHTML = dogPic(petArt(), 'happy');
     popFx($('quiz-fx'), '♥✧♪✦', 5);
 
     /* にがて とっくんじょうでは、おぼえたので にがて度を 1つ へらす */
@@ -4478,7 +4571,7 @@ function answer(value, btnEl){
       run.guard--;
       voice('ng', 0.05);        /* まちがえては いるので しょんぼり */
       renderHearts(null, 0);
-      $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
+      $('quiz-dog').innerHTML = dogPic(petArt(), 'idle');
       popFx($('quiz-fx'), '🍖✧', 3);
       msg = '<p class="bad">ざんねん… こたえは <b>' + q.ans + '</b> だよ。</p>' +
             '<p class="tiny"><img class="inline-item" src="img/bowl.png" alt="">' +
@@ -4543,7 +4636,7 @@ function startReview(){
   run.answered  = false;
   $('quiz-course').textContent  = 'おさらい';
   $('quiz-dogname').textContent = dogLabel();
-  $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
+  $('quiz-dog').innerHTML = dogPic(petArt(), 'idle');
   $('quiz-fx').innerHTML  = '';
   show('quiz');
   nextQuestion();
@@ -4559,7 +4652,7 @@ function answerReview(q, correct){
     pet().affection += HEART_UP;
     sfxOk();
     voice('ok', 0.30);
-    $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
+    $('quiz-dog').innerHTML = dogPic(petArt(), 'happy');
     popFx($('quiz-fx'), '♥✧♪✦', 5);
     renderHearts('add', 0);
 
@@ -4579,7 +4672,7 @@ function answerReview(q, correct){
       run.reviewLevelUp = true;
       sfxLevel();
       $('quiz-dogname').textContent = dogLabel();
-      $('quiz-dog').innerHTML = dogPic(artForLevel(pet().level), 'grow');
+      $('quiz-dog').innerHTML = dogPic(petArt(), 'grow');
       popFx($('quiz-fx'), '✧✦★', 8);
       msg = '<p class="good">レベルアップ！ ' + dogN() + 'が 大きく なった！</p>' +
             '<p class="tiny">レベル ' + pet().level + ' の ' + nameForLevel(pet().level) + ' に なったよ</p>';
@@ -4760,7 +4853,7 @@ function renderResult(fromReview){
      たからものの ポップアップが おわってから おおきく する。 */
   var grewNow = (!fromReview && run.levelUps > 0);
   var showLv  = grewNow ? (pet().level - run.levelUps) : pet().level;
-  var art = artForLevel(showLv);
+  var art = petArt(showLv);
   $('result-dog').innerHTML = dogPic(art, grewNow ? 'idle' : (run.ng === 0 ? 'happy' : 'idle'));
   $('result-dogname').textContent = dogN() + '（' + nameForLevel(showLv) + '）';
   if(!fromReview && run.ng === 0 && !grewNow){
@@ -4842,9 +4935,10 @@ function renderResult(fromReview){
       if(!grewNow) return;
       showLevelPop(lvFrom, lvTo, function(){
         /* とじたら けっか画面の 犬も おおきく する */
-        $('result-dog').innerHTML = dogPic(artForLevel(lvTo), 'grow');
+        $('result-dog').innerHTML = dogPic(petArt(lvTo), 'grow');
         $('result-dogname').textContent = dogLabel();
         popFx($('result-fx'), '♥✧✦♪', 7);
+        checkKidName();
       });
     };
     if(run.gets && run.gets.length){
@@ -4923,7 +5017,7 @@ function catchTap(b){
     voice('ok', 0.10);          /* テンポが はやいので すぐ 鳴らす */
     popFx($('catch-fx'), '♥✧✦♪', 4);
     $('catch-score').textContent = cg.score;
-    $('catch-dog').innerHTML = dogPic(artForLevel(pet().level), 'happy');
+    $('catch-dog').innerHTML = dogPic(petArt(), 'happy');
     setTimeout(catchNextQ, 170);
   }else{
     b.el.className = 'ball ng';
@@ -4978,7 +5072,7 @@ function catchStart(){
   $('catch-time-bar').style.width = '100%';
   $('catch-fx').innerHTML = '';
   $('catch-over').classList.add('hidden');
-  $('catch-dog').innerHTML = dogPic(artForLevel(pet().level), 'idle');
+  $('catch-dog').innerHTML = dogPic(petArt(), 'idle');
   show('catch');
   /* えの はばが きまってから ボールを おく */
   setTimeout(function(){
