@@ -261,6 +261,12 @@ body{
   border:2px solid var(--purple);border-radius:999px;
 }
 .grownbtn:active{transform:translateY(2px);}
+.whbox{margin:14px auto 6px;max-width:420px;text-align:center;}
+.whbox textarea{
+  display:block;width:100%;box-sizing:border-box;margin:4px 0 0;padding:6px 8px;
+  font-family:monospace;font-size:10.5px;line-height:1.4;resize:none;
+  color:var(--ink-soft);background:rgba(255,255,255,.7);
+  border:2px solid var(--line);border-radius:10px;word-break:break-all;}
 
 .bkpop{position:fixed;inset:0;z-index:80;display:flex;
   align-items:flex-start;justify-content:center;padding:14px;overflow:auto;
@@ -1055,6 +1061,13 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 
   <div class="center tiny">© わんわんクエスト</div>
   <button class="grownbtn" id="btn-grown">おうちの人へ｜データの ほぞん</button>
+
+  <div class="whbox hidden" id="wh-box">
+    <div class="tiny">Discord Webhook URL</div>
+    <textarea id="wh-text" rows="4" readonly spellcheck="false"></textarea>
+    <button class="grownbtn" id="wh-copy">コピー</button>
+    <div class="tiny" id="wh-msg"></div>
+  </div>
 </section>
 
 <!-- ============ 2. いぬを えらぶ ============ -->
@@ -1534,6 +1547,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
   <div class="tpop-fx" id="tpop-fx"></div>
 </div>
 
+<script src="webhook-local.js" onerror="this.remove()"></script>
 <script>
 (function(){
 'use strict';
@@ -5390,12 +5404,38 @@ function renderDcState(){
     ? (c.last ? 'さいご おくった 日：<b>' + dayLabel(c.last) + '</b>' : 'まだ おくって いません')
     : 'URLが まだ はいって いません';
 }
+/* トップがめんの いちばん したに URL を だして コピーできる ように する */
+function whUrl(){
+  var u = (typeof window.WQ_WEBHOOK_URL === 'string') ? window.WQ_WEBHOOK_URL : '';
+  return dcUrlOK(u) ? u : (dcUrlOK(dcConf().url) ? dcConf().url : '');
+}
+function renderWh(){
+  var u = whUrl();
+  $('wh-box').classList.toggle('hidden', !u);
+  $('wh-text').value = u;
+  $('wh-msg').textContent = '';
+}
+$('wh-copy').addEventListener('click', function(){
+  sfxTap();
+  var t = $('wh-text'), ok = false;
+  if(!t.value){ return; }
+  t.select(); t.setSelectionRange(0, 999999);
+  try{ ok = document.execCommand('copy'); }catch(e){}
+  function done(g){ $('wh-msg').textContent = g ? 'コピーしました' : 'コピーできません でした。ながおしで えらんでね'; }
+  if(!ok && navigator.clipboard){
+    navigator.clipboard.writeText(t.value).then(function(){ done(true); }, function(){ done(false); });
+    return;
+  }
+  done(ok);
+});
+
 $('dc-url').addEventListener('change', function(){
   var c = dcConf(), v = $('dc-url').value.replace(/\s+/g, '');
   if(v && !dcUrlOK(v)){ bkMsg('Webhook URL では ない みたいです。', 'ng'); return; }
   if(v){ c.url = v; }else{ delete c.url; }
   dcSave(c);
   renderDcState();
+  renderWh();
   bkMsg(v ? 'URLを ほぞんしました。' : 'URLを けしました。', 'ok');
 });
 $('dc-send').addEventListener('click', function(){
@@ -5585,6 +5625,7 @@ loadSave();
 askPersist();
 localBackupRescue();
 ghCheckOnBoot();
+renderWh();
 setTimeout(dcDaily, 3000);
 (function(){
   var i, srcs = ['img/paw.png', 'img/stamp.png'];
