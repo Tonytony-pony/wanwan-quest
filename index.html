@@ -1502,7 +1502,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <div class="bk-row">
         <button class="btn small purple" id="bk-admin">かんりしゃ モードに する</button>
       </div>
-      <p class="note" style="margin:6px 0 0">いぬ（レベル 1・4・9・14・19・24・29・34・39）と、
+      <p class="note" style="margin:6px 0 0">いぬ（レベル 1・4・9・14・19・24・29・34・39）と、ぼうけんチケット 100まい、
         ずかん（ほとんど 100こ）を セットします。いまの データは かわります。</p>
     </div>
 
@@ -2581,7 +2581,7 @@ var CRANE_MAX   = 5;      /* 1日に もらえる けんの かず */
 var CRANE_PITY  = 2;      /* これだけ はずすと つぎは かならず とれる */
 var CRANE_SWEEP = 1750;   /* アームが はしから はしまで うごく ミリびょう */
 var CRANE_UPDOWN = 1000;  /* アームが おりる／あがる ミリびょう（ゆっくりめ） */
-var CRANE_SP_MAX = 99;    /* ぼうけんチケットを ためられる かず */
+var CRANE_SP_MAX = 100;    /* ぼうけんチケットを ためられる かず */
 var CRANE_NOGRIP = 0.10;  /* つかめずに かたむくだけ に なる かくりつ */
 
 /* けいひんの ぬいぐるみ。size 0=ちいさい 1=ふつう 2=おおきい
@@ -5601,6 +5601,7 @@ $('bk-admin').addEventListener('click', function(){
     };
   }
   if(!save.dogs[save.current]) save.current = BREEDS[0].id;
+  save.craneSp = 100;
   /* ほし なし（ふつう）の アイテムを 1つだけ のこして、あとは 100こ */
   for(i = 0; i < TREASURES.length; i++){
     t = TREASURES[i];
