@@ -285,6 +285,12 @@ body{
   font-family:inherit;
   border:2px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);}
 .bk-card .tk + .tk{margin-top:6px;}
+.bk-pl-h{font-size:12px;font-weight:bold;color:var(--purple-deep);margin:7px 0 3px;}
+.bk-pl-h span{font-weight:normal;color:var(--ink-soft);}
+.bk-pl-g{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
+.bk-pl-g div{text-align:center;font-size:9.5px;line-height:1.2;color:var(--ink-soft);}
+.bk-pl-g img{display:block;margin:0 auto 1px;height:38px;width:auto;max-width:100%;object-fit:contain;}
+.bk-pl-g .no img{filter:brightness(0) opacity(.18);}
 .bk-row{display:flex;gap:7px;margin-top:6px;}
 .bk-row .btn{margin:0;flex:1;font-size:13px;padding:8px 4px;}
 .bk-state{font-size:12px;margin:0 0 6px;padding:6px 9px;border-radius:9px;
@@ -1498,6 +1504,12 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       </div>
       <p class="note" style="margin:6px 0 0">いぬ（レベル 1・4・9・14・19・24・29・34・39）と、
         ずかん（ほとんど 100こ）を セットします。いまの データは かわります。</p>
+    </div>
+
+    <div class="bk-sec">
+      <h4>⑦ ぬいぐるみリスト</h4>
+      <p class="note" id="bk-pl-sum" style="margin:0 0 4px"></p>
+      <div id="bk-pl-list"></div>
     </div>
 
     <p class="bk-msg" id="bk-msg"></p>
@@ -5521,6 +5533,7 @@ function openBackup(){
   $('dc-url').value   = dcConf().url || '';
   renderDcState();
   renderCraneTest();
+  renderPlushList();
   $('bk-out').value = '';
   $('bk-in').value  = '';
   bkMsg('');
@@ -5546,11 +5559,30 @@ function renderCraneTest(){
        'けすと はじめから あつめなおせます。';
   $('bk-cr-note').innerHTML = h;
 }
+/* ぬいぐるみリスト。もって いない ものは かげに する */
+function renderPlushList(){
+  var h = '', si, list, pi, p, own;
+  $('bk-pl-sum').innerHTML = 'ぜんぶで <b>' + plushCount() + '</b> / ' +
+    PLUSHES.length + ' しゅるい（もって いない ものは かげ）';
+  for(si = 0; si < PLUSH_SETS.length; si++){
+    list = plushOfSet(si);
+    h += '<div class="bk-pl-h">' + PLUSH_SETS[si].name +
+         (PLUSH_SETS[si].sp ? '（ぼうけんチケット）' : '') +
+         ' <span>' + plushCountSet(si) + ' / ' + PLUSH_PER_SET + '</span></div><div class="bk-pl-g">';
+    for(pi = 0; pi < list.length; pi++){
+      p = list[pi]; own = save.plush[p.id] > 0;
+      h += '<div' + (own ? '' : ' class="no"') + '><img src="img/plush_' + p.id + '.png" alt="">' +
+           (own ? p.name.replace(PLUSH_SETS[si].nick, '') + (save.plush[p.id] > 1 ? ' ×' + save.plush[p.id] : '') : '？') + '</div>';
+    }
+    h += '</div>';
+  }
+  $('bk-pl-list').innerHTML = h;
+}
 $('bk-cr-add').addEventListener('click', function(){
   sfxTap();
   if(!window.confirm('あつめた ぬいぐるみを ぜんぶ けします。いい ですか？')) return;
   save.plush = {}; save.craneM = {}; save.plushPick = '';
-  writeSave(); renderCraneTest(); renderMap();
+  writeSave(); renderCraneTest(); renderPlushList(); renderMap();
   bkMsg('ぬいぐるみを ぜんぶ けしました。', 'ok');
 });
 /* ⑥ かんりしゃ モード：いぬを レベルべつに ならべ、ずかんを 100こずつに する */
