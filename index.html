@@ -290,7 +290,7 @@ body{
 .bk-pl-g{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;}
 .bk-pl-g div{text-align:center;font-size:9.5px;line-height:1.2;color:var(--ink-soft);}
 .bk-pl-g img{display:block;margin:0 auto 1px;height:38px;width:auto;max-width:100%;object-fit:contain;}
-.bk-pl-g .no img{filter:brightness(0) opacity(.18);}
+.bk-pl-g .own{color:var(--pink-deep);font-weight:bold;}
 .bk-row{display:flex;gap:7px;margin-top:6px;}
 .bk-row .btn{margin:0;flex:1;font-size:13px;padding:8px 4px;}
 .bk-state{font-size:12px;margin:0 0 6px;padding:6px 9px;border-radius:9px;
@@ -5559,11 +5559,11 @@ function renderCraneTest(){
        'けすと はじめから あつめなおせます。';
   $('bk-cr-note').innerHTML = h;
 }
-/* ぬいぐるみリスト。もって いない ものは かげに する */
+/* ぬいぐるみリスト。もって いる ものは なまえを めだたせる */
 function renderPlushList(){
   var h = '', si, list, pi, p, own;
   $('bk-pl-sum').innerHTML = 'ぜんぶで <b>' + plushCount() + '</b> / ' +
-    PLUSHES.length + ' しゅるい（もって いない ものは かげ）';
+    PLUSHES.length + ' しゅるい（もっている ものは なまえが ピンク）';
   for(si = 0; si < PLUSH_SETS.length; si++){
     list = plushOfSet(si);
     h += '<div class="bk-pl-h">' + PLUSH_SETS[si].name +
@@ -5571,8 +5571,8 @@ function renderPlushList(){
          ' <span>' + plushCountSet(si) + ' / ' + PLUSH_PER_SET + '</span></div><div class="bk-pl-g">';
     for(pi = 0; pi < list.length; pi++){
       p = list[pi]; own = save.plush[p.id] > 0;
-      h += '<div' + (own ? '' : ' class="no"') + '><img src="img/plush_' + p.id + '.png" alt="">' +
-           (own ? p.name.replace(PLUSH_SETS[si].nick, '') + (save.plush[p.id] > 1 ? ' ×' + save.plush[p.id] : '') : '？') + '</div>';
+      h += '<div' + (own ? ' class="own"' : '') + '><img src="img/plush_' + p.id + '.png" alt="">' +
+           p.name.replace(PLUSH_SETS[si].nick, '') + (own && save.plush[p.id] > 1 ? ' ×' + save.plush[p.id] : '') + '</div>';
     }
     h += '</div>';
   }
