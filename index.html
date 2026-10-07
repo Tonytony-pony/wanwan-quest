@@ -464,6 +464,13 @@ button.ball{position:absolute;width:62px;height:62px;border-radius:50%;
 /* おさんぽ がめんの いりぐち */
 .mini-btn .sub{display:block;font-size:11.5px;opacity:.95;margin-top:2px;}
 /* ===== クレーンゲーム ===== */
+.cr-tabs{display:flex;gap:6px;margin:0 0 6px;}
+.cr-tabs button{flex:1;font:inherit;font-size:13px;font-weight:bold;color:var(--purple-deep);
+  background:#fff;border:2px solid var(--line);border-radius:12px;padding:5px 2px;line-height:1.25;}
+.cr-tabs button span{display:block;font-size:10.5px;font-weight:normal;color:var(--ink-soft);}
+.cr-tabs button.on{background:linear-gradient(180deg,#ffe488,#ffc23f);border-color:#e0a000;color:#7a4a00;}
+.cr-tabs button.on span{color:#7a4a00;}
+.cr-tabs button:disabled:not(.on){opacity:.45;}
 #screen-crane{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
 .cr-box{
   position:relative;flex:1 1 auto;min-height:190px;
@@ -1209,8 +1216,6 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <button class="btn gold mini-btn hidden" id="btn-crane">🧸 クレーンゲーム
       <span class="sub">ぬいぐるみを ゲットしよう！</span></button>
     <p class="cr-left hidden" id="map-crane"></p>
-    <button class="btn gold mini-btn hidden" id="btn-crane-sp">🌟 ぼうけんチケットの クレーン
-      <span class="sub" id="sp-sub"></span></button>
   </div>
 
   <div class="win purple hidden" id="plush-win">
@@ -1276,6 +1281,10 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <span class="tiny">ぬいぐるみを ゲット！</span>
     </div>
     <div class="lv" id="cr-tickets">けん 0</div>
+  </div>
+  <div class="cr-tabs">
+    <button type="button" id="cr-tab-n"></button>
+    <button type="button" id="cr-tab-s"></button>
   </div>
 
   <div class="cr-box" id="cr-box">
@@ -3305,6 +3314,7 @@ function craneStart(sp){
   crRender();
   crKeep.xs = cr.xs;
   crArmY(0);
+  crTabs();
   crMsg(sp
     ? '🌟 ぼうけんチケットを つかったよ！<br><b>' + PLUSH_SETS[crSet()].name + '</b>の ぬいぐるみだよ。とりたい ぬいぐるみの うえで タップ！'
     : strong
@@ -3331,6 +3341,7 @@ function crStop(){
   if(cr.noGrip){ cr.win = false; cr.slipped = true; }
   cr.phase = 'down';
   cr.t0 = crNow();
+  crTabs();
   $('cr-tap').disabled = true;
   crMsg('アームが おりて いくよ…');
 }
@@ -3525,6 +3536,7 @@ function crMiss(){
 }
 
 function crEnd(){
+  crTabs();
   var left = crLeftOf(cr && cr.sp);
   $('cr-tap').disabled = false;
   $('cr-tap').textContent = 'もう いっかい！';
@@ -3593,14 +3605,36 @@ function crQuit(){
 
 $('btn-crane').addEventListener('click', function(){
   sfxTap();
-  if(craneLeft() <= 0) return;
-  craneStart(false);
+  if(craneLeft() <= 0 && save.craneSp <= 0) return;
+  craneStart(craneLeft() <= 0);      /* ふつうの けんが なければ チケットの だい から */
 });
-$('btn-crane-sp').addEventListener('click', function(){
+
+/* だいの きりかえ。アームを とめる まえ（うごいて いる とき）と、
+   1かい おわった あとだけ。あそんで いる さいちゅうは きりかえない。 */
+function crTabs(){
+  if(!cr) return;
+  var can = (cr.phase === 'move' || cr.phase === 'done');
+  var nl = craneLeft(), sl = save.craneSp;
+  var bn = $('cr-tab-n'), bs = $('cr-tab-s');
+  bn.innerHTML = 'ふつうの だい<span>のこり ' + nl + ' かい</span>';
+  bs.innerHTML = '🌟 チケットの だい<span>のこり ' + sl + ' まい</span>';
+  bn.classList.toggle('on', !cr.sp);
+  bs.classList.toggle('on', !!cr.sp);
+  bn.disabled = !can || (cr.sp && nl <= 0);
+  bs.disabled = !can || (!cr.sp && sl <= 0);
+}
+function crSwitch(sp){
+  if(!cr || !!cr.sp === sp) return;
+  if(cr.phase !== 'move' && cr.phase !== 'done') return;
+  if(!$('ppop').classList.contains('hidden')) return;
+  if(crLeftOf(sp) <= 0) return;
   sfxTap();
-  if(save.craneSp <= 0) return;
-  craneStart(true);
-});
+  if(cr.raf) cancelAnimationFrame(cr.raf);
+  if(cr.tid) clearTimeout(cr.tid);
+  craneStart(sp);
+}
+$('cr-tab-n').addEventListener('click', function(){ crSwitch(false); });
+$('cr-tab-s').addEventListener('click', function(){ crSwitch(true); });
 
 /* =========================================================
    7. もんだいを つくる
@@ -4416,17 +4450,15 @@ function renderMap(){
   var cLeft = craneLeft();
   $('btn-crane').classList.remove('hidden');
   $('map-crane').classList.remove('hidden');
-  $('btn-crane').disabled = (cLeft <= 0);
-  $('map-crane').innerHTML = cLeft > 0
+  $('btn-crane').disabled = (cLeft <= 0 && save.craneSp <= 0);
+  $('map-crane').innerHTML = (cLeft > 0
     ? '<span class="tk">' + new Array(cLeft + 1).join('🎫') + '</span> ' +
       'クレーンけん <b>' + cLeft + '</b>まい'
     : 'クレーンけんは おさんぽを おえると もらえるよ（1日 ' +
-      CRANE_MAX + 'まいまで）';
-  $('btn-crane-sp').classList.remove('hidden');
-  $('btn-crane-sp').disabled = (save.craneSp <= 0);
-  $('sp-sub').textContent = save.craneSp > 0
-    ? 'チケット ' + save.craneSp + 'まい！ とくべつな ぬいぐるみが でるよ'
-    : 'ぼうけんの こうえんを あそぶと もらえるよ';
+      CRANE_MAX + 'まいまで）') +
+    '<br>' + (save.craneSp > 0
+      ? '🌟 ぼうけんチケット <b>' + save.craneSp + '</b>まい（とくべつな だいで つかえるよ）'
+      : '🌟 ぼうけんの こうえんを あそぶと とくべつな チケットが もらえるよ');
   $('plush-win').classList.toggle('hidden', plushCount() === 0);
   renderPlushRow();
 
