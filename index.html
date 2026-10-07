@@ -1502,7 +1502,7 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
       <div class="bk-row">
         <button class="btn small purple" id="bk-admin">かんりしゃ モードに する</button>
       </div>
-      <p class="note" style="margin:6px 0 0">いぬ（レベル 1・4・9・14・19・24・29・34・39）と、ぼうけんチケット 100まい、
+      <p class="note" style="margin:6px 0 0">いぬ（レベル 1・4・9・14・19・24・29・34・39）と、ぼうけんチケット 100まい、クレーンけん 99まい、
         ずかん（ほとんど 100こ）を セットします。いまの データは かわります。</p>
     </div>
 
@@ -2198,8 +2198,8 @@ function loadSave(){
       }
     }
     if(typeof d.craneD === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.craneD)) s.craneD = d.craneD;
-    if(typeof d.craneGot  === 'number') s.craneGot  = Math.max(0, Math.min(CRANE_MAX, d.craneGot|0));
-    if(typeof d.craneUse  === 'number') s.craneUse  = Math.max(0, Math.min(CRANE_MAX, d.craneUse|0));
+    if(typeof d.craneGot  === 'number') s.craneGot  = Math.max(0, Math.min(99, d.craneGot|0));
+    if(typeof d.craneUse  === 'number') s.craneUse  = Math.max(0, Math.min(99, d.craneUse|0));
     if(typeof d.craneSp   === 'number') s.craneSp   = Math.max(0, Math.min(CRANE_SP_MAX, d.craneSp|0));
     if(typeof d.craneGrip === 'number') s.craneGrip = Math.max(0, Math.min(CRANE_MAX, d.craneGrip|0));
     if(typeof d.plushPick === 'string' && s.plush[d.plushPick] > 0) s.plushPick = d.plushPick;
@@ -5602,6 +5602,7 @@ $('bk-admin').addEventListener('click', function(){
   }
   if(!save.dogs[save.current]) save.current = BREEDS[0].id;
   save.craneSp = 100;
+  save.craneD = dkey(); save.craneGot = 99; save.craneUse = 0;
   /* ほし なし（ふつう）の アイテムを 1つだけ のこして、あとは 100こ */
   for(i = 0; i < TREASURES.length; i++){
     t = TREASURES[i];
