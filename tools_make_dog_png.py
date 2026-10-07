@@ -75,6 +75,7 @@ def find_src(folder, stem):
 # ちいさい かたまりの まま のこり、あとの 2% フィルタで おちる。
 SAT_MAX   = 26          # R,G,B の さ が これいか なら むちゃくしょく
 LIGHT_MIN = 178         # いちばん くらい チャンネルが これいじょう なら あかるい
+BG_RANGES = [(LIGHT_MIN, 249)]   # はいけいと みなす いろの はんい（いちばん くらい チャンネル）
 WHITE_MIN = 249         # これいじょう しろい ものは いぬの しろ かも しれないので のこす
 ERODE     = 2           # ふちを けずる ドットすう
 MIN_BLOB_RATIO = 0.02   # いちばん おおきい かたまりの 2% いじょう なら のこす
@@ -87,7 +88,10 @@ def is_bg(px):
     if max(r, g, b) - min(r, g, b) > SAT_MAX:
         return False                      # いろが ついている -> いぬ
     m = min(r, g, b)
-    return LIGHT_MIN <= m < WHITE_MIN     # はいいろ だけ はいけい。まっしろは のこす
+    for lo, hi in BG_RANGES:
+        if lo <= m < hi:
+            return True               # はいいろ だけ はいけい。まっしろは のこす
+    return False
 
 
 def key_color(im):
@@ -547,6 +551,13 @@ if __name__ == '__main__':
         print(b)
         for stem, pose, th in POSES:
             src = find_src(os.path.join(SRC_ROOT, b), stem)
+            # フレンチブルは しろい からだの かげ（226〜240）を はいけいと まちがえて
+            # あしが けずれる。はいいろ(178〜224)と しろマス(238〜249)だけ はいけいに する。
+            # 04 は かげと はいけいの しろマスが おなじ いろ なので ふつうの まま。
+            if b == 'frenchbulldog' and stem != '04':
+                BG_RANGES[:] = [(LIGHT_MIN, 224), (238, 249)]
+            else:
+                BG_RANGES[:] = [(LIGHT_MIN, 249)]
             if not src:
                 print('  %-16s (%s.jpg が ないので とばす)' % (b + '_' + pose, stem))
                 continue

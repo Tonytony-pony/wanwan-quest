@@ -2170,6 +2170,19 @@ function loadSave(){
       for(qd in d.qlog){
         if(d.qlog.hasOwnProperty(qd) && /^\d{4}-\d{2}-\d{2}$/.test(qd) && d.qlog[qd]){
           s.qlog[qd] = { ok:Math.max(0, d.qlog[qd].ok|0), ng:Math.max(0, d.qlog[qd].ng|0) };
+          if(d.qlog[qd].c && typeof d.qlog[qd].c === 'object'){
+            var qc = d.qlog[qd].c, cid, mk, cs;
+            s.qlog[qd].c = {};
+            for(cid in qc){
+              if(!qc.hasOwnProperty(cid) || !qc[cid]) continue;
+              cs = s.qlog[qd].c[cid] = { ok:Math.max(0, qc[cid].ok|0), ng:Math.max(0, qc[cid].ng|0), m:{} };
+              if(qc[cid].m && typeof qc[cid].m === 'object'){
+                for(mk in qc[cid].m){
+                  if(qc[cid].m.hasOwnProperty(mk)) cs.m[mk] = Math.max(0, qc[cid].m[mk]|0);
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -2927,8 +2940,12 @@ function popFx(container, chars, count){
 /* 1もん こたえる たびに きろく（にがて度と ちがって、せいかいしても へらさない） */
 function recordAnswer(key, correct){
   var t = dkey(), L = save.qlog[t] || (save.qlog[t] = { ok:0, ng:0 }), k, d, cut;
-  if(correct){ L.ok++; return; }
-  L.ng++;
+  /* あそんだ コースべつの きろく（にがて とっくんじょうも べつに かぞえる） */
+  var cid = (run && run.courseId) || key.split('|')[0];
+  var C = L.c || (L.c = {}), cs = C[cid] || (C[cid] = { ok:0, ng:0, m:{} });
+  if(correct){ L.ok++; cs.ok++; return; }
+  L.ng++; cs.ng++;
+  cs.m[key] = (cs.m[key] || 0) + 1;
   save.missTotal[key] = (save.missTotal[key] || 0) + 1;
   var ml = save.missLog[key] || (save.missLog[key] = {});
   ml[t] = (ml[t] || 0) + 1;
@@ -5418,6 +5435,13 @@ function weekMiss(key, today){
   return n;
 }
 
+function dcCourseName(id){
+  var n = { garden:'はじまりの庭', park:'冒険の公園', forest:'むずかしの森',
+            mountain:'伝説の山', weak:'にがて特訓場' };
+  return n[id] || id;
+}
+function courseOrder(id){ return id === 'weak' ? 99 : courseIndex(id); }
+
 /* おくる もじを つくる。1つが 1900もじ いない になるように わける */
 function dcBuild(since){
   var today = dkey(), days = [], d, k, i, j;
@@ -5427,21 +5451,38 @@ function dcBuild(since){
        d >= addDays(today, -7)) days.push(d);
   }
   days.sort();
-  var lines = ['**わんわんクエスト　がくしゅう きろく**（' + dayLabel(today) + ' ほうこく）', ''];
-  if(!days.length) lines.push('きのうまでに あたらしく あそんだ きろくは ありません。', '');
+  var lines = ['**わんわんクエスト　学習記録**（' + dayLabel(today) + ' 報告）', ''];
+  if(!days.length) lines.push('昨日までに新しく遊んだ記録はありません。', '');
   for(i = 0; i < days.length; i++){
     d = days[i];
-    var L = save.qlog[d], miss = [];
-    lines.push('■ ' + dayLabel(d) + '　せいかい ' + L.ok + ' ／ ふせいかい ' + L.ng);
-    for(k in save.missLog){
-      if(save.missLog.hasOwnProperty(k) && save.missLog[k][d]){
-        miss.push({ k:k, n:save.missLog[k][d] });
+    var L = save.qlog[d], cids = [], c, cs, miss;
+    lines.push('■ ' + dayLabel(d) + '　合計　正解 ' + L.ok + ' ／ 不正解 ' + L.ng);
+    if(L.c){
+      /* 遊んだ おさんぽコース（にがて特訓場も ふくむ）ごとに ひょうじ */
+      for(c in L.c){ if(L.c.hasOwnProperty(c)) cids.push(c); }
+      cids.sort(function(a, b){ return courseOrder(a) - courseOrder(b); });
+      for(j = 0; j < cids.length; j++){
+        cs = L.c[cids[j]];
+        lines.push('　【' + dcCourseName(cids[j]) + '】正解 ' + cs.ok + ' ／ 不正解 ' + cs.ng);
+        miss = [];
+        for(k in cs.m){ if(cs.m.hasOwnProperty(k)) miss.push({ k:k, n:cs.m[k] }); }
+        miss.sort(function(a, b){ return b.n - a.n; });
+        for(var m = 0; m < miss.length; m++){
+          lines.push('　　✕ ' + keyToText(miss[m].k) + '（' + miss[m].n + '回）');
+        }
       }
-    }
-    miss.sort(function(a, b){ return b.n - a.n; });
-    if(!miss.length) lines.push('　ふせいかいの もんだいは なし');
-    for(j = 0; j < miss.length; j++){
-      lines.push('　✕ ' + keyToText(miss[j].k) + '（この日 ' + miss[j].n + '回）');
+    }else{
+      /* コースべつの きろくが ない 古い 日 */
+      miss = [];
+      for(k in save.missLog){
+        if(save.missLog.hasOwnProperty(k) && save.missLog[k][d]){
+          miss.push({ k:k, n:save.missLog[k][d] });
+        }
+      }
+      miss.sort(function(a, b){ return b.n - a.n; });
+      for(j = 0; j < miss.length; j++){
+        lines.push('　✕ ' + keyToText(miss[j].k) + '（この日 ' + miss[j].n + '回）');
+      }
     }
     lines.push('');
   }
@@ -5451,7 +5492,7 @@ function dcBuild(since){
     if(save.missTotal.hasOwnProperty(k)) all.push({ k:k, t:save.missTotal[k], w:weekMiss(k, today) });
   }
   all.sort(function(a, b){ return b.t - a.t || b.w - a.w; });
-  lines.push('■ これまでに まちがえた もんだい（これまで ／ 1しゅうかん）');
+  lines.push('■ これまでに間違えた問題（通算 ／ 直近1週間）');
   if(!all.length) lines.push('　なし');
   for(i = 0; i < all.length; i++){
     lines.push('　' + keyToText(all[i].k) + '　' + all[i].t + '回 ／ ' + all[i].w + '回');
