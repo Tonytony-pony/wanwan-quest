@@ -425,7 +425,7 @@ body{
   font-family:inherit;font-size:23px;color:#7a4400;z-index:2;
   background:radial-gradient(circle at 34% 27%, #fff8cf 0%, #ffd851 52%, #eda600 100%);
   border:3px solid #c98a00;box-shadow:0 3px 0 rgba(150,90,0,.4);
-  cursor:pointer;touch-action:manipulation;
+  cursor:pointer;touch-action:none;
   -webkit-user-select:none;user-select:none;}
 .ball.hit{animation:ballHit .35s ease-out forwards;pointer-events:none;}
 @keyframes ballHit{0%{transform:scale(1)}45%{transform:scale(1.45)}
@@ -1487,6 +1487,15 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
         <button class="btn small purple" id="bk-cr-add">あつめた ぬいぐるみを けす</button>
       </div>
       <p class="note" id="bk-cr-note" style="margin:6px 0 0"></p>
+    </div>
+
+    <div class="bk-sec">
+      <h4>⑥ かんりしゃ モード</h4>
+      <div class="bk-row">
+        <button class="btn small purple" id="bk-admin">かんりしゃ モードに する</button>
+      </div>
+      <p class="note" style="margin:6px 0 0">いぬ（レベル 1・4・9・14・19・24・29・34・39）と、
+        ずかん（ほとんど 100こ）を セットします。いまの データは かわります。</p>
     </div>
 
     <p class="bk-msg" id="bk-msg"></p>
@@ -5065,6 +5074,11 @@ function catchNextQ(){
           t0:t0, spd:spd, dead:false };
     el.style.transform = 'translateY(' + b.y + 'px)';
     (function(bb){
+      /* うごく ボールは click だと、ゆびを はなす までに うごいて
+         はんのうしない ことが ある。ふれた しゅんかんに みる。 */
+      el.addEventListener('pointerdown', function(e){
+        e.preventDefault(); e.stopPropagation(); catchTap(bb);
+      });
       el.addEventListener('click', function(e){ e.stopPropagation(); catchTap(bb); });
     })(b);
     cg.balls.push(b);
@@ -5469,6 +5483,31 @@ $('bk-cr-add').addEventListener('click', function(){
   save.plush = {}; save.craneM = {}; save.plushPick = '';
   writeSave(); renderCraneTest(); renderMap();
   bkMsg('ぬいぐるみを ぜんぶ けしました。', 'ok');
+});
+/* ⑥ かんりしゃ モード：いぬを レベルべつに ならべ、ずかんを 100こずつに する */
+$('bk-admin').addEventListener('click', function(){
+  sfxTap();
+  if(!window.confirm('いぬの レベルと ずかんを かんりしゃ用に かきかえます。いい ですか？\n（さきに ① で ひかえを とると あんしんです）')) return;
+  var lvs = [1, 4, 9, 14, 19, 24, 29, 34, 39], i, t, skipped = false;
+  for(i = 0; i < lvs.length && i < BREEDS.length; i++){
+    var id = BREEDS[i].id, o = save.dogs[id];
+    save.dogs[id] = {
+      dogName   : (o && o.dogName) ? o.dogName : BREEDS[i].name.slice(0, 8),
+      level     : lvs[i],
+      affection : 0,
+      kidName   : (o && o.kidName) || '',
+      view      : (o && o.view) || 'both'
+    };
+  }
+  if(!save.dogs[save.current]) save.current = BREEDS[0].id;
+  /* ほし なし（ふつう）の アイテムを 1つだけ のこして、あとは 100こ */
+  for(i = 0; i < TREASURES.length; i++){
+    t = TREASURES[i];
+    if(!skipped && RARITY[t.r].star === ''){ skipped = true; delete save.found[t.id]; continue; }
+    save.found[t.id] = 100;
+  }
+  writeSave(); renderMap();
+  bkMsg('かんりしゃ モードに しました。', 'ok');
 });
 $('btn-grown').addEventListener('click', function(){ sfxTap(); openBackup(); });
 $('bk-close').addEventListener('click', function(){
