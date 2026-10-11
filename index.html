@@ -2605,6 +2605,7 @@ var CRANE_SWEEP = 1750;   /* アームが はしから はしまで うごく �
 var CRANE_UPDOWN = 1000;  /* アームが おりる／あがる ミリびょう（ゆっくりめ） */
 var CRANE_SP_MAX = 100;    /* ぼうけんチケットを ためられる かず */
 var CRANE_NOGRIP = 0.10;  /* つかめずに かたむくだけ に なる かくりつ */
+var CRANE_TOPDROP = 0.30; /* てんじょうまで もちあげてから おとす かくりつ */
 
 /* けいひんの ぬいぐるみ。size 0=ちいさい 1=ふつう 2=おおきい
    （え が できた ぶんだけ ならべる。あとから ふやせる） */
@@ -3420,7 +3421,25 @@ function crLoop(){
     crArmY(low * (1 - e));
     if(e >= 1){
       cr.phase = 'carry'; cr.t0 = t; cr.fromX = cr.x;
-      if(!cr.win){
+      /* とれる はずでも、てんじょうで ゆれて おとして しまう ことが ある。
+         すくいあげ（2かい はずした つぎ）の かいは かならず とれる ので のぞく。 */
+      if(cr.win && !cr.noGrip &&
+         (save.craneM[cr.slots[cr.target].id] || 0) < CRANE_PITY &&
+         Math.random() < CRANE_TOPDROP){
+        cr.win = false; cr.slipped = true;
+        var trot = rnd(-40, 40);
+        var tx = Math.max(cr.x, CR_CHUTE_R +
+                   crHalfW(crPlushH(), trot, $('cr-box').clientWidth || 340,
+                           cr.slots[cr.target].ar));
+        $('cr-hold').innerHTML = '';
+        sfxNg();
+        crMsg('あっ！ てっぺんで おとしちゃった…！');
+        cr.fallRest = { x:tx, rot:trot };
+        crStartFall(t, tx,
+                    box - CR_HEAP_BOT - (cr.heapTop || 0) - Math.round(crPlushH() * 0.85),
+                    trot);
+      }
+      if(!cr.win && !cr.slipped){
         /* おとす ばしょを さきに きめる。かたむきも ここで きめる ので
            とりだし口に かぶらない いちを せいかくに だせる */
         var srot = rnd(-40, 40);
