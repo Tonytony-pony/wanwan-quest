@@ -2098,6 +2098,8 @@ function defaultSave(){
     qlog    : {},      /* 'YYYY-MM-DD' -> { ok, ng }  その日の せいかい・ふせいかい */
     missTotal: {},     /* もんだい key -> これまでに まちがえた かいすう（へらない） */
     missLog : {},      /* もんだい key -> { 'YYYY-MM-DD': まちがえた かいすう }（14日ぶん） */
+    askTotal: {},      /* もんだい key -> これまでに でた かいすう（askSince から） */
+    askSince: '',      /* でた かいすうを かぞえはじめた日 */
     catchBest: 0,      /* ボールキャッチの ハイスコア */
     plush   : {},      /* ぬいぐるみ id -> こすう（クレーンゲーム） */
     craneD  : '',      /* クレーンけんを かぞえた日 */
@@ -2181,6 +2183,13 @@ function loadSave(){
                   if(qc[cid].m.hasOwnProperty(mk)) cs.m[mk] = Math.max(0, qc[cid].m[mk]|0);
                 }
               }
+              /* でた かいすう（ない 日は かぞえる まえの きろく） */
+              if(qc[cid].a && typeof qc[cid].a === 'object'){
+                cs.a = {};
+                for(mk in qc[cid].a){
+                  if(qc[cid].a.hasOwnProperty(mk)) cs.a[mk] = Math.max(0, qc[cid].a[mk]|0);
+                }
+              }
             }
           }
         }
@@ -2201,6 +2210,12 @@ function loadSave(){
         }
       }
     }
+    if(d.askTotal && typeof d.askTotal === 'object'){
+      for(qk in d.askTotal){
+        if(d.askTotal.hasOwnProperty(qk) && d.askTotal[qk] > 0) s.askTotal[qk] = d.askTotal[qk]|0;
+      }
+    }
+    if(typeof d.askSince === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.askSince)) s.askSince = d.askSince;
     if(typeof d.totalNg === 'number')   s.totalNg = d.totalNg|0;
     /* この きのうが ふえる まえの きろく：いまの にがて度を これまでの かいすうと して つかう */
     for(qk in s.mistakes){
@@ -2947,6 +2962,15 @@ function recordAnswer(key, correct){
   /* あそんだ コースべつの きろく（にがて とっくんじょうも べつに かぞえる） */
   var cid = (run && run.courseId) || key.split('|')[0];
   var C = L.c || (L.c = {}), cs = C[cid] || (C[cid] = { ok:0, ng:0, m:{} });
+  /* でた かいすう（Discord の ほうこくで「なんかい でて なんかい まちがえたか」を だす） */
+  if(!cs.a){
+    cs.a = {};
+    /* きょうの とちゅうから かぞえはじめた ときは、まちがえた かずを したじきに する */
+    for(k in cs.m){ if(cs.m.hasOwnProperty(k)) cs.a[k] = cs.m[k]; }
+  }
+  cs.a[key] = (cs.a[key] || 0) + 1;
+  if(!save.askSince) save.askSince = t;
+  save.askTotal[key] = (save.askTotal[key] || 0) + 1;
   if(correct){ L.ok++; cs.ok++; return; }
   L.ng++; cs.ng++;
   cs.m[key] = (cs.m[key] || 0) + 1;
@@ -5457,6 +5481,20 @@ function weekMiss(key, today){
   return n;
 }
 
+/* today を ふくむ 7日の あいだに でた かいすう（qlog の コースべつ きろくから） */
+function weekAsk(key, today){
+  var from = addDays(today, -6), d, c, n = 0, L;
+  for(d in save.qlog){
+    if(!save.qlog.hasOwnProperty(d) || d < from || d > today) continue;
+    L = save.qlog[d];
+    if(!L.c) continue;
+    for(c in L.c){
+      if(L.c.hasOwnProperty(c) && L.c[c].a && L.c[c].a[key]) n += L.c[c].a[key];
+    }
+  }
+  return n;
+}
+
 function dcCourseName(id){
   var n = { garden:'はじまりの庭', park:'冒険の公園', forest:'むずかしの森',
             mountain:'伝説の山', weak:'にがて特訓場' };
@@ -5490,7 +5528,8 @@ function dcBuild(since){
         for(k in cs.m){ if(cs.m.hasOwnProperty(k)) miss.push({ k:k, n:cs.m[k] }); }
         miss.sort(function(a, b){ return b.n - a.n; });
         for(var m = 0; m < miss.length; m++){
-          lines.push('　　✕ ' + keyToText(miss[m].k) + '（' + miss[m].n + '回）');
+          lines.push('　　✕ ' + keyToText(miss[m].k) + '（' + miss[m].n + '回' +
+                     (cs.a && cs.a[miss[m].k] ? ' ／ 出題 ' + cs.a[miss[m].k] + '回' : '') + '）');
         }
       }
     }else{
@@ -5511,13 +5550,18 @@ function dcBuild(since){
   /* これまでに まちがえた もんだい ぜんぶ */
   var all = [];
   for(k in save.missTotal){
-    if(save.missTotal.hasOwnProperty(k)) all.push({ k:k, t:save.missTotal[k], w:weekMiss(k, today) });
+    if(save.missTotal.hasOwnProperty(k)){
+      all.push({ k:k, t:save.missTotal[k], w:weekMiss(k, today),
+                 at:save.askTotal[k] || 0, aw:weekAsk(k, today) });
+    }
   }
   all.sort(function(a, b){ return b.t - a.t || b.w - a.w; });
-  lines.push('■ これまでに間違えた問題（通算 ／ 直近1週間）');
+  lines.push('■ これまでに間違えた問題（不正解 ／ 出題　通算・直近1週間）');
+  if(save.askSince) lines.push('　※出題数は ' + dayLabel(save.askSince) + ' から記録');
   if(!all.length) lines.push('　なし');
   for(i = 0; i < all.length; i++){
-    lines.push('　' + keyToText(all[i].k) + '　' + all[i].t + '回 ／ ' + all[i].w + '回');
+    lines.push('　' + keyToText(all[i].k) + '　通算 ' + all[i].t + '回 ／ ' + all[i].at + '回' +
+               '　1週間 ' + all[i].w + '回 ／ ' + all[i].aw + '回');
   }
 
   var chunks = [], cur = '';
