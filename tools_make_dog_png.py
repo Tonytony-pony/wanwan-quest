@@ -434,10 +434,13 @@ def process(src_path, out_name, target_h, align='bottom', pad=True):
 
     # とうめいの ある PNG なら、はいけいを けす しょりは いらない。
     # そのまま つかえるので いちばん きれいに しあがる。
+    # ただし Gemini の PNG は とうめいの チャンネルが あっても ぜんぶ ふとうめい
+    # （みどりバックの まま）なので、ほんとうに すけて いる ときだけ。
     if im0.mode in ('RGBA', 'LA') or 'transparency' in im0.info:
         rgba  = im0.convert('RGBA')
         alpha = rgba.getchannel('A')
-        return finish(rgba, alpha, out_name, target_h, align, src_path, 'とうめいPNG', pad)
+        if alpha.getextrema()[0] < 250:
+            return finish(rgba, alpha, out_name, target_h, align, src_path, 'とうめいPNG', pad)
 
     im = im0.convert('RGB')
     bg, w, h, ncell, key = background_mask(im)
