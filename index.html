@@ -1007,7 +1007,9 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
 /* ---------- まちがえた もんだいを その ばで おぼえる ポップアップ ---------- */
 .mpop{position:fixed;inset:0;z-index:74;display:flex;
   align-items:center;justify-content:center;padding:18px;
-  background:rgba(70,25,70,.78);animation:tpopBg .25s ease-out;}
+  background:linear-gradient(180deg,#4a1a4a,#2e0f30);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  animation:tpopBg .25s ease-out;}
 .mpop-card{width:100%;max-width:320px;text-align:center;
   padding:14px 14px 16px;border-radius:20px;
   background:linear-gradient(180deg,#fffdfe,#f3eaff);
