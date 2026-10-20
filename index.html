@@ -5792,6 +5792,8 @@ function dcUrlOK(u){
   return /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\/\d+\/[\w-]+$/.test(u || '');
 }
 
+var DC_MISS_TOP = 10;   /* Discord の ほんぶんに だす「これまでに まちがえた もんだい」の かず */
+
 /* today を ふくむ 7日の あいだに まちがえた かいすう */
 function weekMiss(key, today){
   var ml = save.missLog[key] || {}, from = addDays(today, -6), d, n = 0;
@@ -5874,13 +5876,20 @@ function dcBuild(since){
     }
   }
   all.sort(function(a, b){ return b.t - a.t || b.w - a.w; });
-  lines.push('■ これまでに間違えた問題（不正解 ／ 出題　通算・直近1週間）');
-  if(save.askSince) lines.push('　※出題数は ' + dayLabel(save.askSince) + ' から記録');
-  if(!all.length) lines.push('　なし');
+  /* Discord には うえから DC_MISS_TOP こ だけ。ぜんぶは txt に つける */
+  var head = '■ これまでに間違えた問題（不正解 ／ 出題　通算・直近1週間）',
+      note = save.askSince ? '　※出題数は ' + dayLabel(save.askSince) + ' から記録' : '',
+      full = [head + '　全 ' + all.length + '問'];
+  lines.push(head + (all.length > DC_MISS_TOP ? '　上位 ' + DC_MISS_TOP + '問' : ''));
+  if(note){ lines.push(note); full.push(note); }
+  if(!all.length){ lines.push('　なし'); full.push('　なし'); }
   for(i = 0; i < all.length; i++){
-    lines.push('　' + keyToText(all[i].k) + '　通算 ' + all[i].t + '回 ／ ' + all[i].at + '回' +
-               '　1週間 ' + all[i].w + '回 ／ ' + all[i].aw + '回');
+    var row = '　' + keyToText(all[i].k) + '　通算 ' + all[i].t + '回 ／ ' + all[i].at + '回' +
+              '　1週間 ' + all[i].w + '回 ／ ' + all[i].aw + '回';
+    full.push(row);
+    if(i < DC_MISS_TOP) lines.push(row);
   }
+  if(all.length > DC_MISS_TOP) lines.push('　…ほか ' + (all.length - DC_MISS_TOP) + '問は 添付の txt に');
 
   var chunks = [], cur = '';
   for(i = 0; i < lines.length; i++){
@@ -5888,14 +5897,14 @@ function dcBuild(since){
     cur += lines[i] + '\n';
   }
   if(cur) chunks.push(cur);
-  return chunks;
+  return { chunks:chunks, missAll:full.join('\r\n') + '\r\n' };
 }
 
 /* done(エラーの もじ or null) */
 function dcSend(done){
   var c = dcConf();
   if(!dcUrlOK(c.url)){ done('URLが ただしく ありません'); return; }
-  var chunks = dcBuild(c.since), today = dkey();
+  var rep = dcBuild(c.since), chunks = rep.chunks, today = dkey();
 
   function post(body, cb){
     var x = new XMLHttpRequest();
@@ -5910,6 +5919,8 @@ function dcSend(done){
   fd.append('payload_json', JSON.stringify({ username:'わんわんクエスト', content:chunks[0] }));
   fd.append('files[0]', new Blob([makeBackup()], { type:'text/plain' }),
             'wanwan_backup_' + today + '.txt');
+  fd.append('files[1]', new Blob(['\ufeff' + rep.missAll], { type:'text/plain' }),
+            'wanwan_miss_' + today + '.txt');
   post(fd, function(err){
     if(err){ done(err); return; }
     var cc = dcConf();
