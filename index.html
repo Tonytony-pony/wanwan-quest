@@ -2183,9 +2183,11 @@ function pet(){
 }
 var save = defaultSave();
 
+var syncRaw = null, syncBase = null;   /* さいごに よんだ／かいた ストレージの もじれつ・その ときの セーブ */
 function loadSave(){
   try{
     var raw = localStorage.getItem(SAVE_KEY);
+    syncRaw = raw;
     if(!raw) return;
     var d = JSON.parse(raw);
     if(!d || typeof d !== 'object') return;
@@ -2350,12 +2352,84 @@ function loadSave(){
     if(typeof d.sound === 'boolean')    s.sound = d.sound;
     if(typeof d.bgm   === 'boolean')    s.bgm   = d.bgm;
     save = s;
+    syncBase = JSON.stringify(save);
   }catch(e){ /* こわれて いたら さいしょから */ }
 }
+
+/* ---- ほかの がめんが かいた ぶんを とりこむ ----
+   2つ いじょうの がめん（べつの タブ／ホームがめんの アプリ）が ひらいて いると、
+   ふるい がめんの なにげない そうさで あたらしい セーブが ふるい かずに もどって
+   しまっていた（チケットが 日を またぐと へる、など）。
+   base＝さいごに あわせた セーブ、mine＝この がめん、theirs＝いまの ストレージ。 */
+function merge3(base, mine, theirs){
+  function isObj(v){ return v && typeof v === 'object' && !(v instanceof Array); }
+  var k;
+  if(isObj(mine) && isObj(theirs)){
+    var b = isObj(base) ? base : {}, out = {};
+    for(k in theirs){
+      if(!theirs.hasOwnProperty(k)) continue;
+      if(!mine.hasOwnProperty(k)){
+        /* こちらが けした もの。あいてが あたらしく たした ものは のこす */
+        if(b.hasOwnProperty(k)) continue;
+        out[k] = theirs[k];
+      }else{
+        out[k] = merge3(b[k], mine[k], theirs[k]);
+      }
+    }
+    for(k in mine){
+      if(mine.hasOwnProperty(k) && !theirs.hasOwnProperty(k)) out[k] = mine[k];
+    }
+    return out;
+  }
+  if(typeof mine === 'number' && typeof theirs === 'number' &&
+     (typeof base === 'number' || base === undefined)){
+    var bn = (base === undefined) ? 0 : base;
+    /* かずは「あいての ぶん ＋ こちらが ふやした／へらした ぶん」 */
+    return mine === bn ? theirs : Math.max(0, theirs + (mine - bn));
+  }
+  /* もじ・はい・ならび：こちらが かえて いれば こちら、そうでなければ あいて */
+  return JSON.stringify(mine) !== JSON.stringify(base) ? mine : theirs;
+}
+
+/* ストレージが じぶんの しらない ものに かわって いたら、あわせて よみこむ */
+function mergeFromStorage(){
+  var raw, theirs, base, merged;
+  try{ raw = localStorage.getItem(SAVE_KEY); }catch(e){ return false; }
+  if(!raw || syncRaw === null || syncBase === null || raw === syncRaw) return false;
+  try{
+    theirs = JSON.parse(raw);
+    base   = JSON.parse(syncBase);
+    merged = merge3(base, JSON.parse(JSON.stringify(save)), theirs);
+    localStorage.setItem(SAVE_KEY, JSON.stringify(merged));
+  }catch(e){ return false; }
+  loadSave();      /* いつもの そうじを とおして save に いれる（syncRaw / syncBase も こうしん） */
+  return true;
+}
+
 function writeSave(){
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }catch(e){}
+  mergeFromStorage();                    /* さきに ほかの がめんの ぶんを とりこむ */
+  try{
+    var str = JSON.stringify(save);
+    localStorage.setItem(SAVE_KEY, str);
+    syncRaw = str; syncBase = str;
+  }catch(e){}
   keepLocalBackup();
   ghSchedule();
+}
+
+/* そうさ しなくても、ひらいた とき・もどった とき・ほかの がめんが かいた ときに あわせる。
+   もんだい／ミニゲーム／クレーンの さいちゅうは がめんを つくりなおさない（データだけ あわせる） */
+function syncFromOtherScreens(){
+  if(!mergeFromStorage()) return;
+  var busy = !$('screen-quiz').classList.contains('hidden') ||
+             !$('screen-catch').classList.contains('hidden') ||
+             !$('screen-crane').classList.contains('hidden');
+  if(busy) return;
+  try{
+    if(!$('screen-title').classList.contains('hidden')){ renderTitle(); }
+    else if(!$('screen-select').classList.contains('hidden')){ renderSelect(); }
+    else if(!$('screen-map').classList.contains('hidden') && save.dogs[save.current]){ renderMap(); }
+  }catch(e){}
 }
 
 /* =========================================================
@@ -6207,6 +6281,15 @@ $('bk-pull').addEventListener('click', function(){
    13. スタート
    ========================================================= */
 loadSave();
+window.addEventListener('storage', function(e){
+  if(e.key === SAVE_KEY || e.key === null) syncFromOtherScreens();
+});
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden) syncFromOtherScreens();
+});
+window.addEventListener('pageshow', syncFromOtherScreens);
+window.addEventListener('focus', syncFromOtherScreens);
+setInterval(syncFromOtherScreens, 3000);
 askPersist();
 localBackupRescue();
 ghCheckOnBoot();
