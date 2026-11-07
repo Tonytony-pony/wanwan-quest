@@ -2,6 +2,8 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' blob: data:; connect-src 'self' https://api.github.com https://discord.com https://discordapp.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f8c3dd">
 <meta name="description" content="たしざんで いぬを そだてる レトロRPGふうの さんすうアプリ">
@@ -2182,13 +2184,55 @@ function pet(){
 }
 var save = defaultSave();
 
+/* ---- あんぜん ヘルパー ----
+   セーブは ふっかつコード・クラウド・べつの タブなど「そとから」 はいって くる。
+   なかみを しんじずに、かたちを たしかめて から つかう。 */
+function has(o, k){ return Object.prototype.hasOwnProperty.call(o, k); }
+
+/* HTML に いれる もじは かならず とおす（<  >  &  "  ' を もじに する） */
+function esc(v){
+  return String(v).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
+}
+
+/* JSON.parse の けっかから、あぶない キーの なまえを とりのぞく。
+   （__proto__ や hasOwnProperty という キーが あると、あとで こわれたり
+     プロトタイプを かきかえられたり する） */
+var BAD_KEYS = ['__proto__', 'constructor', 'prototype', 'hasOwnProperty', 'toString', 'valueOf',
+                'isPrototypeOf', 'propertyIsEnumerable', 'toLocaleString'];
+function cleanJSON(x){
+  var i, ks, k;
+  if(x && typeof x === 'object'){
+    if(x instanceof Array){
+      for(i = 0; i < x.length; i++) cleanJSON(x[i]);
+      return x;
+    }
+    ks = Object.keys(x);
+    for(i = 0; i < ks.length; i++){
+      k = ks[i];
+      if(BAD_KEYS.indexOf(k) >= 0){ delete x[k]; }
+      else{ cleanJSON(x[k]); }
+    }
+  }
+  return x;
+}
+
+/* けんしょうに つかう キーの かたち */
+var COURSE_RE = /^(garden|park|forest|mountain|weak)$/;
+var KEY_RE    = /^(garden|park|forest|mountain|weak)\|\d{1,3}\+\d{1,3}$/;   /* にがて もんだいの キー */
+var ID_RE     = /^[A-Za-z0-9_]{1,24}$/;
+var WORD_RE   = /^[a-z]{1,16}$/;
+var DOG_RE    = /^[a-z]{2,20}$/;
+var DATE_RE   = /^\d{4}-\d{2}-\d{2}$/;
+
 var syncRaw = null, syncBase = null;   /* さいごに よんだ／かいた ストレージの もじれつ・その ときの セーブ */
 function loadSave(){
   try{
     var raw = localStorage.getItem(SAVE_KEY);
     syncRaw = raw;
     if(!raw) return;
-    var d = JSON.parse(raw);
+    var d = cleanJSON(JSON.parse(raw));
     if(!d || typeof d !== 'object') return;
     var s = defaultSave();
     if(typeof d.name === 'string') s.name = d.name.slice(0,8);
@@ -2196,7 +2240,7 @@ function loadSave(){
     if(d.dogs && typeof d.dogs === 'object'){
       /* いまの かたち */
       for(var k in d.dogs){
-        if(!d.dogs.hasOwnProperty(k)) continue;
+        if(!d.dogs.hasOwnProperty(k) || !DOG_RE.test(k)) continue;
         var o = d.dogs[k];
         if(!o || typeof o !== 'object') continue;
         s.dogs[k] = {
@@ -2218,8 +2262,18 @@ function loadSave(){
       s.current = FIRST_BREED;
     }
 
-    if(d.cleared   && typeof d.cleared   === 'object') s.cleared   = d.cleared;
-    if(d.mistakes  && typeof d.mistakes  === 'object') s.mistakes  = d.mistakes;
+    if(d.cleared && typeof d.cleared === 'object'){
+      for(var cc in d.cleared){
+        if(d.cleared.hasOwnProperty(cc) && COURSE_RE.test(cc) && d.cleared[cc]) s.cleared[cc] = true;
+      }
+    }
+    if(d.mistakes && typeof d.mistakes === 'object'){
+      for(var mq in d.mistakes){
+        if(d.mistakes.hasOwnProperty(mq) && KEY_RE.test(mq) && typeof d.mistakes[mq] === 'number'){
+          s.mistakes[mq] = Math.min(9999, d.mistakes[mq]);
+        }
+      }
+    }
     if(typeof d.totalOk === 'number')   s.totalOk = d.totalOk|0;
     var qk, qd;
     if(d.qlog && typeof d.qlog === 'object'){
@@ -2230,18 +2284,18 @@ function loadSave(){
             var qc = d.qlog[qd].c, cid, mk, cs;
             s.qlog[qd].c = {};
             for(cid in qc){
-              if(!qc.hasOwnProperty(cid) || !qc[cid]) continue;
+              if(!qc.hasOwnProperty(cid) || !COURSE_RE.test(cid) || !qc[cid]) continue;
               cs = s.qlog[qd].c[cid] = { ok:Math.max(0, qc[cid].ok|0), ng:Math.max(0, qc[cid].ng|0), m:{} };
               if(qc[cid].m && typeof qc[cid].m === 'object'){
                 for(mk in qc[cid].m){
-                  if(qc[cid].m.hasOwnProperty(mk)) cs.m[mk] = Math.max(0, qc[cid].m[mk]|0);
+                  if(qc[cid].m.hasOwnProperty(mk) && KEY_RE.test(mk)) cs.m[mk] = Math.max(0, qc[cid].m[mk]|0);
                 }
               }
               /* でた かいすう（ない 日は かぞえる まえの きろく） */
               if(qc[cid].a && typeof qc[cid].a === 'object'){
                 cs.a = {};
                 for(mk in qc[cid].a){
-                  if(qc[cid].a.hasOwnProperty(mk)) cs.a[mk] = Math.max(0, qc[cid].a[mk]|0);
+                  if(qc[cid].a.hasOwnProperty(mk) && KEY_RE.test(mk)) cs.a[mk] = Math.max(0, qc[cid].a[mk]|0);
                 }
               }
             }
@@ -2251,12 +2305,12 @@ function loadSave(){
     }
     if(d.missTotal && typeof d.missTotal === 'object'){
       for(qk in d.missTotal){
-        if(d.missTotal.hasOwnProperty(qk) && d.missTotal[qk] > 0) s.missTotal[qk] = d.missTotal[qk]|0;
+        if(d.missTotal.hasOwnProperty(qk) && KEY_RE.test(qk) && d.missTotal[qk] > 0) s.missTotal[qk] = d.missTotal[qk]|0;
       }
     }
     if(d.missLog && typeof d.missLog === 'object'){
       for(qk in d.missLog){
-        if(!d.missLog.hasOwnProperty(qk) || !d.missLog[qk] || typeof d.missLog[qk] !== 'object') continue;
+        if(!d.missLog.hasOwnProperty(qk) || !KEY_RE.test(qk) || !d.missLog[qk] || typeof d.missLog[qk] !== 'object') continue;
         for(qd in d.missLog[qk]){
           if(d.missLog[qk].hasOwnProperty(qd) && /^\d{4}-\d{2}-\d{2}$/.test(qd) && d.missLog[qk][qd] > 0){
             (s.missLog[qk] = s.missLog[qk] || {})[qd] = d.missLog[qk][qd]|0;
@@ -2266,7 +2320,7 @@ function loadSave(){
     }
     if(d.askTotal && typeof d.askTotal === 'object'){
       for(qk in d.askTotal){
-        if(d.askTotal.hasOwnProperty(qk) && d.askTotal[qk] > 0) s.askTotal[qk] = d.askTotal[qk]|0;
+        if(d.askTotal.hasOwnProperty(qk) && KEY_RE.test(qk) && d.askTotal[qk] > 0) s.askTotal[qk] = d.askTotal[qk]|0;
       }
     }
     if(typeof d.askSince === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.askSince)) s.askSince = d.askSince;
@@ -2285,7 +2339,7 @@ function loadSave(){
     }
     if(d.craneM && typeof d.craneM === 'object'){
       for(var cm in d.craneM){
-        if(d.craneM.hasOwnProperty(cm) && d.craneM[cm] > 0) s.craneM[cm] = d.craneM[cm]|0;
+        if(d.craneM.hasOwnProperty(cm) && ID_RE.test(cm) && d.craneM[cm] > 0) s.craneM[cm] = d.craneM[cm]|0;
       }
     }
     if(typeof d.craneD === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.craneD)) s.craneD = d.craneD;
@@ -2308,13 +2362,14 @@ function loadSave(){
     }
     if(d.perfect && typeof d.perfect === 'object'){
       for(var pc in d.perfect){
-        if(d.perfect.hasOwnProperty(pc) && d.perfect[pc] > 0) s.perfect[pc] = Math.min(9999, d.perfect[pc]|0);
+        if(d.perfect.hasOwnProperty(pc) && COURSE_RE.test(pc) && d.perfect[pc] > 0) s.perfect[pc] = Math.min(9999, d.perfect[pc]|0);
       }
     }
     if(typeof d.plushPick === 'string' && s.plush[d.plushPick] > 0) s.plushPick = d.plushPick;
     if(d.rares && typeof d.rares === 'object'){
       for(var rk in d.rares){
-        if(d.rares.hasOwnProperty(rk) && typeof d.rares[rk] === 'string') s.rares[rk] = d.rares[rk];
+        if(d.rares.hasOwnProperty(rk) && WORD_RE.test(rk) && typeof d.rares[rk] === 'string' &&
+           DATE_RE.test(d.rares[rk])) s.rares[rk] = d.rares[rk];
       }
     }
     if(d.months && typeof d.months === 'object'){
@@ -2330,11 +2385,11 @@ function loadSave(){
     }
     if(d.found && typeof d.found === 'object'){
       for(var fk in d.found){
-        if(d.found.hasOwnProperty(fk) && d.found[fk] > 0) s.found[fk] = d.found[fk]|0;
+        if(d.found.hasOwnProperty(fk) && ID_RE.test(fk) && d.found[fk] > 0) s.found[fk] = d.found[fk]|0;
       }
     }
     if(d.zbonus && typeof d.zbonus === 'object'){
-      for(var zk in d.zbonus){ if(d.zbonus[zk]) s.zbonus[zk] = true; }
+      for(var zk in d.zbonus){ if(d.zbonus.hasOwnProperty(zk) && WORD_RE.test(zk) && d.zbonus[zk]) s.zbonus[zk] = true; }
     }
     if(d.days && typeof d.days === 'object'){
       for(var dk in d.days){
@@ -2366,17 +2421,21 @@ function merge3(base, mine, theirs){
   if(isObj(mine) && isObj(theirs)){
     var b = isObj(base) ? base : {}, out = {};
     for(k in theirs){
-      if(!theirs.hasOwnProperty(k)) continue;
-      if(!mine.hasOwnProperty(k)){
+      if(!has(theirs, k) || BAD_KEYS.indexOf(k) >= 0) continue;
+      if(!has(mine, k)){
         /* こちらが けした もの。あいてが あたらしく たした ものは のこす */
-        if(b.hasOwnProperty(k)) continue;
+        if(has(b, k)) continue;
         out[k] = theirs[k];
       }else{
         out[k] = merge3(b[k], mine[k], theirs[k]);
       }
     }
     for(k in mine){
-      if(mine.hasOwnProperty(k) && !theirs.hasOwnProperty(k)) out[k] = mine[k];
+      if(!has(mine, k) || has(theirs, k) || BAD_KEYS.indexOf(k) >= 0) continue;
+      /* あいてが けした もの：こちらが かえて いなければ けす（ふっかつ させない）。
+         こちらで ふやした／かえた ものは のこす */
+      if(has(b, k) && JSON.stringify(mine[k]) === JSON.stringify(b[k])) continue;
+      out[k] = mine[k];
     }
     return out;
   }
@@ -2396,8 +2455,8 @@ function mergeFromStorage(){
   try{ raw = localStorage.getItem(SAVE_KEY); }catch(e){ return false; }
   if(!raw || syncRaw === null || syncBase === null || raw === syncRaw) return false;
   try{
-    theirs = JSON.parse(raw);
-    base   = JSON.parse(syncBase);
+    theirs = cleanJSON(JSON.parse(raw));
+    base   = cleanJSON(JSON.parse(syncBase));
     merged = merge3(base, JSON.parse(JSON.stringify(save)), theirs);
     localStorage.setItem(SAVE_KEY, JSON.stringify(merged));
   }catch(e){ return false; }
@@ -2479,7 +2538,7 @@ function readBackup(str){
   try{
     var t = (str || '').replace(/\s+/g, '');
     if(t.indexOf(BK_HEAD) === 0) t = t.slice(BK_HEAD.length);
-    var o = JSON.parse(b64dec(t));
+    var o = cleanJSON(JSON.parse(b64dec(t)));
     var d = (o && o.save) ? o.save : o;
     if(!d || typeof d !== 'object') return null;
     return d;
@@ -2489,6 +2548,7 @@ function readBackup(str){
 /* ひかえを もどす（loadSave と おなじ そうじを とおす） */
 function applySave(d){
   try{
+    cleanJSON(d);
     localStorage.setItem(SAVE_KEY, JSON.stringify(d));
   }catch(e){ return false; }
   loadSave();
@@ -2610,10 +2670,10 @@ function ghSlots(cb){
     for(k in d.files){
       if(!d.files.hasOwnProperty(k) || !ghIsSlot(k)) continue;
       o = null;
-      try{ o = JSON.parse(d.files[k].content); }catch(e){}
+      try{ o = cleanJSON(JSON.parse(d.files[k].content)); }catch(e){}
       out.push({
         file : k,
-        dev  : (o && o.dev) ? o.dev : (k === GH_OLD ? 'まえの ほぞん' : k),
+        dev  : (o && o.dev) ? String(o.dev).slice(0, 12) : (k === GH_OLD ? 'まえの ほぞん' : String(k).slice(0, 24)),
         score: (o && typeof o.score === 'number') ? o.score : -1,
         ts   : (o && o.ts) ? o.ts : 0,
         save : (o && o.save) ? o.save : null,
@@ -3236,8 +3296,10 @@ function allWeakSorted(){
   return out;
 }
 function keyToText(key){
-  var p = key.split('|')[1].split('+');
-  return p[0] + ' + ' + p[1] + ' = ' + (parseInt(p[0],10) + parseInt(p[1],10));
+  /* かならず すうじだけに する（HTML に はいって も あんぜん） */
+  var p = (String(key).split('|')[1] || '').split('+');
+  var a = parseInt(p[0], 10) || 0, b = parseInt(p[1], 10) || 0;
+  return a + ' + ' + b + ' = ' + (a + b);
 }
 
 /* =========================================================
@@ -4474,7 +4536,7 @@ function showLevelPop(fromLv, toLv, after){
     $('lvpop-stage-wrap').classList.remove('hidden');
     $('lvpop-stage').innerHTML = nameForLevel(fromLv) +
       '<span class="ar">▶</span>' + nameForLevel(toLv);
-    $('lvpop-note').innerHTML = '✧ ' + dogN() + 'に <b>こいぬが うまれた</b>よ！ ✧';
+    $('lvpop-note').innerHTML = '✧ ' + esc(dogN()) + 'に <b>こいぬが うまれた</b>よ！ ✧';
   }else if(grew){
     $('lvpop-stage-wrap').classList.remove('hidden');
     $('lvpop-stage').innerHTML = nameForLevel(fromLv) +
@@ -4557,7 +4619,7 @@ function renderItems(){
     owners = [];
     for(k in save.dogs){
       if(save.dogs.hasOwnProperty(k) && save.dogs[k].level >= ITEMS[i].lv){
-        owners.push(save.dogs[k].dogName);
+        owners.push(esc(save.dogs[k].dogName));
       }
     }
     html += '<div class="itemrow' + (owners.length ? '' : ' locked') + '">' +
@@ -4604,7 +4666,7 @@ function renderSelect(){
         html = '<span class="ph">🐾</span>';
         card.disabled = true;
       }
-      if(owned) html += '<span class="nm2">' + owned.dogName + '</span>';
+      if(owned) html += '<span class="nm2">' + esc(owned.dogName) + '</span>';
       html += '<span class="bn">' + b.name + '</span>';
       html += !b.ready ? '<span class="st soon">じゅんびちゅう</span>'
             : owned    ? '<span class="st lv">レベル ' + owned.level + '</span>'
@@ -5075,7 +5137,7 @@ function answer(value, btnEl){
       if(save.mistakes[q.key] <= 0) delete save.mistakes[q.key];
     }
 
-    msg = '<p class="good">だいせいかい！ ' + dogN() + 'が よろこんでいる！</p>';
+    msg = '<p class="good">だいせいかい！ ' + esc(dogN()) + 'が よろこんでいる！</p>';
 
     /* ボール: れんぞく せいかいの ボーナス */
     var ballHit = hasItem('ball', pet().level) && run.streak % BALL_STREAK === 0;
@@ -5149,7 +5211,7 @@ function answer(value, btnEl){
     }else{
       run.hearts -= run.down;
       renderHearts('break', run.down);
-      msg = '<p class="bad">ざんねん… ' + dogN() + 'は そっぽを むいてしまった。</p>' +
+      msg = '<p class="bad">ざんねん… ' + esc(dogN()) + 'は そっぽを むいてしまった。</p>' +
             '<p class="tiny">こたえは <b>' + q.ans + '</b> だよ。<br>' +
             '♥ が ' + run.down + 'こ われて、のこり <b>♥ ' + run.hearts + 'こ</b>…</p>';
     }
@@ -5228,7 +5290,7 @@ function answerReview(q, correct){
       $('quiz-dogname').textContent = dogLabel();
       $('quiz-dog').innerHTML = dogPic(petArt(), 'grow');
       popFx($('quiz-fx'), '✧✦★', 8);
-      msg = '<p class="good">レベルアップ！ ' + dogN() + 'が 大きく なった！</p>' +
+      msg = '<p class="good">レベルアップ！ ' + esc(dogN()) + 'が 大きく なった！</p>' +
             '<p class="tiny">レベル ' + pet().level + ' の ' + nameForLevel(pet().level) + ' に なったよ</p>';
     }
   }else{
@@ -5264,7 +5326,7 @@ function finishReview(){
   run.mode = 'normal';
   run.reviewDone = true;
   if(run.reviewLevelUp && run.banner.indexOf('おおきく') < 0){
-    run.banner = '<div class="banner">✧ ' + dogN() + 'が おおきく なった！ ✧</div>' + run.banner;
+    run.banner = '<div class="banner">✧ ' + esc(dogN()) + 'が おおきく なった！ ✧</div>' + run.banner;
   }
   renderResult(true);
 }
@@ -5366,7 +5428,7 @@ function finishRun(){
 
   run.banner = '';
   if(run.levelUps > 0){
-    run.banner += '<div class="banner">✧ ' + dogN() + 'が おおきく なった！ ✧</div>';
+    run.banner += '<div class="banner">✧ ' + esc(dogN()) + 'が おおきく なった！ ✧</div>';
     /* あがった レベルで あたらしく もらえた アイテム */
     var before = pet().level - run.levelUps, k;
     for(k = 0; k < ITEMS.length; k++){
@@ -5471,11 +5533,11 @@ function renderResult(fromReview){
       ? '<p>にがて とっくん おわり！ よく がんばったね。</p>'
       : '<p>' + courseById(run.courseId).name + ' の おせわが おわったよ。</p>';
     if(run.ng === 0){
-      m += '<p class="good">' + dogN() + 'は とても しあわせそう！</p>';
+      m += '<p class="good">' + esc(dogN()) + 'は とても しあわせそう！</p>';
     }else if(run.ng <= 2){
       m += '<p>つぎは まちがえないように がんばろう！</p>';
     }else{
-      m += '<p class="bad">' + dogN() + 'の ごきげんが ちょっと わるいみたい…</p>';
+      m += '<p class="bad">' + esc(dogN()) + 'の ごきげんが ちょっと わるいみたい…</p>';
     }
     if(run.bonus > 0){
       m += '<p class="tiny"><img class="inline-item" src="img/ball.png" alt="">' +
@@ -5757,7 +5819,7 @@ function catchEnd(){
     (cg.gained > 0
       ? '<br>なつき度が <b>＋' + cg.gained + '</b>'
       : '<br><span class="tiny">3こ キャッチすると なつき度が ふえるよ</span>') +
-    (lv > 0 ? '<br>✧ ' + dogN() + 'が おおきく なった！ ✧' : '');
+    (lv > 0 ? '<br>✧ ' + esc(dogN()) + 'が おおきく なった！ ✧' : '');
 
   if(best) sfxLevel(); else sfxTap();
   $('catch-over').classList.remove('hidden');
@@ -5989,7 +6051,7 @@ function dcSend(done){
   }
 
   var fd = new FormData();
-  fd.append('payload_json', JSON.stringify({ username:'わんわんクエスト', content:chunks[0] }));
+  fd.append('payload_json', JSON.stringify({ username:'わんわんクエスト', content:chunks[0], allowed_mentions:{ parse:[] } }));
   fd.append('files[0]', new Blob([makeBackup()], { type:'text/plain' }),
             'wanwan_backup_' + today + '.txt');
   fd.append('files[1]', new Blob(['\ufeff' + rep.missAll], { type:'text/plain' }),
@@ -6003,7 +6065,7 @@ function dcSend(done){
     var n = 1;
     (function next(){
       if(n >= chunks.length){ done(null); return; }
-      post(JSON.stringify({ username:'わんわんクエスト', content:chunks[n++] }), function(){ next(); });
+      post(JSON.stringify({ username:'わんわんクエスト', content:chunks[n++], allowed_mentions:{ parse:[] } }), function(){ next(); });
     })();
   });
 }
@@ -6144,6 +6206,10 @@ $('bk-cr-add').addEventListener('click', function(){
 /* ⑥ かんりしゃ モード：いぬを レベルべつに ならべ、ずかんを 100こずつに する */
 $('bk-admin').addEventListener('click', function(){
   sfxTap();
+  /* こどもが まちがえて おせない ように、おとなの かくにん（かけ算）を する */
+  var qa = 6 + Math.floor(Math.random() * 4), qb = 7 + Math.floor(Math.random() * 3);
+  var ans = window.prompt('おとなの かくにん\n' + qa + ' × ' + qb + ' ＝ ？  （こたえを すうじで）');
+  if(ans === null || parseInt(ans, 10) !== qa * qb){ bkMsg('こたえが ちがうので やめました。', 'ng'); return; }
   if(!window.confirm('いぬの レベルと ずかんを かんりしゃ用に かきかえます。いい ですか？\n（さきに ① で ひかえを とると あんしんです）')) return;
   var lvs = [1, 4, 9, 14, 19, 24, 29, 34, 39], i, t, skipped = false;
   for(i = 0; i < lvs.length && i < BREEDS.length; i++){
@@ -6253,7 +6319,7 @@ $('bk-list').addEventListener('click', function(){
     }
     for(i = 0; i < ghSlotCache.length; i++){
       t = ghSlotCache[i];
-      h += '<option value="' + i + '">' + t.dev +
+      h += '<option value="' + i + '">' + esc(t.dev) +
            (t.mine ? '（この 端末）' : '') +
            ' ／ ' + (t.ts ? new Date(t.ts).toLocaleDateString('ja-JP') : '？') +
            '</option>';
