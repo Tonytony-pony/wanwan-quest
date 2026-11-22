@@ -474,8 +474,25 @@ button.ball{position:absolute;width:62px;height:62px;border-radius:50%;
 .cr-tabs button.on span{color:#7a4a00;}
 .cr-tabs button:disabled:not(.on){opacity:.45;}
 #screen-crane{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+/* いま ねらって いる セットの ぜんぶ（もっている＝カラー／まだ＝くろい かげ） */
+.cr-set{margin:0 0 4px;padding:4px 6px 5px;background:#fff;border:2px solid var(--line);border-radius:12px;}
+.cr-set .h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;
+  font-size:11.5px;font-weight:bold;color:var(--purple-deep);line-height:1.3;margin-bottom:2px;}
+.cr-set .h b{color:var(--pink-deep);}
+.cr-set .g{display:grid;grid-template-columns:repeat(12,1fr);gap:1px;}
+.cr-set .g i{display:block;position:relative;aspect-ratio:1;font-style:normal;}
+.cr-set .g img{width:100%;height:100%;object-fit:contain;display:block;}
+.cr-set .g i:not(.own) img{filter:brightness(0) opacity(.22);}
+.cr-set .g i.own::after{content:'';position:absolute;right:0;bottom:0;width:7px;height:7px;border-radius:50%;
+  background:#ff7bb0;box-shadow:0 0 0 1.5px #fff;}
+/* たかい がめん（タブレット）では 6れつ×2だんで おおきく */
+@media (min-height:900px){
+  .cr-set .g{grid-template-columns:repeat(6,1fr);gap:3px 6px;padding:0 4px;}
+  .cr-set .h{font-size:14px;margin-bottom:4px;}
+}
 .cr-box{
   position:relative;flex:1 1 auto;min-height:190px;
+  max-height:430px;   /* ひろい がめんでも うえの あきを のばしすぎない（ぬいぐるみの おおきさは かえない） */
   border-radius:14px;overflow:hidden;margin:2px 0 0;
   background:linear-gradient(180deg,#eaf3ff 0%,#dde8ff 62%,#cdddf8 100%);
   border:4px solid var(--purple-deep);
@@ -1320,6 +1337,8 @@ input[type=text]:focus{outline:none;border-color:var(--pink);
     <button type="button" id="cr-tab-forest" data-c="forest"></button>
     <button type="button" id="cr-tab-mountain" data-c="mountain"></button>
   </div>
+
+  <div class="cr-set" id="cr-set"></div>
 
   <div class="cr-box" id="cr-box">
     <div class="cr-rail"></div>
@@ -3458,14 +3477,21 @@ function crArmY(px){
 }
 function crArmX(pct){ $('cr-arm').style.left = pct + '%'; }
 
-function crPlushH(){
+/* ぬいぐるみ・土台の おおきさを きめる たかさ。
+   きかいを max-height（CR_BOX_MAX）で おさえた がめんでは、おさえる まえの
+   ひろい きかいと おなじ おおきさに する（したがわは かえない）。 */
+var CR_BOX_MAX = 430;
+function crRefH(){
   var h = $('cr-box').clientHeight;
-  return Math.max(48, Math.min(84, Math.round(h * 0.30)));
+  /* clientHeight は わく（4px×2）を ひいた たかさ なので ゆとりを みる */
+  return (h >= CR_BOX_MAX - 12) ? Math.max(h, 540) : h;
+}
+function crPlushH(){
+  return Math.max(48, Math.min(84, Math.round(crRefH() * 0.30)));
 }
 /* つみあげた 土台の たかさ */
 function crHeapH(){
-  var h = $('cr-box').clientHeight;
-  return Math.max(70, Math.min(160, Math.round(h * 0.30)));
+  return Math.max(70, Math.min(160, Math.round(crRefH() * 0.30)));
 }
 /* 土台の したばしの いち。ゆかバー（16px）に 8px ぶん うめて すきまを なくす */
 var CR_HEAP_BOT = 8;
@@ -3644,6 +3670,8 @@ function craneStart(kind){
          target:-1, win:false, taken:-1, strong:strong, armY:0,
          slipped:false, noGrip:false, pity:false, spent:false, newSet:-1, kind:kind,
          fall:null, fallRest:null, heapTop:0 };
+
+  crSetStrip();   /* うえの セットひょうを さきに だす（きかいの たかさが きまる まえに） */
 
   /* きかいの なかみは もちこす。土台は さいしょの 1かいだけ つくる。 */
   /* がめんの おおきさが かわったら（よこむきに した など）
@@ -3862,6 +3890,7 @@ function crWin(){
   var wasDone = plushSetDone(si);
   save.plush[p.id] = (save.plush[p.id] || 0) + 1;
   delete save.craneM[p.id];
+  crSetStrip();
   var hadStreak = (save.craneS[cr.kind] || 0) > 0;
   delete save.craneS[cr.kind];            /* れんぞくの はずしは 0 に もどる */
   writeSave();
@@ -4011,9 +4040,30 @@ $('btn-crane').addEventListener('click', function(){
 
 /* だいの きりかえ。アームを とめる まえ（うごいて いる とき）と、
    1かい おわった あとだけ。あそんで いる さいちゅうは きりかえない。 */
+/* いま ねらって いる セットの ぜんぶを きかいの うえに ならべる */
+var crSetKey = '';
+function crSetStrip(){
+  if(!cr) return;
+  var si = crSet(), list = plushOfSet(si), i, p, own, n = 0, key = si + ':', h = '';
+  for(i = 0; i < list.length; i++){
+    own = save.plush[list[i].id] > 0; if(own) n++;
+    key += own ? '1' : '0';
+  }
+  if(key === crSetKey) return;
+  crSetKey = key;
+  h = '<div class="h"><span>' + esc(PLUSH_SETS[si].name) + '</span><span>もっている <b>' + n + '</b> / ' +
+      list.length + '</span></div><div class="g">';
+  for(i = 0; i < list.length; i++){
+    p = list[i]; own = save.plush[p.id] > 0;
+    h += '<i' + (own ? ' class="own"' : '') + ' title="' + (own ? esc(p.name) : '？') + '">' +
+         '<img src="img/plush_' + p.id + '.png" alt=""></i>';
+  }
+  $('cr-set').innerHTML = h + '</div>';
+}
 function crTabs(){
   if(!cr) return;
   crLastKind = cr.kind;
+  crSetStrip();
   var can = (cr.phase === 'move' || cr.phase === 'done');
   var i, c, b, n, ok;
   for(i = 0; i < TICKETS.length; i++){
