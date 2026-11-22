@@ -2162,6 +2162,7 @@ function defaultSave(){
     tk      : { garden:0, park:0, forest:0, mountain:0 },  /* コースの チケット。日が かわっても きえない */
     perfect : {},      /* コース id -> ぜんもん せいかいの かいすう（セットを あける のに つかう） */
     craneM  : {},      /* ぬいぐるみ id -> はずした かいすう */
+    craneS  : {},      /* コース -> れんぞくで はずした かいすう（どの ぬいぐるみでも。とれたら 0） */
     plushPick: '',     /* おへやに かざって いる ぬいぐるみ */
     rares   : {},      /* レアアイテム id -> もらった日 'YYYY-MM-DD' */
     months  : {},      /* 'YYYY-MM' -> true  月の ごほうびを もらった */
@@ -2340,6 +2341,13 @@ function loadSave(){
     if(d.craneM && typeof d.craneM === 'object'){
       for(var cm in d.craneM){
         if(d.craneM.hasOwnProperty(cm) && ID_RE.test(cm) && d.craneM[cm] > 0) s.craneM[cm] = d.craneM[cm]|0;
+      }
+    }
+    if(d.craneS && typeof d.craneS === 'object'){
+      var csk = ['garden','park','forest','mountain'];
+      for(var csi2 = 0; csi2 < csk.length; csi2++){
+        var csv = d.craneS.hasOwnProperty(csk[csi2]) ? d.craneS[csk[csi2]] : 0;
+        if(typeof csv === 'number' && csv > 0) s.craneS[csk[csi2]] = Math.min(99, csv|0);
       }
     }
     if(typeof d.craneD === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d.craneD)) s.craneD = d.craneD;
@@ -2820,6 +2828,13 @@ function ensureAudio(){
    5まい もらうには 10もんを 5かい（50もん）とく ひつようが ある。 */
 var CRANE_MAX   = 5;      /* 1日に もらえる チケットの かず（ぜんぶ あわせて） */
 var CRANE_PITY  = 2;      /* これだけ はずすと つぎは かならず とれる */
+/* 「かならず とれる」の じょうけん（どちらかを みたす）:
+   ・おなじ ぬいぐるみを CRANE_PITY かい はずした
+   ・おなじ コースで どの ぬいぐるみでも CRANE_PITY かい れんぞくで はずした
+   とれたら れんぞくの かいすうは 0 に もどる。 */
+function crSure(kind, id){
+  return ((save.craneM[id] || 0) >= CRANE_PITY) || ((save.craneS[kind] || 0) >= CRANE_PITY);
+}
 var CRANE_SWEEP = 1750;   /* アームが はしから はしまで うごく ミリびょう */
 var CRANE_UPDOWN = 1000;  /* アームが おりる／あがる ミリびょう（ゆっくりめ） */
 var CRANE_NOGRIP = 0.10;  /* つかめずに かたむくだけ に なる かくりつ */
@@ -3422,7 +3437,7 @@ function crPick(si){
 
 /* とれるか どうかは アニメの まえに きめる */
 function crDecide(p, dist){
-  if((save.craneM[p.id] || 0) >= CRANE_PITY) return true;   /* すくいあげ */
+  if(crSure(cr ? cr.kind : 'garden', p.id)) return true;   /* すくいあげ */
   var near = dist / 9;                    /* 0 に ちかいほど ぴったり */
   var base = (near < 0.5) ? 0.90 : (near < 1.0) ? 0.55 : 0.20;
   base *= [1, 0.8, 0.62][p.size];
@@ -3627,7 +3642,7 @@ function craneStart(kind){
 
   cr = { phase:'move', t0:crNow(), x:CR_L, slots:null, tilt:null, xs:null,
          target:-1, win:false, taken:-1, strong:strong, armY:0,
-         slipped:false, noGrip:false, spent:false, newSet:-1, kind:kind,
+         slipped:false, noGrip:false, pity:false, spent:false, newSet:-1, kind:kind,
          fall:null, fallRest:null, heapTop:0 };
 
   /* きかいの なかみは もちこす。土台は さいしょの 1かいだけ つくる。 */
@@ -3682,7 +3697,8 @@ function crStop(){
   cr.win = crDecide(cr.slots[best], bd);
   /* ときどき「つかめなくて かたむくだけ」に なる。
      すくいあげ（2かい はずした つぎ）の かいは かならず とれる ので のぞく。 */
-  var pity = (save.craneM[cr.slots[best].id] || 0) >= CRANE_PITY;
+  var pity = crSure(cr.kind, cr.slots[best].id);
+  cr.pity = pity;
   cr.noGrip = (!pity && Math.random() < CRANE_NOGRIP);
   if(cr.noGrip){ cr.win = false; cr.slipped = true; }
   cr.phase = 'down';
@@ -3749,7 +3765,7 @@ function crLoop(){
       /* とれる はずでも、てんじょうで ゆれて おとして しまう ことが ある。
          すくいあげ（2かい はずした つぎ）の かいは かならず とれる ので のぞく。 */
       if(cr.win && !cr.noGrip &&
-         (save.craneM[cr.slots[cr.target].id] || 0) < CRANE_PITY &&
+         !cr.pity &&
          Math.random() < CRANE_TOPDROP){
         cr.win = false; cr.slipped = true;
         var trot = rnd(-40, 40);
@@ -3846,6 +3862,8 @@ function crWin(){
   var wasDone = plushSetDone(si);
   save.plush[p.id] = (save.plush[p.id] || 0) + 1;
   delete save.craneM[p.id];
+  var hadStreak = (save.craneS[cr.kind] || 0) > 0;
+  delete save.craneS[cr.kind];            /* れんぞくの はずしは 0 に もどる */
   writeSave();
   /* いま この セットが そろった？ -1 なし / 0いじょう つぎの セット / -2 ぜんぶ */
   cr.newSet = -1;
@@ -3866,7 +3884,10 @@ function crWin(){
   cr.slots = crKeep.slots; cr.tilt = crKeep.tilt; cr.xs = crKeep.xs;
   cr.taken = -1;
   crRender();                    /* おぎなった 1たいを みせる */
-  crMsg('<b>' + p.name + '</b>を ゲット！');
+  crMsg('<b>' + p.name + '</b>を ゲット！' +
+        (cr.pity ? '<br><span class="tiny">「かならず とれる」を つかったよ。<b>はずした かいすうは 0に もどったよ</b>。<br>' +
+                   'また 2かい れんぞくで はずすと、つぎは かならず とれるよ</span>'
+         : hadStreak ? '<br><span class="tiny">はずした かいすうは 0に もどったよ</span>' : ''));
   showPlushPop(p);
 }
 
@@ -3879,20 +3900,21 @@ function crMiss(){
     crKeep.tilt[cr.target] = cr.fallRest.rot;
   }
   save.craneM[p.id] = (save.craneM[p.id] || 0) + 1;
+  save.craneS[cr.kind] = Math.min(99, (save.craneS[cr.kind] || 0) + 1);
   writeSave();
   cr.phase = 'done';
   cr.tilt = crKeep.tilt; cr.xs = crKeep.xs;
   cr.taken = -1;
   crRender();                    /* おちた ところに おきなおす */
   $('cr-fall').classList.add('hidden');
-  var left = CRANE_PITY - save.craneM[p.id];
+  var left = CRANE_PITY - Math.max(save.craneM[p.id] || 0, save.craneS[cr.kind] || 0);
   /* つかめなかった ときと、もちあげて おとした ときで いいかたを かえる */
   crMsg((cr.noGrip
           ? 'つかめなかった… <b>' + p.name + 'が ちょっと うごいた</b>よ<br>'
           : 'おしい！ おとして しまった…<br>') +
         (left <= 0
-          ? '<b>つぎは かならず とれる よ！</b>'
-          : 'でも <b>' + p.name + 'は つぎ とりやすく なった</b>よ'));
+          ? '<b>つぎは どの ぬいぐるみでも かならず とれる よ！</b><br><span class="tiny">（とれたら はずした かいすうは 0に もどるよ）</span>'
+          : 'あと <b>' + left + 'かい</b> れんぞくで はずすと、つぎは <b>かならず とれる</b>よ'));
   crEnd();
 }
 
@@ -6199,7 +6221,7 @@ function renderPlushList(){
 $('bk-cr-add').addEventListener('click', function(){
   sfxTap();
   if(!window.confirm('あつめた ぬいぐるみを ぜんぶ けします。いい ですか？')) return;
-  save.plush = {}; save.craneM = {}; save.plushPick = '';
+  save.plush = {}; save.craneM = {}; save.craneS = {}; save.plushPick = '';
   writeSave(); renderCraneTest(); renderPlushList(); renderMap();
   bkMsg('ぬいぐるみを ぜんぶ けしました。', 'ok');
 });
