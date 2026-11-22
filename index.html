@@ -479,20 +479,33 @@ button.ball{position:absolute;width:62px;height:62px;border-radius:50%;
 .cr-set .h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;
   font-size:11.5px;font-weight:bold;color:var(--purple-deep);line-height:1.3;margin-bottom:2px;}
 .cr-set .h b{color:var(--pink-deep);}
+.cr-set .h em{font-style:normal;}
 .cr-set .g{display:grid;grid-template-columns:repeat(12,1fr);gap:1px;}
 .cr-set .g i{display:block;position:relative;aspect-ratio:1;font-style:normal;}
 .cr-set .g img{width:100%;height:100%;object-fit:contain;display:block;}
 .cr-set .g i:not(.own) img{filter:brightness(0) opacity(.22);}
 .cr-set .g i.own::after{content:'';position:absolute;right:0;bottom:0;width:7px;height:7px;border-radius:50%;
   background:#ff7bb0;box-shadow:0 0 0 1.5px #fff;}
+/* スマホ：きかいの たかさを なるべく へらさない ように 1ぎょうに ちぢめる
+   （セットの なまえは はぶき、「3/12」だけ みぎに） */
+@media (max-width:599px){
+  .cr-set{display:flex;align-items:center;gap:6px;padding:3px 6px;}
+  .cr-set .g{flex:1;min-width:0;}
+  .cr-set .h{order:2;margin:0;white-space:nowrap;font-size:11px;}
+  .cr-set .h .n, .cr-set .h em{display:none;}
+}
 /* たかい がめん（タブレット）では 6れつ×2だんで おおきく */
-@media (min-height:900px){
+@media (min-width:600px) and (min-height:900px){
   .cr-set .g{grid-template-columns:repeat(6,1fr);gap:3px 6px;padding:0 4px;}
   .cr-set .h{font-size:14px;margin-bottom:4px;}
 }
+/* タブレット（よこ はばが ひろくて、たかい がめん）だけ、うえの あきを おさえる。
+   スマホは そのまま。ぬいぐるみの おおきさは かえない（crRefH）。 */
+@media (min-width:600px) and (min-height:900px){
+  .cr-box{max-height:430px;}
+}
 .cr-box{
   position:relative;flex:1 1 auto;min-height:190px;
-  max-height:430px;   /* ひろい がめんでも うえの あきを のばしすぎない（ぬいぐるみの おおきさは かえない） */
   border-radius:14px;overflow:hidden;margin:2px 0 0;
   background:linear-gradient(180deg,#eaf3ff 0%,#dde8ff 62%,#cdddf8 100%);
   border:4px solid var(--purple-deep);
@@ -3480,11 +3493,11 @@ function crArmX(pct){ $('cr-arm').style.left = pct + '%'; }
 /* ぬいぐるみ・土台の おおきさを きめる たかさ。
    きかいを max-height（CR_BOX_MAX）で おさえた がめんでは、おさえる まえの
    ひろい きかいと おなじ おおきさに する（したがわは かえない）。 */
-var CR_BOX_MAX = 430;
 function crRefH(){
-  var h = $('cr-box').clientHeight;
+  var b = $('cr-box'), h = b.clientHeight;
+  var mh = parseFloat(window.getComputedStyle(b).maxHeight);   /* おさえて いない とき NaN */
   /* clientHeight は わく（4px×2）を ひいた たかさ なので ゆとりを みる */
-  return (h >= CR_BOX_MAX - 12) ? Math.max(h, 540) : h;
+  return (isFinite(mh) && h >= mh - 12) ? Math.max(h, 540) : h;
 }
 function crPlushH(){
   return Math.max(48, Math.min(84, Math.round(crRefH() * 0.30)));
@@ -4051,7 +4064,7 @@ function crSetStrip(){
   }
   if(key === crSetKey) return;
   crSetKey = key;
-  h = '<div class="h"><span>' + esc(PLUSH_SETS[si].name) + '</span><span>もっている <b>' + n + '</b> / ' +
+  h = '<div class="h"><span class="n">' + esc(PLUSH_SETS[si].name) + '</span><span><em>もっている </em><b>' + n + '</b> / ' +
       list.length + '</span></div><div class="g">';
   for(i = 0; i < list.length; i++){
     p = list[i]; own = save.plush[p.id] > 0;
